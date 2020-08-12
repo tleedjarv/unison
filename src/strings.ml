@@ -1143,6 +1143,7 @@ let docs =
       \032   or unison profilename [options]\n\
       \n\
       Basic options:\n\
+      \032-acl               synchronize ACLs\n\
       \032-auto              automatically accept default (nonconflicting) actions\n\
       \032-batch             batch mode: ask no questions at all\n\
       \032-doc xxx           show documentation ('-doc topics' lists topics)\n\
@@ -1190,6 +1191,7 @@ let docs =
       \032-debug xxx         debug module xxx ('all' -> everything, 'verbose' -> more)\n\
       \032-diff xxx          set command for showing differences between files\n\
       \032-dontchmod         when set, never use the chmod system call\n\
+      \032-dontverifyacl     when set, don't verify ACL after setting it\n\
       \032-dumbtty           do not change terminal settings in text UI\n\
       \032-fastcheck xxx     do fast update detection (true/false/default)\n\
       \032-fastercheckUNSAFE skip computing fingerprints for new files (experts only!)\n\
@@ -1267,6 +1269,12 @@ let docs =
       \032  command-line parsing. This is because we want to run the actions\n\
       \032  without loading a profile; and then we can\226\128\153t do command-line parsing\n\
       \032  because it is intertwined with profile loading.\n\
+      \n\
+      \032  acl\n\
+      \032         When this flag is set to true, the ACLs of files and directories\n\
+      \032         are synchronized. The type of ACLs depends on the platform and\n\
+      \032         filesystem support. On Unix-like platforms it can be NFSv4 ACLs,\n\
+      \032         for example.\n\
       \n\
       \032  addprefsto xxx\n\
       \032         By default, new preferences added by Unison (e.g., new ignore\n\
@@ -1487,6 +1495,15 @@ let docs =
       \032         circumstances (and under some operating systems), the chmod call\n\
       \032         always fails. Setting this preference completely prevents Unison\n\
       \032         from ever calling chmod.\n\
+      \n\
+      \032  dontverifyacl\n\
+      \032         When ACLs are synchronized (acl set to true), Unison verifies\n\
+      \032         the files after having set an updated ACL to see if the ACL was\n\
+      \032         set correctly. But in some circumstances (and under some\n\
+      \032         operating systems), the ACL on the file will always differ to\n\
+      \032         the set ACL, even if the ACL was actually set successfully.\n\
+      \032         Setting this preference prevents Unison from verifing ACL after\n\
+      \032         setting it.\n\
       \n\
       \032  dumbtty\n\
       \032         When set to true, this flag makes the text mode user interface\n\
@@ -2684,9 +2701,53 @@ let docs =
       \032      Unix system).\n\
       \032    * For security reasons, the Unix setuid and setgid bits are not\n\
       \032      propagated.\n\
-      \032    * The Unix owner and group ids are not propagated. (What would this\n\
-      \032      mean, in general?) All files are created with the owner and group\n\
-      \032      of the server process.\n\
+      \032    * The Unix owner and group ids can be propagated (see owner and group\n\
+      \032      preferences) by mapping names or by numberic ids (see numericids\n\
+      \032      preference).\n\
+      \n\
+      Access Control Lists - ACLs\n\
+      \n\
+      \032  Unison allows synchronizing access control lists (ACLs) on platforms\n\
+      \032  and filesystems that support them. In general, synchronization makes\n\
+      \032  sense only in case both replicas support the same type of ACLs and\n\
+      \032  recognize same users and groups. In some cases you may be able to go\n\
+      \032  beyond that and synchronize ACLs to a replica that couldn't fully use\n\
+      \032  them--this may be be useful for the purpose of preserving ACLs.\n\
+      \n\
+      \032  If one of the replicas does not support any type of ACLs then Unison\n\
+      \032  will not attempt ACL synchronization. If the other replica does support\n\
+      \032  ACLs then those will remain intact.\n\
+      \n\
+      \032  If both replicas support ACLs of any supported type then you can\n\
+      \032  request Unison to try ACL synchronization (acl preference). Success of\n\
+      \032  synchronization depends on permissions of the owner and group of Unison\n\
+      \032  process (Unison must have permissions to set ACL) and the compatibility\n\
+      \032  of ACL types on both replicas.\n\
+      \n\
+      \032  An ACL is propagated as a single unit, with all ACEs. There is no\n\
+      \032  merging of ACEs from the replicas.\n\
+      \n\
+      \032  Unison currently supports the following platforms and ACL types:\n\
+      \032    * Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,\n\
+      \032      OmniOS, etc.)\n\
+      \032         + NFSv4 ACL (ZFS ACL)\n\
+      \032         + POSIX-draft ACL\n\
+      \032         + Some NFSv4 ACL (ZFS ACL) cross-synchronization with\n\
+      \032           POSIX-draft ACL\n\
+      \032         + Full cross-synchronization with other platforms that support\n\
+      \032           NFSv4 ACLs; limited cross-synchronization with POSIX-draft\n\
+      \032           ACLs\n\
+      \032    * FreeBSD\n\
+      \032         + NFSv4 ACL (ZFS ACL)\n\
+      \032         + Limited POSIX-draft ACL (access ACL only; not default ACL)\n\
+      \032         + Full cross-synchronization with other platforms that support\n\
+      \032           NFSv4 ACLs\n\
+      \032    * Darwin (macOS)\n\
+      \032         + NFSv4 ACL (ZFS ACL)\n\
+      \032         + Limited POSIX-draft ACL (access ACL only; not default ACL)\n\
+      \n\
+      \032  Not all filesystems on the listed platforms support all ACL types (or\n\
+      \032  any ACLs at all).\n\
       \n\
       Cross-Platform Synchronization\n\
       \n\
