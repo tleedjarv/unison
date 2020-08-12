@@ -98,7 +98,7 @@ let get fromRoot fspath path =
            inode    = (* The inode number is truncated so that
                          it fits in a 31 bit ocaml integer *)
                       stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
-           desc     = Props.get stats osxInfos;
+           desc     = Props.get (Fspath.toSysPath (Fspath.concat fspath path)) stats osxInfos;
            osX      = osxInfos }
        with
          Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
@@ -197,7 +197,7 @@ let get' f =
          let osxInfos = Osx.defaultInfos typ in
          { typ   = typ;
            inode = stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
-           desc  = Props.get stats osxInfos;
+           desc  = Props.get f stats osxInfos;
            osX   = osxInfos }
        with
          Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->

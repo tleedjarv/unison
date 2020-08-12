@@ -17,6 +17,7 @@
 
 
 let debug = Util.debug "props"
+let debugverbose = Util.debug "props+"
 
 module type S = sig
   type t
@@ -662,6 +663,163 @@ let init _ = ()
 end
 
 (* ------------------------------------------------------------------------- *)
+(*                                  ACL                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let syncACL =
+  Prefs.createBool "acl" false "synchronize ACLs"
+    ("When this flag is set to \\verb|true|, the ACLs of files and "
+     ^ "directories are synchronized. The type of ACLs depends on the "
+     ^ "platform and filesystem support. On Unix-like platforms it "
+     ^ "can be NFSv4 ACLs, for example.")
+
+module ACL : sig
+  include S
+  val getP : System.fspath -> Unix.LargeFile.stats -> Osx.info -> t
+  val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
+end = struct
+
+(* None indicates ACLs are not supported. This is not synchronized.
+ * An empty string represents a trivial/removed ACL. This will be
+ * synchronized. *)
+type t = string option
+
+let dummy = None
+
+let hash t h = Uutil.hash2 (Uutil.hash t) h
+
+let toString t =
+  match t with
+    Some "" ->
+      " <trivial ACL>"
+  | Some s ->
+      " A=" ^ s
+  | _ ->
+      ""
+
+let syncedPartsToString = toString
+
+let similar t t' =
+  not (Prefs.read syncACL)
+    ||
+  let result = (t = t') in
+  debugverbose
+    (fun() ->
+      Util.msg "Comparing ACLs |%s| and |%s| => %s\n"
+        (toString t) (toString t')
+        (match result with true -> "same" | false -> "different"));
+  result
+
+let override t t' = t'
+
+let strip t = if Prefs.read syncACL then t else None
+
+let diff t t' = if similar t t' then None else t'
+
+external sysGetACLAsText: string -> string = "unison_acl_to_text"
+external sysSetACLFromText: string -> string -> unit = "unison_acl_from_text"
+
+(* getACLAsText must be an option, where None means ACLs not supported *)
+let getACLAsText path =
+  try
+    let result = sysGetACLAsText path in
+    (* "-1" is used as a special code for no ACL support *)
+    if result = "-1" then
+      None
+    else
+      Some result
+  with Failure msg -> begin
+    Trace.logverbose (msg ^
+               ". You can set preference \"acl\" to false \
+               to avoid this error.\n");
+    None
+  end
+
+let setACLFromText path t =
+  match t with
+    Some acl -> begin
+      try
+        sysSetACLFromText path acl
+      with Failure msg ->
+        Trace.logverbose (msg ^
+                   ". You can set preference \"acl\" to false \
+                   to avoid this error.\n");
+        ()
+    end
+  | _ -> ()
+
+let set fspath path kind t =
+  match t with
+    Some _ when Prefs.read syncACL ->
+      let abspath = Fspath.concat fspath path in
+      debug
+        (fun() ->
+          Util.msg "Setting ACL for %s from text |%s|\n"
+            (Fspath.toDebugString abspath) (toString t));
+      setACLFromText (Fspath.toString abspath) t
+  | _ -> ()
+
+let get _ _ = dummy
+let getP abspath stats _ =
+  if
+    Prefs.read syncACL &&
+    (stats.Unix.LargeFile.st_kind = Unix.S_REG ||
+     stats.Unix.LargeFile.st_kind = Unix.S_DIR)
+  then
+    let acltext = getACLAsText (System.fspathToString abspath) in
+    debug
+      (fun() ->
+        Util.msg "Got text ACL |%s| for %s\n"
+          (toString acltext) (System.fspathToDebugString abspath));
+    acltext
+  else
+    None
+
+let dontVerifyACL =
+  Prefs.createBool "dontverifyacl" false
+    "!when set, don't verify ACL after setting it"
+    ("When ACLs are synchronized ({\\tt acl} set to \\verb|true|), Unison "
+     ^ "verifies the files after having set an updated ACL to see if the "
+     ^ "ACL was set correctly. But in some circumstances (and under some "
+     ^ "operating systems), the ACL on the file will always differ to the "
+     ^ "set ACL, even if the ACL was actually set successfully. Setting "
+     ^ "this preference prevents Unison from verifing ACL after setting it.")
+
+(* FIXME: currently there is a problem when not verifying set ACLs.
+ * The ACL on the target file may be completely OK, but Unison does not
+ * know it and therefore the archive is not updated to reflect the actual
+ * ACL on the file. So, the next time Unison is run, it detects the real
+ * ACL on the file as an update, which it is not. *)
+let check fspath path stats acl =
+  if (not (Prefs.read dontVerifyACL)) then
+  let acl' = getP (Fspath.toSysPath (Fspath.concat fspath path)) stats None in
+  match acl, acl' with
+    None, _ ->
+      ()
+  | _, None ->
+      ()
+  | _ ->
+    if acl <> acl' then
+      raise
+        (Util.Transient
+           (Format.sprintf
+              "Failed to set ACL of file %s to%s. \
+               The ACL was set to%s instead. \
+               The filesystem probably does not have full ACL support or \
+               the synchronized ACL is of different type. \
+               If this is a filesystem without correct ACL support, you \
+               should set the {\\tt acl} option to \\verb|false|. \
+               If you know that the ACL was set correctly then you should \
+               set the {\\tt dontverifyacl} option to \\verb|true|."
+              (Fspath.toPrintString (Fspath.concat fspath path))
+              (toString acl)
+              (toString acl')))
+
+let init _ = ()
+
+end
+
+(* ------------------------------------------------------------------------- *)
 (*                           Properties                                      *)
 (* ------------------------------------------------------------------------- *)
 
@@ -671,12 +829,13 @@ type t =
     gid : Gid.t;
     time : Time.t;
     typeCreator : TypeCreator.t;
-    length : Uutil.Filesize.t }
+    length : Uutil.Filesize.t;
+    acl : ACL.t }
 
 let template perm =
   { perm = perm; uid = Uid.dummy; gid = Gid.dummy;
     time = Time.dummy; typeCreator = TypeCreator.dummy;
-    length = Uutil.Filesize.dummy }
+    length = Uutil.Filesize.dummy; acl = ACL.dummy }
 
 let dummy = template Perm.dummy
 
@@ -685,7 +844,8 @@ let hash p h =
     (Uid.hash p.uid
        (Gid.hash p.gid
           (Time.hash p.time
-             (TypeCreator.hash p.typeCreator h))))
+             (TypeCreator.hash p.typeCreator
+                (ACL.hash p.acl h)))))
 
 let similar p p' =
   Perm.similar p.perm p'.perm
@@ -697,6 +857,8 @@ let similar p p' =
   Time.similar p.time p'.time
     &&
   TypeCreator.similar p.typeCreator p'.typeCreator
+    &&
+  ACL.similar p.acl p'.acl
 
 let override p p' =
   { perm = Perm.override p.perm p'.perm;
@@ -704,7 +866,8 @@ let override p p' =
     gid = Gid.override p.gid p'.gid;
     time = Time.override p.time p'.time;
     typeCreator = TypeCreator.override p.typeCreator p'.typeCreator;
-    length = p'.length }
+    length = p'.length;
+    acl = ACL.override p.acl p'.acl }
 
 let strip p =
   { perm = Perm.strip p.perm;
@@ -712,22 +875,24 @@ let strip p =
     gid = Gid.strip p.gid;
     time = Time.strip p.time;
     typeCreator = TypeCreator.strip p.typeCreator;
-    length = p.length }
+    length = p.length;
+    acl = ACL.strip p.acl }
 
 let toString p =
   Printf.sprintf
-    "modified on %s  size %-9.0f %s%s%s%s"
+    "modified on %s  size %-9.0f %s%s%s%s%s"
     (Time.toString p.time)
     (Uutil.Filesize.toFloat p.length)
     (Perm.toString p.perm)
     (Uid.toString p.uid)
     (Gid.toString p.gid)
     (TypeCreator.toString p.typeCreator)
+    (ACL.toString p.acl)
 
 let syncedPartsToString p =
   let tm = Time.syncedPartsToString p.time in
   Printf.sprintf
-    "%s%s  size %-9.0f %s%s%s%s"
+    "%s%s  size %-9.0f %s%s%s%s%s"
     (if tm = "" then "" else "modified at ")
     tm
     (Uutil.Filesize.toFloat p.length)
@@ -735,6 +900,7 @@ let syncedPartsToString p =
     (Uid.syncedPartsToString p.uid)
     (Gid.syncedPartsToString p.gid)
     (TypeCreator.syncedPartsToString p.typeCreator)
+    (ACL.syncedPartsToString p.acl)
 
 let diff p p' =
   { perm = Perm.diff p.perm p'.perm;
@@ -742,9 +908,10 @@ let diff p p' =
     gid = Gid.diff p.gid p'.gid;
     time = Time.diff p.time p'.time;
     typeCreator = TypeCreator.diff p.typeCreator p'.typeCreator;
-    length = p'.length }
+    length = p'.length;
+    acl = ACL.diff p.acl p'.acl }
 
-let get stats infos =
+let get abspath stats infos =
   { perm = Perm.get stats infos;
     uid = Uid.get stats infos;
     gid = Gid.get stats infos;
@@ -754,26 +921,32 @@ let get stats infos =
       if stats.Unix.LargeFile.st_kind = Unix.S_REG then
         Uutil.Filesize.fromStats stats
       else
-        Uutil.Filesize.zero }
+        Uutil.Filesize.zero;
+    acl = ACL.getP abspath stats infos }
 
 let set fspath path kind p =
   Uid.set fspath path kind p.uid;
   Gid.set fspath path kind p.gid;
   TypeCreator.set fspath path kind p.typeCreator;
   Time.set fspath path kind p.time;
-  Perm.set fspath path kind p.perm
+  Perm.set fspath path kind p.perm;
+  (* ACLs must always be set after chmod,
+   * otherwise chmod may replace the ACL. *)
+  ACL.set fspath path kind p.acl
 
 (* Paranoid checks *)
 let check fspath path stats p =
   Time.check fspath path stats p.time;
-  Perm.check fspath path stats p.perm
+  Perm.check fspath path stats p.perm;
+  ACL.check fspath path stats p.acl
 
 let init someHostIsRunningWindows =
   Perm.init someHostIsRunningWindows;
   Uid.init someHostIsRunningWindows;
   Gid.init someHostIsRunningWindows;
   Time.init someHostIsRunningWindows;
-  TypeCreator.init someHostIsRunningWindows
+  TypeCreator.init someHostIsRunningWindows;
+  ACL.init someHostIsRunningWindows
 
 let fileDefault = template Perm.fileDefault
 let fileSafe = template Perm.fileSafe

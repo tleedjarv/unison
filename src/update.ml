@@ -52,7 +52,7 @@ let ignoreArchives =
 (*FIX: consider changing the way case-sensitivity mode is stored in
   the archive *)
 (*FIX: we should use only one Marshal.from_channel *)
-let archiveFormat = 22
+let archiveFormat = 23
 
 module NameMap = MyMap.Make (Name)
 
