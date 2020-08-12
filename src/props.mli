@@ -13,7 +13,7 @@ val diff : t -> t -> t
 val toString : t -> string
 val syncedPartsToString : t -> string
 val set : Fspath.t -> Path.local -> [`Set | `Update] -> t -> unit
-val get : Unix.LargeFile.stats -> Osx.info -> t
+val get : System.fspath -> Unix.LargeFile.stats -> Osx.info -> t
 val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
 val init : bool -> unit
 
