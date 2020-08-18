@@ -1,0 +1,50 @@
+name: Manual build
+
+on:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: 'OS (ubuntu, windows, macos)'
+        required: true
+      target:
+        description: 'Make target'
+        required: false
+        default: 'test'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ${{ github.event.inputs.os }}-latest
+        ocaml-version:
+          - 4.08.1
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+
+    - name: Cache opam files
+      id: cache-opam
+      uses: actions/cache@v2
+      if: runner.os != 'Windows'
+      with:
+        path: ~/.opam
+        key: ${{ matrix.os }}-ocaml_${{ matrix.ocaml-version }}-opam
+
+    - name: Set up opam on macOS
+      if: steps.cache-opam.outputs.cache-hit == 'true' && runner.os == 'macOS'
+      run: /usr/local/bin/brew install opam
+
+    - name: Use OCaml ${{ matrix.ocaml-version }}
+      if: steps.cache-opam.outputs.cache-hit != 'true' || runner.os == 'Linux'
+      uses: avsm/setup-ocaml@v1
+      with:
+        ocaml-version: ${{ matrix.ocaml-version }}
+
+    - run: opam exec -- make
+
+    - run: make ${{ github.event.inputs.target }}
