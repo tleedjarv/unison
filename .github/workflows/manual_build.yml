@@ -20,9 +20,6 @@ jobs:
           - ${{ github.event.inputs.os }}-latest
         ocaml-version:
           - 4.08.1
-        include:
-          - os: windows-latest
-            make_params: OSARCH=win32
 
     runs-on: ${{ matrix.os }}
 
@@ -30,7 +27,7 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
-    - name: Cache opam
+    - name: Cache opam repository
       id: cache-opam
       uses: actions/cache@v2
       if: runner.os != 'Windows'
@@ -38,11 +35,11 @@ jobs:
         path: ~/.opam
         key: ${{ matrix.os }}-ocaml_${{ matrix.ocaml-version }}-opam
 
-    - name: Set up opam
-      if: steps.cache-opam.outputs.cache-hit == 'true' && runner.os == 'Ubuntu'
+    - name: Set up opam on Linux
+      if: steps.cache-opam.outputs.cache-hit == 'true' && runner.os == 'Linux'
       run: sudo apt-get -y install bubblewrap ocaml-native-compilers ocaml-compiler-libs musl-tools
 
-    - name: Set up opam
+    - name: Set up opam on macOS
       if: steps.cache-opam.outputs.cache-hit == 'true' && runner.os == 'macOS'
       run: /usr/local/bin/brew install opam
 
