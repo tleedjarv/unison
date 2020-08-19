@@ -10,8 +10,10 @@
  * by checking if the resulting ACL matches the requested ACL (the check
  * fails with cross-synchronization).
  *
- * On FreeBSD and Darwin NFSv4 ACLs are supported. There is only limited
- * support for POSIX draft ACLs (no default ACLs).
+ * On FreeBSD, NFSv4 ACLs are supported. There is only limited support for
+ * POSIX draft ACLs (no default ACLs).
+ *
+ * On Darwin, extended ACLs are supported.
  *
  * Currently there is no support for Windows NTFS ACLs. Theoretically
  * this can be added as the interface towards synchronization logic is
@@ -160,14 +162,14 @@
 #define UNSN_HAS_FS_ACL 1
 #endif
 
-#ifdef __Solaris__
+#if defined(__Solaris__)
 #include <fcntl.h>
 #include <sys/stat.h>
 #endif
 
 #if defined(__Solaris__) || defined(__FreeBSD__) || defined(__APPLE__)
-#include <sys/acl.h>
 #include <sys/types.h>
+#include <sys/acl.h>
 #endif
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
@@ -175,11 +177,8 @@
 #include <string.h>
 #endif
 
-#undef OS_NFS4_ACL_TYPE
-#if defined(__FreeBSD__)
-#define OS_NFS4_ACL_TYPE ACL_TYPE_NFS4
-#elif defined(__APPLE__)
-#define OS_NFS4_ACL_TYPE ACL_TYPE_EXTENDED
+#if defined(__APPLE__)
+#include <errno.h>
 #endif
 
 #define CAML_NAME_SPACE
@@ -204,11 +203,25 @@ CAMLprim value unison_acl_to_text(value path)
 
 #else /* UNSN_HAS_FS_ACL */
 
+
+#if defined(__APPLE__)
+#define UNSN_ACL_T acl_t
+#else
+#define UNSN_ACL_T acl_t *
+#endif
+
+#if defined(__FreeBSD__)
+#define UNSN_ACL_TO_TEXT(aclp)    acl_to_text_np(aclp, NULL, ACL_TEXT_APPEND_ID)
+#elif defined(__APPLE__)
+#define UNSN_ACL_TO_TEXT(aclp)    acl_to_text(aclp, NULL)
+#endif
+
+
 #if defined(__FreeBSD__)
 acl_type_t unsn_path_acl_type(const char *path)
 {
   if (lpathconf(path, _PC_ACL_NFS4) > 0) { /* NFSv4 ACL supported */
-    return OS_NFS4_ACL_TYPE;
+    return ACL_TYPE_NFS4;
   } else if (lpathconf(path, _PC_ACL_EXTENDED) > 0) { /* POSIX draft ACL */
     return ACL_TYPE_ACCESS; /* It is not possible to get or set
                                default and access ACL at the same time,
@@ -220,9 +233,10 @@ acl_type_t unsn_path_acl_type(const char *path)
 #elif defined(__APPLE__)
 acl_type_t unsn_path_acl_type(const char *path)
 {
-  return OS_NFS4_ACL_TYPE;
+  return ACL_TYPE_EXTENDED;
 }
 #endif
+
 
 #if defined(__Solaris__)
 void unsn_remove_acl(const char *path)
@@ -237,7 +251,7 @@ void unsn_remove_acl(const char *path)
     caml_failwith("Error removing ACL");
   }
 }
-#elif defined(__FreeBSD__) || defined(__APPLE__)
+#elif defined(__FreeBSD__)
 void unsn_remove_acl(const char *path)
 {
   /* FreeBSD has a acl_strip_np() function, but it would be
@@ -246,9 +260,19 @@ void unsn_remove_acl(const char *path)
    * try to remove all and ignore errors. */
   acl_delete_link_np(path, ACL_TYPE_DEFAULT);
   acl_delete_link_np(path, ACL_TYPE_ACCESS);
-  acl_delete_link_np(path, OS_NFS4_ACL_TYPE);
+  acl_delete_link_np(path, ACL_TYPE_NFS4);
+}
+#elif defined(__APPLE__)
+void unsn_remove_acl(const char *path)
+{
+  acl_set_link_np(path, unsn_path_acl_type(path), acl_from_text("!#acl 1"));
+}
+#else
+void unsn_remove_acl(const char *path)
+{
 }
 #endif
+
 
 #if defined(__FreeBSD__)
 void postprocess_acl(char **s)
@@ -328,6 +352,15 @@ void postprocess_acl(char **s)
   free(*s);
   *s = buf;
 }
+#elif defined(__APPLE__)
+void postprocess_acl(char **s)
+{
+  /* Remove trailing newline */
+  size_t last = strlen(*s) - 1;
+  if (last >= 0 && (*s)[last] == '\n') {
+    (*s)[last] = '\0';
+  }
+}
 #endif
 
 
@@ -339,10 +372,17 @@ CAMLprim value unison_acl_from_text(value path, value acl)
   CAMLparam2(path, acl);
   const char *acl_text = String_val(acl);
   const char *name = String_val(path);
-  acl_t *aclp = NULL;
+  UNSN_ACL_T aclp = NULL;
   int error;
 
-#ifdef __Solaris__
+#if defined(__FreeBSD__) || defined(__APPLE__)
+  acl_type_t type = unsn_path_acl_type(name);
+  if (type == -1) {
+    caml_failwith("ACL not supported");
+  }
+#endif
+
+#if defined(__Solaris__)
   /* Safety check so we don't follow links */
   static struct stat st;
 
@@ -369,11 +409,6 @@ CAMLprim value unison_acl_from_text(value path, value acl)
   aclp = acl_from_text(acl_text);
 
   if (aclp != NULL) {
-    acl_type_t type = unsn_path_acl_type(name);
-    if (type == -1) {
-      caml_failwith("ACL not supported");
-    }
-
     error = acl_set_link_np(name, type, aclp);
 #endif
     acl_free(aclp);
@@ -397,35 +432,35 @@ CAMLprim value unison_acl_to_text(value path)
   CAMLparam1(path);
   CAMLlocal1(result);
   const char *name = String_val(path);
-  acl_t *aclp = NULL;
+  UNSN_ACL_T aclp = NULL;
 
-#if defined(__Solaris__)
-  int error = acl_get(name, ACL_NO_TRIVIAL, &aclp);
-  if (error == 0) {
-#elif defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__APPLE__)
+  int is_trivial = 0;
+
   acl_type_t type = unsn_path_acl_type(name);
   if (type == -1) {
     CAMLreturn(caml_copy_string(UNSN_ACL_NOT_SUPPORTED));
   }
 
   aclp = acl_get_link_np(name, type);
+
+#if defined(__FreeBSD__)
   if (aclp != NULL) {
-    int is_trivial = 0;
-#ifdef __FreeBSD__
     acl_is_trivial_np(aclp, &is_trivial); /* Ignore any errors here */
+#elif defined(__APPLE__)
+  /* ACLs are always enabled on Darwin since version 10 (2009) */
+  if (aclp != NULL || errno != EOPNOTSUPP) {
+    if (aclp == NULL) is_trivial = 1;
 #endif
 
     if (is_trivial == 0 && aclp != NULL) {
-      char *s = acl_to_text_np(aclp, NULL
-#ifdef __FreeBSD__
-                      , ACL_TEXT_APPEND_ID
-#endif
-                      );
-#ifdef __FreeBSD__
+      char *s = UNSN_ACL_TO_TEXT(aclp);
       postprocess_acl(&s);
-#endif
-#endif /* FreeBSD or Darwin */
-#ifdef __Solaris__
+#endif  /* FreeBSD or Darwin */
+
+#if defined(__Solaris__)
+  int error = acl_get(name, ACL_NO_TRIVIAL, &aclp);
+  if (error == 0) {
     if (aclp != NULL) {
       char *s = acl_totext(aclp, ACL_APPEND_ID | ACL_COMPACT_FMT | ACL_SID_FMT);
 #endif

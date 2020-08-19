@@ -2743,8 +2743,7 @@ let docs =
       \032         + Full cross-synchronization with other platforms that support\n\
       \032           NFSv4 ACLs\n\
       \032    * Darwin (macOS)\n\
-      \032         + NFSv4 ACL (ZFS ACL)\n\
-      \032         + Limited POSIX-draft ACL (access ACL only; not default ACL)\n\
+      \032         + Extended ACL\n\
       \n\
       \032  Not all filesystems on the listed platforms support all ACL types (or\n\
       \032  any ACLs at all).\n\
