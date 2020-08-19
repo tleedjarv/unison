@@ -27,7 +27,19 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
+    - name: Cache opam
+      id: cache-opam
+      uses: actions/cache@v2
+      with:
+        path: ~/.opam
+        key: ${{ matrix.os }}-ocaml_${{ matrix.ocaml-version }}-opam
+
+    - name: Set up opam
+      if: steps.cache-opam.outputs.cache-hit == 'true'
+      run: /usr/local/bin/brew install opam
+
     - name: Use OCaml ${{ matrix.ocaml-version }}
+      if: steps.cache-opam.outputs.cache-hit != 'true'
       uses: avsm/setup-ocaml@v1
       with:
         ocaml-version: ${{ matrix.ocaml-version }}
