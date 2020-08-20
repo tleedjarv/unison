@@ -42,7 +42,7 @@ all:: INSTALL
 	run runbatch runt rundebug runp runtext runsort runprefer \
 	prefsdocs runtest repeattest \
 	selftest selftestdebug selftestremote testmerge \
-	checkin installremote
+	testacl checkin installremote
 
 .DELETE_ON_ERROR:
 # to avoid problems when something fails to run
@@ -328,6 +328,92 @@ testmerge:
 	cat a.tmp/file.txt
 	cat b.tmp/file.txt
 	cat $(HOME)/.unison/backup/file.txt
+
+
+ACL_CHMOD=echo
+ACL_LS=ls -l
+ifeq ($(OSARCH),solaris)
+  ACL1=A+user:$(shell whoami):rw-pd---------:-------:allow,group@:----dD--------:-------:allow
+  ACL2=A+user:$(shell whoami):r---d-a-R-c--s:-------:allow
+  ACL3=A+user:$(shell whoami):-w-p----------:-------:deny
+  ACLRM=A-
+  ACL_CHMOD=chmod
+  ACL_LS=ls -V
+endif
+ifeq ($(shell uname),FreeBSD)
+  ACL_ENABLED=0
+  ACL_POSIX=$(shell getconf ACL_EXTENDED .)
+  ACL_NFS4=$(shell getconf ACL_NFS4 .)
+ifeq ($(ACL_POSIX),1)
+    ACL_ENABLED=1
+    ACL1=-m u:$(shell whoami):rwx,g::rw
+    ACL2=-m u::---
+    ACL3=-m u:$(shell whoami):rwx
+else
+ifeq ($(ACL_NFS4),1)
+    ACL_ENABLED=1
+    ACL1=-m user:$(shell whoami):rw-pd---------:-------:allow,group@:----dD--------:-------:allow
+    ACL2=-m user:$(shell whoami):r---d-a-R-c--s:-------:allow
+    ACL3=-m user:$(shell whoami):-w-p----------:-------:deny
+endif
+endif
+ifeq ($(ACL_ENABLED),1)
+    ACLRM=-b
+    ACL_CHMOD=setfacl -h
+    ACL_LS=getfacl -h
+endif
+endif
+ifeq ($(OSARCH),osx)
+  ACL1=+a '$(shell whoami) allow read,write,delete,add_file,add_subdirectory,file_inherit,directory_inherit'
+  ACL2=+a '$(shell whoami) allow read'
+  ACL3=+a '$(shell whoami) deny write'
+  ACLRM=-N
+  ACL_CHMOD=chmod
+  ACL_LS=ls -le
+endif
+
+testacl:
+	-rm -rf test1.tmp test2.tmp
+	mkdir test1.tmp test2.tmp
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	touch test1.tmp/a.txt
+	$(ACL_CHMOD) $(ACL1) test1.tmp/a.txt
+	touch test2.tmp/b.txt
+	$(ACL_CHMOD) $(ACL2) test2.tmp/b.txt
+	$(ACL_CHMOD) $(ACL3) test2.tmp/b.txt
+	./$(NAME) -ui text -batch -ignorearchives -acl -debug props test1.tmp test2.tmp
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	$(ACL_LS) test1.tmp/* test2.tmp/*
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	./$(NAME) -ui text -batch -acl -debug props test1.tmp test2.tmp
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	$(ACL_CHMOD) $(ACLRM) test2.tmp/b.txt
+	./$(NAME) -ui text -batch -acl -debug props test1.tmp test2.tmp
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	$(ACL_LS) test1.tmp/* test2.tmp/*
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	$(ACL_CHMOD) $(ACLRM) test1.tmp/a.txt
+	$(ACL_CHMOD) $(ACLRM) test1.tmp/b.txt
+	$(ACL_CHMOD) $(ACLRM) test2.tmp/a.txt
+	$(ACL_CHMOD) $(ACLRM) test2.tmp/b.txt
+	$(ACL_LS) test1.tmp/* test2.tmp/*
+	./$(NAME) -ui text -batch -acl -debug props test1.tmp test2.tmp
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	-rm -rf test1.tmp test2.tmp
 
 
 ######################################################################
