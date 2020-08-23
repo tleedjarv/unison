@@ -42,7 +42,7 @@ all:: INSTALL
 	run runbatch runt rundebug runp runtext runsort runprefer \
 	prefsdocs runtest repeattest \
 	selftest selftestdebug selftestremote testmerge \
-	testacl checkin installremote
+	testxattr testacl checkin installremote
 
 .DELETE_ON_ERROR:
 # to avoid problems when something fails to run
@@ -328,6 +328,96 @@ testmerge:
 	cat a.tmp/file.txt
 	cat b.tmp/file.txt
 	cat $(HOME)/.unison/backup/file.txt
+
+
+
+ifeq ($(OSARCH),solaris)
+  XATTR_LS=for f in test{1,2}.tmp/* ; do echo $$f ; runat $$f ls -l ; done
+  XATTR_SET1=echo "testxattrvalue1" | runat test1.tmp/a.txt tee unison_xattr_test_name1 ; echo "testxattrvalue2" | runat test1.tmp/a.txt tee unison_xattr_test_name2
+  XATTR_SET2=echo "testxattrvalue2" | runat test2.tmp/b.txt tee unison_xattr_test_name2
+  XATTR_SET3=echo "testxattrvalue3" | runat test1.tmp/a.txt tee unison_xattr_test_name3
+  XATTR_CH1=echo "NEWVALUE" | runat test1.tmp/a.txt tee unison_xattr_test_name2
+  XATTR_RM1=runat test1.tmp/a.txt rm unison_xattr_test_name1
+  XATTR_RM_ALL=for f in test{1,2}.tmp/* ; do runat $$f rm unison_xattr_test_* ; done
+endif
+ifeq ($(OSARCH),osx)
+  ## ls -l@ for listing just names
+  XATTR_LS=for f in test{1,2}.tmp/* ; do echo $$f ; xattr -l $$f ; done
+  XATTR_SET1=xattr -w unison_xattr_test_name1 testxattrvalue1 test1.tmp/a.txt ; xattr -w unison_xattr_test_name2 testxattrvalue2 test1.tmp/a.txt
+  XATTR_SET2=xattr -w unison_xattr_test_name2 testxattrvalue2 test2.tmp/b.txt
+  XATTR_SET3=xattr -w unison_xattr_test_name3 testxattrvalue3 test1.tmp/a.txt
+  XATTR_CH1=xattr -w unison_xattr_test_name2 NEWVALUE test1.tmp/a.txt
+  XATTR_RM1=xattr -d unison_xattr_test_name1 test1.tmp/a.txt
+  XATTR_RM_ALL=for f in test{1,2}.tmp/* ; do xattr -c $$f ; done
+endif
+ifeq ($(OSARCH),Linux)
+  XATTR_LS=bash -c "for f in test{1,2}.tmp/* ; do getfattr -h -d \$$f ; done"
+  XATTR_SET1=setfattr -h -n user.unison_xattr_test_name1 -v testxattrvalue1 test1.tmp/a.txt ; setfattr -h -n user.unison_xattr_test_name2 -v testxattrvalue2 test1.tmp/a.txt
+  XATTR_SET2=setfattr -h -n user.unison_xattr_test_name2 -v testxattrvalue2 test2.tmp/b.txt
+  XATTR_SET3=setfattr -h -n user.unison_xattr_test_name3 -v testxattrvalue3 test1.tmp/a.txt
+  XATTR_CH1=setfattr -h -n user.unison_xattr_test_name2 -v NEWVALUE test1.tmp/a.txt
+  XATTR_RM1=setfattr -x user.unison_xattr_test_name1 test1.tmp/a.txt
+  XATTR_RM_ALL=setfattr -x user.unison_xattr_test_name2 test1.tmp/a.txt ; setfattr -x user.unison_xattr_test_name3 test1.tmp/a.txt ; setfattr -x user.unison_xattr_test_name2 test1.tmp/b.txt ; setfattr -x user.unison_xattr_test_name2 test2.tmp/a.txt ; setfattr -x user.unison_xattr_test_name3 test2.tmp/a.txt ; setfattr -x user.unison_xattr_test_name2 test2.tmp/b.txt
+endif
+ifeq ($(shell uname),FreeBSD)
+  ## lsextattr user filenames for listing just names
+  XATTR_LS=bash -c "for f in test{1,2}.tmp/* ; do echo \$$f ; for a in \`lsextattr -q user \$$f\` ; do echo -n \$$a '= ' ; getextattr -fhq user \$$a \$$f ; done ; done"
+  XATTR_SET1=setextattr -h user unison_xattr_test_name1 testxattrvalue1 test1.tmp/a.txt ; setextattr -h user unison_xattr_test_name2 testxattrvalue2 test1.tmp/a.txt
+  XATTR_SET2=setextattr -h user unison_xattr_test_name2 testxattrvalue2 test2.tmp/b.txt
+  XATTR_SET3=setextattr -h user unison_xattr_test_name3 testxattrvalue3 test1.tmp/a.txt
+  XATTR_CH1=setextattr -h user unison_xattr_test_name2 NEWVALUE test1.tmp/a.txt
+  XATTR_RM1=rmextattr -h user unison_xattr_test_name1 test1.tmp/a.txt
+  XATTR_RM_ALL=bash -c "for f in test{1,2}.tmp/* ; do for a in unison_xattr_test_name1 unison_xattr_test_name2 unison_xattr_test_name3 ; do rmextattr -fhq user \$$a \$$f ; done ; done"
+endif
+
+testxattr:
+	-rm -rf test1.tmp test2.tmp
+	mkdir test1.tmp test2.tmp
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	## Set initial xattrs
+	touch test1.tmp/a.txt
+	$(XATTR_SET1)
+	touch test2.tmp/b.txt
+	$(XATTR_SET2)
+	./$(NAME) -ui text -batch -ignorearchives -xattrs -debug props test1.tmp test2.tmp
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	## List xattrs test1.tmp/* test2.tmp/*
+	$(XATTR_LS)
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	./$(NAME) -ui text -batch -xattrs -debug props test1.tmp test2.tmp
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	## Remove one xattr
+	$(XATTR_RM1)
+	## Modify one xattr (reduce value length)
+	$(XATTR_CH1)
+	## Set one new xattr
+	$(XATTR_SET3)
+	./$(NAME) -ui text -batch -xattrs -debug props test1.tmp test2.tmp
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	## List xattrs test1.tmp/* test2.tmp/*
+	$(XATTR_LS)
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	## Remove all xattrs
+	$(XATTR_RM_ALL)
+	## List xattrs test1.tmp/* test2.tmp/*
+	$(XATTR_LS)
+	./$(NAME) -ui text -batch -xattrs -debug props test1.tmp test2.tmp
+	@echo
+	@echo -----------------------------------------------------------
+	@echo
+	-rm -rf test1.tmp test2.tmp
 
 
 ACL_CHMOD=echo

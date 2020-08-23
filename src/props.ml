@@ -633,6 +633,153 @@ let same_time t t' = System.hasCorrectCTime && t = t'
 end
 
 (* ------------------------------------------------------------------------- *)
+(*                        Extended attributes (xattr)                        *)
+(* ------------------------------------------------------------------------- *)
+
+let syncxattrs =
+  Prefs.createBool "xattrs" false "synchronize extended attributes (xattrs)"
+    ("When this flag is set to \\verb|true|, the extended attributes of "
+     ^ "files and directories are synchronized. System extended attributes "
+     ^ "are not synchronized.")
+
+module Xattr : sig
+  include S
+  val getP : Fspath.t -> Unix.LargeFile.stats -> Osx.info -> t
+end = struct
+
+(* None indicates xattrs are not supported. This is not synchronized.
+ * An empty list means xattrs are supported but there are none on the file.
+ * This will be synchronized. *)
+type xa = (string * bytes)
+type xas = xa list
+type t = xas option
+
+let dummy = None
+
+let hash t h = Uutil.hash2 (Uutil.hash t) h
+
+let toString t =
+  match t with
+  | Some [] ->
+      "no xattrs"
+  | Some [(n, _)] ->
+      Printf.sprintf "1 xattr: %s" n
+  | Some l ->
+      Printf.sprintf "%i xattrs: %s"
+          (Safelist.length l)
+          (String.concat ", " (Safelist.map (fun (n, _) -> n) l))
+  | None ->
+      ""
+
+let syncedPartsToString = toString
+
+let similar t t' =
+  not (Prefs.read syncxattrs)
+    ||
+  match (t, t') with
+  | (None, None) -> true
+  | (Some l, Some l') ->
+        Safelist.length l = Safelist.length l' &&
+            Safelist.for_all (fun m -> Safelist.mem m l') l
+  | _ -> false
+
+let override t t' = t'
+
+let strip t = if Prefs.read syncxattrs then t else None
+
+let diff t t' = if similar t t' then None else t'
+
+exception XattrNotSupported
+let _ = Callback.register_exception "XattrNotSupported" XattrNotSupported
+
+external sysGetXattrs: string -> xas = "unison_xattrs_get"
+external sysSetXattr: string -> xa -> unit = "unison_xattr_set"
+external sysRemoveXattr: string -> string -> unit = "unison_xattr_remove"
+
+(* getXattrs must be an option, where None means xattrs not supported *)
+let getXattrs path =
+  try
+    Some (sysGetXattrs path)
+  with
+  | XattrNotSupported -> None
+  | Failure msg -> begin
+      Trace.logverbose (msg ^
+               ". You can set preference \"xattrs\" to false \
+               to avoid this error.\n");
+      None
+  end
+
+let setXattrs path t =
+  match t with
+    Some xattrs -> begin
+      let t0 = getXattrs path in
+      match t0 with
+        Some xattrs0 -> begin
+          try
+            Safelist.iter
+                (fun m ->
+                   if not(Safelist.mem m xattrs0) then
+                   let (n, _) = m in
+                   debugverbose (fun() -> Util.msg "Writing xattr: %s\n" n);
+                   sysSetXattr path m
+                ) xattrs;
+            Safelist.iter
+                (fun (n, _) ->
+                   if not(Safelist.exists (fun (n', _) -> n' = n) xattrs) then
+                   begin
+                     debugverbose (fun() -> Util.msg "Removing xattr: %s\n" n);
+                     sysRemoveXattr path n
+                   end
+                ) xattrs0
+          with
+          | XattrNotSupported ->
+              Trace.logverbose ("Extended attributes are not supported. \
+                       You can set preference \"xattrs\" to false \
+                       to avoid this error.\n");
+          | Failure msg ->
+              Trace.logverbose (msg ^
+                       ". You can set preference \"xattrs\" to false \
+                       to avoid this error. You can debug \"props+\" to \
+                       see more details.\n");
+          ()
+        end
+      | _ -> ()
+    end
+  | _ -> ()
+
+let set fspath path kind t =
+  match t with
+    Some _ when Prefs.read syncxattrs ->
+      let abspath = Fspath.concat fspath path in
+      debug
+        (fun() ->
+          Util.msg "Setting xattrs for %s (%s)\n"
+            (Fspath.toDebugString abspath) (toString t));
+      setXattrs (Fspath.toString abspath) t
+  | _ -> ()
+
+let get _ _ = dummy
+let getP abspath stats _ =
+  if
+    Prefs.read syncxattrs (*&&
+    (stats.Unix.LargeFile.st_kind = Unix.S_REG ||
+     stats.Unix.LargeFile.st_kind = Unix.S_DIR)*)
+    (* Actually, there is no props stored for symlinks in the archive anyway. But could sync still? *)
+  then
+    let xattrs = getXattrs (Fspath.toString abspath) in
+    debug
+      (fun() ->
+        Util.msg "Xattr: got %s for %s\n"
+          (toString xattrs) (Fspath.toDebugString abspath));
+    xattrs
+  else
+    None
+
+let init _ = ()
+
+end
+
+(* ------------------------------------------------------------------------- *)
 (*                          Type and creator                                 *)
 (* ------------------------------------------------------------------------- *)
 
@@ -877,6 +1024,7 @@ type t =
     uid : Uid.t;
     gid : Gid.t;
     time : Time.t;
+    xattr : Xattr.t;
     typeCreator : TypeCreator.t;
     length : Uutil.Filesize.t;
     ctime : CTime.t;
@@ -886,7 +1034,7 @@ let template perm =
   { perm = perm; uid = Uid.dummy; gid = Gid.dummy;
     time = Time.dummy; typeCreator = TypeCreator.dummy;
     length = Uutil.Filesize.dummy; ctime = CTime.dummy;
-    acl = ACL.dummy }
+    xattr = Xattr.dummy; acl = ACL.dummy }
 
 let dummy = template Perm.dummy
 
@@ -895,8 +1043,9 @@ let hash p h =
     (Uid.hash p.uid
        (Gid.hash p.gid
           (Time.hash p.time
-             (TypeCreator.hash p.typeCreator
-                (ACL.hash p.acl h)))))
+             (Xattr.hash p.xattr
+                (TypeCreator.hash p.typeCreator
+                   (ACL.hash p.acl h))))))
 
 let similar p p' =
   Perm.similar p.perm p'.perm
@@ -907,6 +1056,8 @@ let similar p p' =
     &&
   Time.similar p.time p'.time
     &&
+  Xattr.similar p.xattr p'.xattr
+    &&
   TypeCreator.similar p.typeCreator p'.typeCreator
     &&
   ACL.similar p.acl p'.acl
@@ -916,6 +1067,7 @@ let override p p' =
     uid = Uid.override p.uid p'.uid;
     gid = Gid.override p.gid p'.gid;
     time = Time.override p.time p'.time;
+    xattr = Xattr.override p.xattr p'.xattr;
     typeCreator = TypeCreator.override p.typeCreator p'.typeCreator;
     length = p'.length;
     ctime = p'.ctime;
@@ -926,6 +1078,7 @@ let strip p =
     uid = Uid.strip p.uid;
     gid = Gid.strip p.gid;
     time = Time.strip p.time;
+    xattr = Xattr.strip p.xattr;
     typeCreator = TypeCreator.strip p.typeCreator;
     length = p.length;
     ctime = p.ctime;
@@ -960,6 +1113,7 @@ let diff p p' =
     uid = Uid.diff p.uid p'.uid;
     gid = Gid.diff p.gid p'.gid;
     time = Time.diff p.time p'.time;
+    xattr = Xattr.diff p.xattr p'.xattr;
     typeCreator = TypeCreator.diff p.typeCreator p'.typeCreator;
     length = p'.length;
     ctime = p'.ctime;
@@ -977,6 +1131,7 @@ let get' stats infos =
       else
         Uutil.Filesize.zero;
     ctime = CTime.get stats;
+    xattr = Xattr.dummy;
     acl = ACL.dummy }
 
 let get ?(wantAllSyncProps = false) ?(archProps = dummy) abspath stats infos =
@@ -987,6 +1142,7 @@ let get ?(wantAllSyncProps = false) ?(archProps = dummy) abspath stats infos =
      * because even though the ctime has not changed, the archive may have
      * been created without these properties being synced (due to that being
      * a user preference). *)
+    xattr = Xattr.getP abspath stats infos;
     acl =
       if wantAllSyncProps && (ctimeChanged || archProps.acl = ACL.dummy) then
         ACL.getP abspath stats infos
@@ -997,6 +1153,7 @@ let get ?(wantAllSyncProps = false) ?(archProps = dummy) abspath stats infos =
 let set fspath path kind p =
   Uid.set fspath path kind p.uid;
   Gid.set fspath path kind p.gid;
+  Xattr.set fspath path kind p.xattr;
   TypeCreator.set fspath path kind p.typeCreator;
   Time.set fspath path kind p.time;
   Perm.set fspath path kind p.perm;
@@ -1015,6 +1172,7 @@ let init someHostIsRunningWindows =
   Uid.init someHostIsRunningWindows;
   Gid.init someHostIsRunningWindows;
   Time.init someHostIsRunningWindows;
+  Xattr.init someHostIsRunningWindows;
   TypeCreator.init someHostIsRunningWindows;
   ACL.init someHostIsRunningWindows
 
