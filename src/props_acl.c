@@ -218,7 +218,7 @@ CAMLprim value unison_acl_to_text(value path)
 
 
 #if defined(__FreeBSD__)
-acl_type_t unsn_path_acl_type(const char *path)
+static acl_type_t unsn_path_acl_type(const char *path)
 {
   if (lpathconf(path, _PC_ACL_NFS4) > 0) { /* NFSv4 ACL supported */
     return ACL_TYPE_NFS4;
@@ -231,7 +231,7 @@ acl_type_t unsn_path_acl_type(const char *path)
   }
 }
 #elif defined(__APPLE__)
-acl_type_t unsn_path_acl_type(const char *path)
+static acl_type_t unsn_path_acl_type(const char *path)
 {
   return ACL_TYPE_EXTENDED;
 }
@@ -239,7 +239,7 @@ acl_type_t unsn_path_acl_type(const char *path)
 
 
 #if defined(__Solaris__)
-void unsn_remove_acl(const char *path)
+static void unsn_remove_acl(const char *path)
 {
   static struct stat st;
 
@@ -252,7 +252,7 @@ void unsn_remove_acl(const char *path)
   }
 }
 #elif defined(__FreeBSD__)
-void unsn_remove_acl(const char *path)
+static void unsn_remove_acl(const char *path)
 {
   /* FreeBSD has a acl_strip_np() function, but it would be
    * much too complicated in this code. */
@@ -263,19 +263,19 @@ void unsn_remove_acl(const char *path)
   acl_delete_link_np(path, ACL_TYPE_NFS4);
 }
 #elif defined(__APPLE__)
-void unsn_remove_acl(const char *path)
+static void unsn_remove_acl(const char *path)
 {
   acl_set_link_np(path, unsn_path_acl_type(path), acl_from_text("!#acl 1"));
 }
 #else
-void unsn_remove_acl(const char *path)
+static void unsn_remove_acl(const char *path)
 {
 }
 #endif
 
 
 #if defined(__FreeBSD__)
-void postprocess_acl(char **s)
+static void postprocess_acl(char **s)
 {
   char *p, *start;
   char *buf;
@@ -353,7 +353,7 @@ void postprocess_acl(char **s)
   *s = buf;
 }
 #elif defined(__APPLE__)
-void postprocess_acl(char **s)
+static void postprocess_acl(char **s)
 {
   /* Remove trailing newline */
   size_t last = strlen(*s) - 1;
@@ -367,7 +367,7 @@ void postprocess_acl(char **s)
 /************************************
  *         Set ACL from text
  ************************************/
-CAMLprim value unison_acl_from_text(value path, value acl)
+CAMLprim void unison_acl_from_text(value path, value acl)
 {
   CAMLparam2(path, acl);
   const char *acl_text = String_val(acl);
@@ -390,14 +390,14 @@ CAMLprim value unison_acl_from_text(value path, value acl)
     caml_failwith("Can't access file to set ACL");
   }
   if ((st.st_mode & S_IFMT) == S_IFLNK) {
-    CAMLreturn(Val_unit);
+    CAMLreturn0;
   }
 #endif
 
   /* Check if ACL must be removed */
   if (acl_text == NULL || *acl_text == '\0') {
     unsn_remove_acl(name);
-    CAMLreturn(Val_unit);
+    CAMLreturn0;
   }
 
 #if defined(__Solaris__)
@@ -420,7 +420,7 @@ CAMLprim value unison_acl_from_text(value path, value acl)
     caml_failwith("Error converting ACL from text");
   }
 
-  CAMLreturn(Val_unit);
+  CAMLreturn0;
 }
 
 
