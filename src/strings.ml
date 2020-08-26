@@ -1248,6 +1248,7 @@ let docs =
       \032-unicode xxx       assume Unicode encoding in case insensitive mode\n\
       \032-watch             when set, use a file watcher process to detect changes (defa\n\
       ult true)\n\
+      \032-xattrignore xxx   add a pattern to the xattrignore list\n\
       \032-xferbycopying     optimize transfers using local copies (default true)\n\
       \n\
       Special command line options:\n\
@@ -2081,6 +2082,16 @@ let docs =
       \032         and for continuous synchronization (-repeat watch preference.\n\
       \032         Setting this flag to false disable the use of this process.\n\
       \n\
+      \032  xattrignore xxx\n\
+      \032         Preference -xattrignore namespec causes Unison to ignore\n\
+      \032         extended attributes with names that match namespec. This can be\n\
+      \032         used to exclude extended attributes that would fail\n\
+      \032         synchronization due to lack of permissions or technical\n\
+      \032         differences at replicas. The syntax of namespec is the same as\n\
+      \032         used for path specification (described in the section \"Path\n\
+      \032         Specification\"). The pattern is applied to the name of extended\n\
+      \032         attribute, not to path.\n\
+      \n\
       \032  xattrs\n\
       \032         When this flag is set to true, the extended attributes of files\n\
       \032         and directories are synchronized. System extended attributes are\n\
@@ -2794,6 +2805,9 @@ let docs =
       \032      from Linux can be propagated to other platforms and back to Linux\n\
       \032      (e.g. in \"star topology\"), native attribute names from other\n\
       \032      platforms will be rejected on Linux.\n\
+      \n\
+      \032  xattrignore preference can be used to filter the names of extended\n\
+      \032  attributes that will be synchronized.\n\
       \n\
       Cross-Platform Synchronization\n\
       \n\
