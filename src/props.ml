@@ -642,6 +642,17 @@ let syncxattrs =
      ^ "files and directories are synchronized. System extended attributes "
      ^ "are not synchronized.")
 
+let ignoreXattrsPred =
+  Pred.create "xattrignore" ~advanced:true
+    ("Preference \\texttt{-xattrignore \\ARG{namespec}} causes Unison to "
+     ^ "ignore extended attributes with names that match \\ARG{namespec}. "
+     ^ "This can be used to exclude extended attributes that would fail "
+     ^ "synchronization due to lack of permissions or technical differences "
+     ^ "at replicas. The syntax of \\ARG{namespec} is the same as used "
+     ^ "for path specification (described in "
+     ^ "\\sectionref{pathspec}{Path Specification}). The pattern is "
+     ^ "applied to the {\\em name} of extended attribute, not to path.")
+
 module Xattr : sig
   include S
   val getP : Fspath.t -> Unix.LargeFile.stats -> Osx.info -> t
@@ -689,6 +700,15 @@ let strip t = if Prefs.read syncxattrs then t else None
 
 let diff t t' = if similar t t' then None else t'
 
+let skipIgnoredXattr l =
+  Safelist.filter (fun (n, _) ->
+       let keep = not (Pred.test ignoreXattrsPred n) in
+       debugverbose
+         (fun() ->
+            Util.msg "Xattr: attribute %s %s\n" n
+              (if keep then "not ignored" else "IGNORED by user request"));
+       keep) l
+
 exception XattrNotSupported
 let _ = Callback.register_exception "XattrNotSupported" XattrNotSupported
 
@@ -699,7 +719,7 @@ external sysRemoveXattr: string -> string -> unit = "unison_xattr_remove"
 (* getXattrs must be an option, where None means xattrs not supported *)
 let getXattrs path =
   try
-    Some (sysGetXattrs path)
+    Some (skipIgnoredXattr (sysGetXattrs path))
   with
   | XattrNotSupported -> None
   | Failure msg -> begin
@@ -711,7 +731,8 @@ let getXattrs path =
 
 let setXattrs path t =
   match t with
-    Some xattrs -> begin
+    Some l -> begin
+      let xattrs = skipIgnoredXattr l in
       let t0 = getXattrs path in
       match t0 with
         Some xattrs0 -> begin
