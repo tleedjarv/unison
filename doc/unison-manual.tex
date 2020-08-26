@@ -2107,6 +2107,47 @@ Unison currently supports the following platforms and ACL types:
 Not all filesystems on the listed platforms support all ACL types
 (or any ACLs at all).
 
+\SUBSECTION{Extended Attributes - xattrs}{xattrs}
+
+Unison allows synchronizing extended attributes on platforms and
+filesystems that support them. System attributes are not synchronized.
+What exactly is considered a system attribute is platform-dependent.
+Synchronization is possible cross-platform, but see caveats below.
+
+If one of the replicas does not support extended attributes then
+Unison will not attempt attribute synchronization. If the other
+replica does support extended attributes then those will remain intact.
+
+If both replicas support extended attributes then you can request
+Unison to try attribute synchronization (\verb|xattrs| preference).
+Extended attributes from both replicas will not be merged, all extended
+attributes are propagated as a set from one replica to another.
+
+Unison currently supports extended attributes on the following platforms:
+\begin{itemize}
+\item Linux
+Attributes in user, trusted and security namespaces. Synchronization of
+the latter two namespaces depends on \verb|unison| process privileges.
+\item Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,
+  OmniOS, etc.)
+\item FreeBSD
+Attributes in user namespace.
+\item Darwin (macOS)
+\end{itemize}
+Not all filesystems on the listed platforms may support extended attributes.
+
+\noindent {\it Caveats:}
+\begin{itemize}
+\item Some platforms and file systems support very large extended attribute
+values. Unison synchronizes only up to 4KB of each attribute value.
+\item Attributes are synchronized as name-value pairs. On Linux, attribute
+names always have a fully qualified form (\texttt{namespace.attribute}).
+Other platforms do not have the same constraint.
+The consequence of this is that while attribute names from Linux can be
+propagated to other platforms and back to Linux (e.g. in ``star topology''),
+native attribute names from other platforms will be rejected on Linux.
+\end{itemize}
+
 \SUBSECTION{Cross-Platform Synchronization}{crossplatform}
 
 If you use Unison to synchronize files between Windows and Unix

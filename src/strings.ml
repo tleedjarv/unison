@@ -1163,6 +1163,7 @@ let docs =
       \032-testserver        exit immediately after the connection to the server\n\
       \032-times             synchronize modification times\n\
       \032-version           print version and exit\n\
+      \032-xattrs            synchronize extended attributes (xattrs)\n\
       \n\
       Advanced options:\n\
       \032-addprefsto xxx    file to add new prefs to\n\
@@ -2080,6 +2081,11 @@ let docs =
       \032         and for continuous synchronization (-repeat watch preference.\n\
       \032         Setting this flag to false disable the use of this process.\n\
       \n\
+      \032  xattrs\n\
+      \032         When this flag is set to true, the extended attributes of files\n\
+      \032         and directories are synchronized. System extended attributes are\n\
+      \032         not synchronized.\n\
+      \n\
       \032  xferbycopying\n\
       \032         When this preference is set, Unison will try to avoid\n\
       \032         transferring file contents across the network by recognizing\n\
@@ -2747,6 +2753,47 @@ let docs =
       \n\
       \032  Not all filesystems on the listed platforms support all ACL types (or\n\
       \032  any ACLs at all).\n\
+      \n\
+      Extended Attributes - xattrs\n\
+      \n\
+      \032  Unison allows synchronizing extended attributes on platforms and\n\
+      \032  filesystems that support them. System attributes are not synchronized.\n\
+      \032  What exactly is considered a system attribute is platform-dependent.\n\
+      \032  Synchronization is possible cross-platform, but see caveats below.\n\
+      \n\
+      \032  If one of the replicas does not support extended attributes then Unison\n\
+      \032  will not attempt attribute synchronization. If the other replica does\n\
+      \032  support extended attributes then those will remain intact.\n\
+      \n\
+      \032  If both replicas support extended attributes then you can request\n\
+      \032  Unison to try attribute synchronization (xattrs preference). Extended\n\
+      \032  attributes from both replicas will not be merged, all extended\n\
+      \032  attributes are propagated as a set from one replica to another.\n\
+      \n\
+      \032  Unison currently supports extended attributes on the following\n\
+      \032  platforms:\n\
+      \032    * Linux Attributes in user, trusted and security namespaces.\n\
+      \032      Synchronization of the latter two namespaces depends on unison\n\
+      \032      process privileges.\n\
+      \032    * Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,\n\
+      \032      OmniOS, etc.)\n\
+      \032    * FreeBSD Attributes in user namespace.\n\
+      \032    * Darwin (macOS)\n\
+      \n\
+      \032  Not all filesystems on the listed platforms may support extended\n\
+      \032  attributes.\n\
+      \n\
+      \032  Caveats:\n\
+      \032    * Some platforms and file systems support very large extended\n\
+      \032      attribute values. Unison synchronizes only up to 4KB of each\n\
+      \032      attribute value.\n\
+      \032    * Attributes are synchronized as name-value pairs. On Linux,\n\
+      \032      attribute names always have a fully qualified form\n\
+      \032      (namespace.attribute). Other platforms do not have the same\n\
+      \032      constraint. The consequence of this is that while attribute names\n\
+      \032      from Linux can be propagated to other platforms and back to Linux\n\
+      \032      (e.g. in \"star topology\"), native attribute names from other\n\
+      \032      platforms will be rejected on Linux.\n\
       \n\
       Cross-Platform Synchronization\n\
       \n\
