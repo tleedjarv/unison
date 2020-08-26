@@ -48,3 +48,8 @@ jobs:
     - run: opam exec -- make
 
     - run: make ${{ github.event.inputs.target }}
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: binary ${{ matrix.os }} OCaml ${{ matrix.ocaml-version }}
+        path: src/unison
