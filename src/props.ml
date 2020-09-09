@@ -699,15 +699,36 @@ let toString t =
 
 let syncedPartsToString = toString
 
+let aclIds = Str.regexp
+  "\\(\\(user\\|group\\):\\)[^:]+:\\([^:]+:[^:]+:[^:]+:[0-9]+\\($\\|,\\)\\)"
+let removeAclNames t =
+  match t with
+    Some t -> Str.global_replace aclIds "\\1\\3" t
+  | None -> "-1"
+
+let similar2 t t' =
+  if not (Prefs.read numericIds) then
+    false
+  else begin
+    (* Try to strip out the user/group names and compare only numeric ids.
+     * Format of ACE is expected to be as follows:
+     *   user:lp:rw------------:------I:allow:1300 *)
+    let ta = removeAclNames t
+    and ta' = removeAclNames t' in
+    ta = ta'
+  end
+
 let similar t t' =
   not (Prefs.read syncACL)
     ||
-  let result = (t = t') in
+  let result = if t = t' then true else similar2 t t' in
   debugverbose
     (fun() ->
-      Util.msg "Comparing ACLs |%s| and |%s| => %s\n"
+      Util.msg "Comparing ACLs |%s| and |%s| => %s%s\n"
         (toString t) (toString t')
-        (match result with true -> "same" | false -> "different"));
+        (match result with true -> "same" | false -> "different")
+        (if Prefs.read numericIds then
+          " (comparing numeric user/group ids)" else ""));
   result
 
 let override t t' = t'
@@ -775,23 +796,7 @@ let getP abspath stats _ =
   else
     None
 
-let dontVerifyACL =
-  Prefs.createBool "dontverifyacl" false
-    "!when set, don't verify ACL after setting it"
-    ("When ACLs are synchronized ({\\tt acl} set to \\verb|true|), Unison "
-     ^ "verifies the files after having set an updated ACL to see if the "
-     ^ "ACL was set correctly. But in some circumstances (and under some "
-     ^ "operating systems), the ACL on the file will always differ to the "
-     ^ "set ACL, even if the ACL was actually set successfully. Setting "
-     ^ "this preference prevents Unison from verifing ACL after setting it.")
-
-(* FIXME: currently there is a problem when not verifying set ACLs.
- * The ACL on the target file may be completely OK, but Unison does not
- * know it and therefore the archive is not updated to reflect the actual
- * ACL on the file. So, the next time Unison is run, it detects the real
- * ACL on the file as an update, which it is not. *)
 let check fspath path stats acl =
-  if (not (Prefs.read dontVerifyACL)) then
   let acl' = getP (Fspath.toSysPath (Fspath.concat fspath path)) stats None in
   match acl, acl' with
     None, _ ->
@@ -799,7 +804,7 @@ let check fspath path stats acl =
   | _, None ->
       ()
   | _ ->
-    if acl <> acl' then
+    if not (similar acl acl') then
       raise
         (Util.Transient
            (Format.sprintf
@@ -808,12 +813,14 @@ let check fspath path stats acl =
                The filesystem probably does not have full ACL support or \
                the synchronized ACL is of different type. \
                If this is a filesystem without correct ACL support, you \
-               should set the {\\tt acl} option to \\verb|false|. \
-               If you know that the ACL was set correctly then you should \
-               set the {\\tt dontverifyacl} option to \\verb|true|."
+               should set the \"acl\" option to false. \
+               %s"
               (Fspath.toPrintString (Fspath.concat fspath path))
               (toString acl)
-              (toString acl')))
+              (toString acl')
+              (if Prefs.read numericIds then "" else "Or, you may want to \
+               set the preference \"numericids\" to true if the \
+               user/group names don't match on both systems.")))
 
 let init _ = ()
 
