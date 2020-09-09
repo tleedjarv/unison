@@ -1191,7 +1191,6 @@ let docs =
       \032-debug xxx         debug module xxx ('all' -> everything, 'verbose' -> more)\n\
       \032-diff xxx          set command for showing differences between files\n\
       \032-dontchmod         when set, never use the chmod system call\n\
-      \032-dontverifyacl     when set, don't verify ACL after setting it\n\
       \032-dumbtty           do not change terminal settings in text UI\n\
       \032-fastcheck xxx     do fast update detection (true/false/default)\n\
       \032-fastercheckUNSAFE skip computing fingerprints for new files (experts only!)\n\
@@ -1495,15 +1494,6 @@ let docs =
       \032         circumstances (and under some operating systems), the chmod call\n\
       \032         always fails. Setting this preference completely prevents Unison\n\
       \032         from ever calling chmod.\n\
-      \n\
-      \032  dontverifyacl\n\
-      \032         When ACLs are synchronized (acl set to true), Unison verifies\n\
-      \032         the files after having set an updated ACL to see if the ACL was\n\
-      \032         set correctly. But in some circumstances (and under some\n\
-      \032         operating systems), the ACL on the file will always differ to\n\
-      \032         the set ACL, even if the ACL was actually set successfully.\n\
-      \032         Setting this preference prevents Unison from verifing ACL after\n\
-      \032         setting it.\n\
       \n\
       \032  dumbtty\n\
       \032         When set to true, this flag makes the text mode user interface\n\
