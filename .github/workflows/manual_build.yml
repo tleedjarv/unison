@@ -19,7 +19,8 @@ jobs:
         os:
           - ${{ github.event.inputs.os }}-latest
         ocaml-version:
-          - 4.08.1
+          - 4.11.1
+          - 4.05.0
 
     runs-on: ${{ matrix.os }}
 
