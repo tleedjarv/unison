@@ -105,6 +105,17 @@ jobs:
         path: ~/.opam
         key: v1-${{ matrix.job.os }}-opam-${{ matrix.job.ocaml-version }}
 
+    - name: Retrieve cygwin download cache (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/cache@v2
+      id: cache-cygwin
+      with:
+        path: D:\a\unison\unison/http%3a%2f%2fcygwin.mirror.constant.com%2f
+        key: v1-cygwin-${{ matrix.job.os }}-ocaml-${{ matrix.job.ocaml-version }}
+        restore-keys: |
+          v1-cygwin-${{ matrix.job.os }}-
+          v1-cygwin-
+
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
       uses: CICD-tools/ghactions-ocaml.toolchain@dev
       with:
