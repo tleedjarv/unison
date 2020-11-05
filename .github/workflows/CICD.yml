@@ -19,8 +19,8 @@ jobs:
         - { os: macos-10.15   , ocaml-version: 4.10.1 }
         - { os: macos-10.15   , ocaml-version: 4.09.1 }
         - { os: macos-10.15   , ocaml-version: 4.08.1 }
-        - { os: macos-10.14   , ocaml-version: 4.07.1 }
-        - { os: macos-10.14   , ocaml-version: 4.05.0 }
+        - { os: macos-10.15   , ocaml-version: 4.07.1 }
+        - { os: macos-10.15   , ocaml-version: 4.05.0 }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -79,15 +79,10 @@ jobs:
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'/bin
 
     - name: Select Xcode version 10.3 (macOS)
-      if: runner.os == 'macOS'
-      ## Xcode 10.3 is needed to get macOS 10.14 SDK
+      if: false && runner.os == 'macOS'
+      ## Xcode 10.3 is needed to get macOS 10.14 SDK (which does not seem to be available in GHA virtual images)
       run: |
         sudo xcode-select -s "/Applications/Xcode_10.3.app"
-        export MACOSX_DEPLOYMENT_TARGET=10.14
-        export OSX_VERSION=10.14
-        export OSX_SYSROOT=macosx10.14
-        ls -l /Library/Developer/CommandLineTools/SDKs
-        ls -l /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs
 
     - name: Enable/config MSVC environment (if/when needed)
       uses: ilammy/msvc-dev-cmd@v1.3.0
