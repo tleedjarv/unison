@@ -21,20 +21,6 @@ jobs:
         - { os: macos-10.15   , ocaml-version: 4.08.1 }
         - { os: macos-10.15   , ocaml-version: 4.07.1 }
         - { os: macos-10.15   , ocaml-version: 4.05.0 }
-        - { os: ubuntu-latest  , ocaml-version: 4.11.1 }
-        - { os: ubuntu-latest  , ocaml-version: 4.10.1 }
-        - { os: ubuntu-latest  , ocaml-version: 4.10.0+musl+static+flambda }
-        - { os: ubuntu-latest  , ocaml-version: 4.09.1 }
-        - { os: ubuntu-latest  , ocaml-version: 4.08.1 }
-        - { os: ubuntu-latest  , ocaml-version: 4.07.1 }
-        - { os: ubuntu-latest  , ocaml-version: 4.05.0 }
-        - { os: windows-latest , ocaml-version: 4.11.1 }
-        - { os: windows-latest , ocaml-version: 4.10.1 }
-        - { os: windows-latest , ocaml-version: 4.10.1+mingw32 }
-        - { os: windows-latest , ocaml-version: 4.09.1 }
-        - { os: windows-latest , ocaml-version: 4.08.1 }
-        - { os: windows-latest , ocaml-version: 4.07.1 }
-        - { os: windows-latest , ocaml-version: 4.05.0 }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -91,6 +77,10 @@ jobs:
         mkdir -p '${{ steps.vars.outputs.STAGING_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'/bin
+
+    - name: Select Xcode version
+      if: runner.os == 'macOS'
+      run: sudo xcode-select -s "/Applications/Xcode_10.3.app"
 
     - name: Enable/config MSVC environment (if/when needed)
       uses: ilammy/msvc-dev-cmd@v1.3.0
