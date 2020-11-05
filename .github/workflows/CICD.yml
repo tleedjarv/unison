@@ -160,7 +160,7 @@ jobs:
         project_exe_stem=${PROJECT_EXES%% *}
         cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gtk2${{ steps.vars.outputs.EXE_suffix }}"
 
-    - if: runner.os == 'macOS' && matrix.job.ocaml-version == '4.07.1' ## macui builds currently fail with Ocaml >= 4.08
+    - if: runner.os == 'macOS'
       shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
       run: |
         opam exec -- make src OSTYPE=$OSTYPE UISTYLE=mac
@@ -169,7 +169,7 @@ jobs:
         cp -R src/uimac/build/Default/Unison.app '${{ steps.vars.outputs.PKG_DIR }}/macapp'
         echo "src/uimac/build/Default/Unison.app copied to '${{ steps.vars.outputs.PKG_DIR }}/macapp'"
 
-    - if: runner.os == 'macOS' && matrix.job.ocaml-version == '4.07.1' ## macui builds currently fail with Ocaml >= 4.08
+    - if: runner.os == 'macOS'
       uses: actions/upload-artifact@v2
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}.app
