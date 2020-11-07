@@ -37,8 +37,8 @@ CAMLprim value ml_unmarshal_from_bigarray(value b, value ofs)
 CAMLprim value ml_blit_string_to_bigarray
 (value s, value i, value a, value j, value l)
 {
-  const char *src = String_val(s) + Long_val(i);
-  char *dest = Array_data(Bigarray_val(a), j);
+  void *src = String_val(s) + Long_val(i);
+  void *dest = Array_data(Bigarray_val(a), j);
   memcpy(dest, src, Long_val(l));
   return Val_unit;
 }
@@ -46,8 +46,8 @@ CAMLprim value ml_blit_string_to_bigarray
 CAMLprim value ml_blit_bytes_to_bigarray
 (value s, value i, value a, value j, value l)
 {
-  char *src = Bytes_val(s) + Long_val(i);
-  char *dest = Array_data(Bigarray_val(a), j);
+  void *src = Bytes_val(s) + Long_val(i);
+  void *dest = Array_data(Bigarray_val(a), j);
   memcpy(dest, src, Long_val(l));
   return Val_unit;
 }
@@ -55,8 +55,8 @@ CAMLprim value ml_blit_bytes_to_bigarray
 CAMLprim value ml_blit_bigarray_to_bytes
 (value a, value i, value s, value j, value l)
 {
-  char *src = Array_data(Bigarray_val(a), i);
-  char *dest = Bytes_val(s) + Long_val(j);
+  void *src = Array_data(Bigarray_val(a), i);
+  void *dest = Bytes_val(s) + Long_val(j);
   memcpy(dest, src, Long_val(l));
   return Val_unit;
 }
