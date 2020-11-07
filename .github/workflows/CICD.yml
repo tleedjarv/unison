@@ -21,6 +21,7 @@ jobs:
         - { os: macos-10.15   , ocaml-version: 4.08.1 }
         - { os: macos-10.15   , ocaml-version: 4.07.1 }
         - { os: macos-10.15   , ocaml-version: 4.05.0 }
+        - { os: ubuntu-latest , ocaml-version: 4.10.1 }
 
     runs-on: ${{ matrix.job.os }}
 
