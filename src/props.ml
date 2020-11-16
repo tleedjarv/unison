@@ -609,6 +609,30 @@ let init _ = ()
 end
 
 (* ------------------------------------------------------------------------- *)
+(*                               Change time                                 *)
+(* ------------------------------------------------------------------------- *)
+
+(* ctime itself is never synchronized. It is only leveraged for faster
+ * metadata update detection; and stored in archive for this purpose. *)
+
+module CTime : sig
+  type t
+  val dummy : t
+  val get : Unix.LargeFile.stats -> t
+  val same_time : t -> t -> bool
+end = struct
+
+type t = float
+
+let dummy = -1.
+
+let get stats = stats.Unix.LargeFile.st_ctime
+
+let same_time t t' = t = t' && Sys.os_type <> "Win32"
+
+end
+
+(* ------------------------------------------------------------------------- *)
 (*                          Type and creator                                 *)
 (* ------------------------------------------------------------------------- *)
 
@@ -838,12 +862,14 @@ type t =
     time : Time.t;
     typeCreator : TypeCreator.t;
     length : Uutil.Filesize.t;
+    ctime : CTime.t;
     acl : ACL.t }
 
 let template perm =
   { perm = perm; uid = Uid.dummy; gid = Gid.dummy;
     time = Time.dummy; typeCreator = TypeCreator.dummy;
-    length = Uutil.Filesize.dummy; acl = ACL.dummy }
+    length = Uutil.Filesize.dummy; ctime = CTime.dummy;
+    acl = ACL.dummy }
 
 let dummy = template Perm.dummy
 
@@ -875,6 +901,7 @@ let override p p' =
     time = Time.override p.time p'.time;
     typeCreator = TypeCreator.override p.typeCreator p'.typeCreator;
     length = p'.length;
+    ctime = p'.ctime;
     acl = ACL.override p.acl p'.acl }
 
 let strip p =
@@ -884,6 +911,7 @@ let strip p =
     time = Time.strip p.time;
     typeCreator = TypeCreator.strip p.typeCreator;
     length = p.length;
+    ctime = p.ctime;
     acl = ACL.strip p.acl }
 
 let toString p =
@@ -917,9 +945,12 @@ let diff p p' =
     time = Time.diff p.time p'.time;
     typeCreator = TypeCreator.diff p.typeCreator p'.typeCreator;
     length = p'.length;
+    ctime = p'.ctime;
     acl = ACL.diff p.acl p'.acl }
 
-let get abspath stats infos =
+let get ?(wantAllSyncProps = false) ?(archProps = dummy) abspath stats infos =
+  let ctime = CTime.get stats in
+  let ctimeChanged = not (CTime.same_time ctime archProps.ctime) in
   { perm = Perm.get stats infos;
     uid = Uid.get stats infos;
     gid = Gid.get stats infos;
@@ -930,7 +961,17 @@ let get abspath stats infos =
         Uutil.Filesize.fromStats stats
       else
         Uutil.Filesize.zero;
-    acl = ACL.getP abspath stats infos }
+    ctime;
+    (* The additional check of archive value against dummy value is required
+     * because even though the ctime has not changed, the archive may have
+     * been created without these properties being synced (due to that being
+     * a user preference). *)
+    acl =
+      if wantAllSyncProps && (ctimeChanged || archProps.acl = ACL.dummy) then
+        ACL.getP abspath stats infos
+      else
+        archProps.acl
+  }
 
 let set fspath path kind p =
   Uid.set fspath path kind p.uid;
@@ -961,11 +1002,12 @@ let fileSafe = template Perm.fileSafe
 let dirDefault = template Perm.dirDefault
 
 let same_time p p' = Time.same p.time p'.time
+let same_ctime p p' = CTime.same_time p.ctime p'.ctime
 let length p = p.length
 let setLength p l = {p with length=l}
 
 let time p = Time.extract p.time
-let setTime p t = {p with time = Time.replace p.time t}
+let setTime p p' = {p with time = Time.replace p.time (time p'); ctime = p'.ctime}
 
 let perms p = Perm.extract p.perm
 

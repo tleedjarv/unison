@@ -65,7 +65,7 @@ let statFn fromRoot fspath path =
   end else
     stats
 
-let get fromRoot fspath path =
+let get ?(archDesc = Props.dummy) fromRoot ?(wantAllSyncProps = false) fspath path =
   Util.convertUnixErrorsToTransient
   "querying file information"
     (fun () ->
@@ -98,7 +98,8 @@ let get fromRoot fspath path =
            inode    = (* The inode number is truncated so that
                          it fits in a 31 bit ocaml integer *)
                       stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
-           desc     = Props.get (Fspath.toSysPath (Fspath.concat fspath path)) stats osxInfos;
+           desc     = Props.get ~wantAllSyncProps ~archProps:archDesc
+                        (Fspath.toSysPath (Fspath.concat fspath path)) stats osxInfos;
            osX      = osxInfos }
        with
          Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
@@ -169,7 +170,7 @@ let ressStamp info = Osx.stamp info.osX
 let unchanged fspath path info =
   (* The call to [Util.time] must be before the call to [get] *)
   let t0 = Util.time () in
-  let info' = get true fspath path in
+  let info' = get ~archDesc:info.desc true ~wantAllSyncProps:true fspath path in
   let dataUnchanged =
     Props.same_time info.desc info'.desc
       &&
