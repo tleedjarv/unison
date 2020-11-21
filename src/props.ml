@@ -699,14 +699,34 @@ let syncACL =
 
 module ACL : sig
   include S
+  val extract : t -> string option
   val getP : System.fspath -> Unix.LargeFile.stats -> Osx.info -> t
   val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
+  val setDataFun : (string -> string) -> (string -> string) -> unit
 end = struct
+
+(* Optional functions for compressing or deduplicating ACLs. *)
+let compressF = ref (fun acl -> acl)
+let decompressF = ref (fun t -> t)
+
+let setDataFun f f2 =
+  compressF := f;
+  decompressF := f2
+
+let compress acl =
+  if acl = "" then acl else
+    !compressF acl
+
+let decompress t =
+  if t = "" then t else
+    !decompressF t
 
 (* None indicates ACLs are not supported. This is not synchronized.
  * An empty string represents a trivial/removed ACL. This will be
  * synchronized. *)
 type t = string option
+
+let extract t = t
 
 let dummy = None
 
@@ -717,7 +737,7 @@ let toString t =
     Some "" ->
       " <trivial ACL>"
   | Some s ->
-      " A=" ^ s
+      " A=" ^ (decompress s)
   | None ->
       if not (Prefs.read syncACL) then "" else " !No ACL support!"
 
@@ -727,7 +747,7 @@ let aclIds = Str.regexp
   "\\(\\(user\\|group\\):\\)[^:]+:\\([^:]+:[^:]+:[^:]+:[0-9]+\\($\\|,\\)\\)"
 let removeAclNames t =
   match t with
-    Some t -> Str.global_replace aclIds "\\1\\3" t
+    Some t -> Str.global_replace aclIds "\\1\\3" (decompress t)
   | None -> "-1"
 
 let similar2 t t' =
@@ -772,7 +792,7 @@ let getACLAsText path =
     if result = "-1" then
       None
     else
-      Some result
+      Some (compress result)
   with Failure msg -> begin
     Trace.logverbose (msg ^
                ". You can set preference \"acl\" to false \
@@ -784,7 +804,7 @@ let setACLFromText path t =
   match t with
     Some acl -> begin
       try
-        sysSetACLFromText path acl
+        sysSetACLFromText path (decompress acl)
       with Failure msg ->
         Trace.logverbose (msg ^
                    ". You can set preference \"acl\" to false \
@@ -997,6 +1017,8 @@ let init someHostIsRunningWindows =
   TypeCreator.init someHostIsRunningWindows;
   ACL.init someHostIsRunningWindows
 
+let setACLDataFun = ACL.setDataFun
+
 let fileDefault = template Perm.fileDefault
 let fileSafe = template Perm.fileSafe
 let dirDefault = template Perm.dirDefault
@@ -1010,6 +1032,8 @@ let time p = Time.extract p.time
 let setTime p p' = {p with time = Time.replace p.time (time p'); ctime = p'.ctime}
 
 let perms p = Perm.extract p.perm
+
+let acl p = ACL.extract p.acl
 
 let syncModtimes = Time.sync
 let permMask = Perm.permMask

@@ -17,6 +17,7 @@ val get : ?wantAllSyncProps:bool -> ?archProps:t ->
           System.fspath -> Unix.LargeFile.stats -> Osx.info -> t
 val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
 val init : bool -> unit
+val setACLDataFun : (string -> string) -> (string -> string) -> unit
 
 val same_time : t -> t -> bool
 val same_ctime : t -> t -> bool
@@ -25,6 +26,8 @@ val setLength : t -> Uutil.Filesize.t -> t
 val time : t -> float
 val setTime : t -> t -> t
 val perms : t -> int
+
+val acl : t -> string option
 
 val fileDefault : t
 val fileSafe : t
