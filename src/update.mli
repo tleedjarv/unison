@@ -50,6 +50,12 @@ val checkNoUpdates :
 (* Turn off fastcheck for the given file on the next sync. *)
 val markPossiblyUpdated : Fspath.t -> Path.local -> unit
 
+(* (For breaking the dependency loop between update.ml and props.ml...) *)
+val setPropsDataFun :
+  (archive -> (string * (string * string) list) list)
+  -> ((string * (string * string) list) list -> unit)
+  -> unit
+
 (* Save to disk the archive updates *)
 val commitUpdates : unit -> unit
 

@@ -495,6 +495,36 @@ let archiveUnchanged fspath newInfo =
   with Not_found ->
     false
 
+
+(*************************************************************************)
+(*                     Shared props data in archive                      *)
+(*************************************************************************)
+
+let propsDataKey = Proplist.register "Props data"
+
+let preparePropsData :
+  (archive -> (string * (string * string) list) list) ref =
+    ref (fun _ -> [])
+
+let setPropsData : ((string * (string * string) list) list -> unit) ref =
+  ref (fun _ -> ())
+
+let setPropsDataFun f f2 =
+  preparePropsData := f;
+  setPropsData := f2
+
+let preparePropsDataLocal archive props =
+  match !preparePropsData archive with
+  | [] -> props
+  | pd -> Proplist.add propsDataKey pd props
+
+let setPropsDataLocal (thisRoot: string) =
+  try
+    let data = Proplist.find propsDataKey (getArchiveProps thisRoot) in
+    !setPropsData data
+  with Not_found -> ()
+
+
 (*************************************************************************
                            DUMPING ARCHIVES
  *************************************************************************)
@@ -675,6 +705,7 @@ let setArchiveData thisRoot fspath (arch, hash, magic, properties) info =
   let properties = Proplist.add caseKey archMode properties in
   setArchiveLocal thisRoot arch;
   setArchivePropsLocal thisRoot properties;
+  setPropsDataLocal thisRoot;
   Hashtbl.replace archiveInfoCache thisRoot info;
   if archMode <> curMode then populateCacheFromArchive fspath arch;
   Lwt.return (Some (hash, magic))
@@ -2136,6 +2167,7 @@ let prepareCommitLocal (fspath, magic) =
    **)
   let archiveHash = checkArchive true [] archive 0 in
   let props = getArchiveProps root in
+  let props = preparePropsDataLocal archive props in
   storeArchiveLocal
     (Util.fileInUnisonDir newName) root archive archiveHash magic props;
   Lwt.return (Some archiveHash)
