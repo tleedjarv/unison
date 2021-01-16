@@ -341,9 +341,16 @@ ifeq ($(OSARCH),solaris)
   ACL_LS=ls -V
 endif
 ifeq ($(shell uname),FreeBSD)
+  ACL_BSD=1
+else ifeq ($(OSARCH),NetBSD)
+  ACL_BSD=1
+else
+  ACL_BSD=0
+endif
+ifeq ($(ACL_BSD),1)
   ACL_ENABLED=0
-  ACL_POSIX=$(shell getconf ACL_EXTENDED .)
-  ACL_NFS4=$(shell getconf ACL_NFS4 .)
+  ACL_POSIX=$(shell getconf ACL_EXTENDED . 2> /dev/null)
+  ACL_NFS4=$(shell getconf ACL_NFS4 . 2> /dev/null)
 ifeq ($(ACL_POSIX),1)
     ACL_ENABLED=1
     ACL1=-m u:$(shell whoami):rwx,g::rw
