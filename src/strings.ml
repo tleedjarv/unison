@@ -2727,7 +2727,7 @@ let docs =
       \032         + Full cross-synchronization with other platforms that support\n\
       \032           NFSv4 ACLs; limited cross-synchronization with POSIX-draft\n\
       \032           ACLs\n\
-      \032    * FreeBSD\n\
+      \032    * FreeBSD, NetBSD\n\
       \032         + NFSv4 ACL (ZFS ACL)\n\
       \032         + Limited POSIX-draft ACL (access ACL only; not default ACL)\n\
       \032         + Full cross-synchronization with other platforms that support\n\
