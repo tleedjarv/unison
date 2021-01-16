@@ -163,7 +163,11 @@
  * which allow the use of SIDs in ACL definition.
  */
 
-#define UNSN_ACL_NOT_SUPPORTED "-1"
+#define CAML_NAME_SPACE
+#include <caml/memory.h>
+#include <caml/alloc.h>
+#include <caml/fail.h>
+
 
 #if defined(sun) || defined(__sun)  /* Solarish, all illumos-based OS,   */
 #define __Solaris__                 /* OpenIndiana, OmniOS, SmartOS, ... */
@@ -184,29 +188,8 @@
 #endif
 #endif
 
-#if defined(__Solaris__)
-#include <fcntl.h>
-#include <sys/stat.h>
-#endif
 
-#if defined(__Solaris__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
-#include <sys/types.h>
-#include <sys/acl.h>
-#endif
-
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
-#include <unistd.h>
-#include <string.h>
-#endif
-
-#if defined(__APPLE__)
-#include <errno.h>
-#endif
-
-#define CAML_NAME_SPACE
-#include <caml/memory.h>
-#include <caml/alloc.h>
-#include <caml/fail.h>
+#define UNSN_ACL_NOT_SUPPORTED "-1"
 
 
 #ifndef UNSN_HAS_FS_ACL
@@ -226,11 +209,31 @@ CAMLprim value unison_acl_to_text(value path)
 #else /* UNSN_HAS_FS_ACL */
 
 
+#if defined(__Solaris__)
+#include <fcntl.h>
+#include <sys/stat.h>
+#endif
+
+#if defined(__Solaris__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/acl.h>
+#endif
+
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
+#include <unistd.h>
+#include <string.h>
+#endif
+
+#if defined(__APPLE__)
+#include <errno.h>
+#endif
+
 #if defined(__APPLE__)
 #define UNSN_ACL_T acl_t
 #else
 #define UNSN_ACL_T acl_t *
 #endif
+
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
 #define UNSN_ACL_TO_TEXT(aclp)    acl_to_text_np(aclp, NULL, ACL_TEXT_APPEND_ID)
