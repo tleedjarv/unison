@@ -628,7 +628,7 @@ let dummy = -1.
 
 let get stats = stats.Unix.LargeFile.st_ctime
 
-let same_time t t' = t = t' && Sys.os_type <> "Win32"
+let same_time t t' = System.hasCorrectCTime && t = t'
 
 end
 
