@@ -535,7 +535,7 @@ CAMLprim value win_get_console_mode (value out)
   DWORD mode;
   BOOL res;
 
-  if (out) con = init_conout();
+  if (Bool_val(out)) con = init_conout();
   else init_conin ();
 
   res = GetConsoleMode (con, &mode);
@@ -552,7 +552,7 @@ CAMLprim value win_set_console_mode (value out, value mode)
   HANDLE con;
   BOOL res;
 
-  if (out) con = init_conout();
+  if (Bool_val(out)) con = init_conout();
   else init_conin ();
 
   res = SetConsoleMode (con, Int_val(mode));
