@@ -315,8 +315,8 @@ let hasInodeNumbers () = true
 
 (****)
 
-external getConsoleMode : unit -> int = "win_get_console_mode"
-external setConsoleMode : int -> unit = "win_set_console_mode"
+external getConsoleMode : bool -> int = "win_get_console_mode"
+external setConsoleMode : bool -> int -> unit = "win_set_console_mode"
 external getConsoleOutputCP : unit -> int = "win_get_console_output_cp"
 external setConsoleOutputCP : int -> unit = "win_set_console_output_cp"
 
@@ -325,7 +325,9 @@ type terminalStateFunctions =
     startReading : unit -> unit; stopReading : unit -> unit }
 
 let terminalStateFunctions () =
-  let oldstate = getConsoleMode () in
+  let oldstate = getConsoleMode true in
+  let () = setConsoleMode true (oldstate lor 0x4 (* ENABLE_VIRTUAL_TERMINAL_PROCESSING *)) in
+  let oldstate = getConsoleMode false in
   let oldcp = getConsoleOutputCP () in
   (* Ctrl-C does not interrupt a call to ReadFile when
      ENABLE_LINE_INPUT is not set, so we handle Ctr-C
@@ -333,11 +335,11 @@ let terminalStateFunctions () =
      We still want Ctrl-C to generate an exception when not reading
      from the console in order to be able to interrupt Unison at any
      time.  *)
-  { defaultTerminal = (fun () -> setConsoleMode oldstate;
+  { defaultTerminal = (fun () -> setConsoleMode false oldstate;
                                  setConsoleOutputCP oldcp);
-    rawTerminal = (fun () -> setConsoleMode 0x19; setConsoleOutputCP 65001);
-    startReading = (fun () -> setConsoleMode 0x18);
-    stopReading = (fun () -> setConsoleMode 0x19) }
+    rawTerminal = (fun () -> setConsoleMode false 0x19; setConsoleOutputCP 65001);
+    startReading = (fun () -> setConsoleMode false 0x18);
+    stopReading = (fun () -> setConsoleMode false 0x19) }
 
 (****)
 

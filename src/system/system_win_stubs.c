@@ -502,28 +502,43 @@ CAMLprim value w_create_process(value * argv, int argn)
 /****/
 
 static HANDLE conin = INVALID_HANDLE_VALUE;
+static HANDLE conout = INVALID_HANDLE_VALUE;
 
-static void init_conin ()
+static void init_con (HANDLE *con)
 {
-  if (conin == INVALID_HANDLE_VALUE) {
-    conin = CreateFile ("CONIN$", GENERIC_READ | GENERIC_WRITE,
+  if (*con == INVALID_HANDLE_VALUE) {
+    *conin = CreateFile ("CONIN$", GENERIC_READ | GENERIC_WRITE,
                         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                         OPEN_EXISTING, 0, 0);
-    if (conin == INVALID_HANDLE_VALUE) {
+    if (*conin == INVALID_HANDLE_VALUE) {
       win32_maperr (GetLastError ());
       uerror("init_conin", Nothing);
     }
   }
 }
 
-CAMLprim value win_get_console_mode (value unit)
+static HANDLE init_conin()
 {
+  init_con(&conin);
+  return conin;
+}
+
+static HANDLE init_conout()
+{
+  init_con(&conout);
+  return conout;
+}
+
+CAMLprim value win_get_console_mode (value out)
+{
+  HANDLE con;
   DWORD mode;
   BOOL res;
 
-  init_conin ();
+  if (out) con = init_conout();
+  else init_conin ();
 
-  res = GetConsoleMode (conin, &mode);
+  res = GetConsoleMode (con, &mode);
   if (res == 0) {
     win32_maperr (GetLastError ());
     uerror("get_console_mode", Nothing);
@@ -532,13 +547,15 @@ CAMLprim value win_get_console_mode (value unit)
   return (Val_int (mode));
 }
 
-CAMLprim value win_set_console_mode (value mode)
+CAMLprim value win_set_console_mode (value out, value mode)
 {
+  HANDLE con;
   BOOL res;
 
-  init_conin ();
+  if (out) con = init_conout();
+  else init_conin ();
 
-  res = SetConsoleMode (conin, Int_val(mode));
+  res = SetConsoleMode (con, Int_val(mode));
   if (res == 0) {
     win32_maperr (GetLastError ());
     uerror("set_console_mode", Nothing);

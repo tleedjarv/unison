@@ -106,7 +106,7 @@ let setColorPreference () =
     match Prefs.read colorMode with
     | `True    -> true
     | `False   -> false
-    | `Default -> colorOk && Sys.os_type <> "Win32"
+    | `Default -> colorOk
 
 let color t =
   if not !colorEnabled then "" else
