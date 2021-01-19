@@ -504,13 +504,13 @@ CAMLprim value w_create_process(value * argv, int argn)
 static HANDLE conin = INVALID_HANDLE_VALUE;
 static HANDLE conout = INVALID_HANDLE_VALUE;
 
-static void init_con (HANDLE *con)
+static void init_con (HANDLE *con, const char *name)
 {
-  if (*con == INVALID_HANDLE_VALUE) {
-    *conin = CreateFile ("CONIN$", GENERIC_READ | GENERIC_WRITE,
+  if ((HANDLE)(*con) == INVALID_HANDLE_VALUE) {
+    *con = CreateFile (name, GENERIC_READ | GENERIC_WRITE,
                         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                         OPEN_EXISTING, 0, 0);
-    if (*conin == INVALID_HANDLE_VALUE) {
+    if ((HANDLE)(*con) == INVALID_HANDLE_VALUE) {
       win32_maperr (GetLastError ());
       uerror("init_conin", Nothing);
     }
@@ -519,13 +519,13 @@ static void init_con (HANDLE *con)
 
 static HANDLE init_conin()
 {
-  init_con(&conin);
+  init_con(&conin, "CONIN$");
   return conin;
 }
 
 static HANDLE init_conout()
 {
-  init_con(&conout);
+  init_con(&conout, "CONOUT$");
   return conout;
 }
 
