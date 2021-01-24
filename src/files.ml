@@ -1104,7 +1104,7 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
            debug (fun () -> Util.msg "New fingerprint is %s\n" (Os.fullfingerprint_to_string fp));
            let new_archive_entry =
              Update.ArchiveFile
-               (Props.get (Fspath.toSysPath arch_fspath) (Fs.stat arch_fspath) infoarch.osX, fp,
+               (Props.get arch_fspath (Fs.stat arch_fspath) infoarch.osX, fp,
                 Fileinfo.stamp (Fileinfo.get true arch_fspath Path.empty),
                 Osx.stamp infoarch.osX) in
            Update.replaceArchive root1 path1 new_archive_entry >>= fun _ ->

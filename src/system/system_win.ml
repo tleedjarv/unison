@@ -351,4 +351,12 @@ let fingerprint f =
   close_in ic;
   d
 
+(****)
+
+external acl_get_text_impl : string -> string = "unison_acl_to_text"
+external acl_set_text_impl : string -> string -> unit = "unison_acl_from_text"
+
+let acl_get_text = acl_get_text_impl
+let acl_set_text = acl_set_text_impl
+
 end

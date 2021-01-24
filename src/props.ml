@@ -700,7 +700,7 @@ let syncACL =
 module ACL : sig
   include S
   val extract : t -> string option
-  val getP : System.fspath -> Unix.LargeFile.stats -> Osx.info -> t
+  val getP : Fspath.t -> Unix.LargeFile.stats -> Osx.info -> t
   val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
   val setDataFun : (string -> string) -> (string -> string) -> unit
 end = struct
@@ -781,13 +781,10 @@ let strip t = if Prefs.read syncACL then t else None
 
 let diff t t' = if similar t t' then None else t'
 
-external sysGetACLAsText: string -> string = "unison_acl_to_text"
-external sysSetACLFromText: string -> string -> unit = "unison_acl_from_text"
-
 (* getACLAsText must be an option, where None means ACLs not supported *)
 let getACLAsText path =
   try
-    let result = sysGetACLAsText path in
+    let result = Fs.acl_get_text path in
     (* "-1" is used as a special code for no ACL support *)
     if result = "-1" then
       None
@@ -804,7 +801,7 @@ let setACLFromText path t =
   match t with
     Some acl -> begin
       try
-        sysSetACLFromText path (decompress acl)
+        Fs.acl_set_text path (decompress acl)
       with Failure msg ->
         Trace.logverbose (msg ^
                    ". You can set preference \"acl\" to false \
@@ -821,7 +818,7 @@ let set fspath path kind t =
         (fun() ->
           Util.msg "Setting ACL for %s from text |%s|\n"
             (Fspath.toDebugString abspath) (toString t));
-      setACLFromText (Fspath.toString abspath) t
+      setACLFromText abspath t
   | _ -> ()
 
 let get _ _ = dummy
@@ -831,17 +828,17 @@ let getP abspath stats _ =
     (stats.Unix.LargeFile.st_kind = Unix.S_REG ||
      stats.Unix.LargeFile.st_kind = Unix.S_DIR)
   then
-    let acltext = getACLAsText (System.fspathToString abspath) in
+    let acltext = getACLAsText abspath in
     debug
       (fun() ->
         Util.msg "Got text ACL |%s| for %s\n"
-          (toString acltext) (System.fspathToDebugString abspath));
+          (toString acltext) (Fspath.toDebugString abspath));
     acltext
   else
     None
 
 let check fspath path stats acl =
-  let acl' = getP (Fspath.toSysPath (Fspath.concat fspath path)) stats None in
+  let acl' = getP (Fspath.concat fspath path) stats None in
   let same =
     match acl, acl' with
     | None, _ -> true
@@ -968,9 +965,7 @@ let diff p p' =
     ctime = p'.ctime;
     acl = ACL.diff p.acl p'.acl }
 
-let get ?(wantAllSyncProps = false) ?(archProps = dummy) abspath stats infos =
-  let ctime = CTime.get stats in
-  let ctimeChanged = not (CTime.same_time ctime archProps.ctime) in
+let get' stats infos =
   { perm = Perm.get stats infos;
     uid = Uid.get stats infos;
     gid = Gid.get stats infos;
@@ -981,7 +976,13 @@ let get ?(wantAllSyncProps = false) ?(archProps = dummy) abspath stats infos =
         Uutil.Filesize.fromStats stats
       else
         Uutil.Filesize.zero;
-    ctime;
+    ctime = CTime.get stats;
+    acl = ACL.dummy }
+
+let get ?(wantAllSyncProps = false) ?(archProps = dummy) abspath stats infos =
+  let props = get' stats infos in
+  let ctimeChanged = not (CTime.same_time props.ctime archProps.ctime) in
+  { props with
     (* The additional check of archive value against dummy value is required
      * because even though the ctime has not changed, the archive may have
      * been created without these properties being synced (due to that being

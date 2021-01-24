@@ -72,3 +72,8 @@ let hasInodeNumbers () = System.hasInodeNumbers ()
 let hasCorrectCTime = System.hasCorrectCTime
 
 let setUnicodeEncoding = System.setUnicodeEncoding
+
+(****)
+
+let acl_get_text f = System.acl_get_text (Fspath.toString f)
+let acl_set_text f acl = System.acl_set_text (Fspath.toString f) acl
