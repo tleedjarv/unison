@@ -54,6 +54,11 @@ val hasInodeNumbers : unit -> bool
  * [hasCorrectCTime] can have a different value on different systems. *)
 val hasCorrectCTime : bool
 
+(****)
+
+val acl_get_text : fspath -> string
+val acl_set_text : fspath -> string -> unit
+
 end
 
 module type Full = sig

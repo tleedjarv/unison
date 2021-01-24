@@ -127,3 +127,8 @@ let fingerprint f =
   let d = Digest.channel ic (-1) in
   close_in ic;
   d
+
+(****)
+
+external acl_get_text : string -> string = "unison_acl_to_text"
+external acl_set_text : string -> string -> unit = "unison_acl_from_text"

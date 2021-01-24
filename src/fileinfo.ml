@@ -99,7 +99,7 @@ let get ?(archDesc = Props.dummy) fromRoot ?(wantAllSyncProps = false) fspath pa
                          it fits in a 31 bit ocaml integer *)
                       stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
            desc     = Props.get ~wantAllSyncProps ~archProps:archDesc
-                        (Fspath.toSysPath (Fspath.concat fspath path)) stats osxInfos;
+                        (Fspath.concat fspath path) stats osxInfos;
            osX      = osxInfos }
        with
          Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
@@ -198,7 +198,7 @@ let get' f =
          let osxInfos = Osx.defaultInfos typ in
          { typ   = typ;
            inode = stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
-           desc  = Props.get f stats osxInfos;
+           desc  = Props.get' stats osxInfos;
            osX   = osxInfos }
        with
          Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->

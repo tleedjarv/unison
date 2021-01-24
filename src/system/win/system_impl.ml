@@ -61,4 +61,7 @@ module Fs = struct
   let canSetTime v = c1 W.canSetTime G.canSetTime v
   let hasInodeNumbers v = c1 W.hasInodeNumbers G.hasInodeNumbers v
   let hasCorrectCTime = if !unicode then W.hasCorrectCTime else G.hasCorrectCTime
+
+  let acl_get_text v = c1 W.acl_get_text G.acl_get_text v
+  let acl_set_text v1 v2 = c2 W.acl_set_text G.acl_set_text v1 v2
 end

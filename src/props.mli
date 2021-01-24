@@ -14,7 +14,8 @@ val toString : t -> string
 val syncedPartsToString : t -> string
 val set : Fspath.t -> Path.local -> [`Set | `Update] -> t -> unit
 val get : ?wantAllSyncProps:bool -> ?archProps:t ->
-          System.fspath -> Unix.LargeFile.stats -> Osx.info -> t
+          Fspath.t -> Unix.LargeFile.stats -> Osx.info -> t
+val get' : Unix.LargeFile.stats -> Osx.info -> t
 val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
 val init : bool -> unit
 val setACLDataFun : (string -> string) -> (string -> string) -> unit
