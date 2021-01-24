@@ -2717,7 +2717,17 @@ let docs =
       \032  An ACL is propagated as a single unit, with all ACEs. There is no\n\
       \032  merging of ACEs from the replicas.\n\
       \n\
+      \032  ACE inheritance may in certain scenarios cause synchronization\n\
+      \032  inconsistencies. In Windows, only explicit ACEs are synchronized;\n\
+      \032  inherited ACEs are not actively synchronized, but Windows will\n\
+      \032  propagate ACEs from parent directories (unless inheritance is\n\
+      \032  explicitly prevented on a file or a directory--this prevention is also\n\
+      \032  synchronized). Due to inheritance, the ultimately effective ACL may be\n\
+      \032  different, or provide different access, even after synchronization.\n\
+      \n\
       \032  Unison currently supports the following platforms and ACL types:\n\
+      \032    * Windows (Windows XP SP2 and later)\n\
+      \032         + NTFS ACL (discrete ACL (DACL) only)\n\
       \032    * Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,\n\
       \032      OmniOS, etc.)\n\
       \032         + NFSv4 ACL (ZFS ACL)\n\

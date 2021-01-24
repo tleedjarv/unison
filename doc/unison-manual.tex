@@ -2069,8 +2069,19 @@ and the compatibility of ACL types on both replicas.
 An ACL is propagated as a single unit, with all ACEs. There is no
 merging of ACEs from the replicas.
 
+ACE inheritance may in certain scenarios cause synchronization inconsistencies.
+In Windows, only explicit ACEs are synchronized; inherited ACEs are not
+actively synchronized, but Windows will propagate ACEs from parent directories
+(unless inheritance is explicitly prevented on a file or a directory---this
+prevention is also synchronized). Due to inheritance, the ultimately effective
+ACL may be different, or provide different access, even after synchronization.
+
 Unison currently supports the following platforms and ACL types:
 \begin{itemize}
+  \item Windows (Windows XP SP2 and later)
+  \begin{itemize}
+    \item NTFS ACL (discrete ACL (DACL) only)
+  \end{itemize}
 \item Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,
   OmniOS, etc.)
   \begin{itemize}
