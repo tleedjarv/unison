@@ -62,6 +62,12 @@ module Fs = struct
   let hasInodeNumbers v = c1 W.hasInodeNumbers G.hasInodeNumbers v
   let hasCorrectCTime = if !unicode then W.hasCorrectCTime else G.hasCorrectCTime
 
-  let acl_get_text v = c1 W.acl_get_text G.acl_get_text v
-  let acl_set_text v1 v2 = c2 W.acl_set_text G.acl_set_text v1 v2
+  let onlyUnicodeACL () = raise (Sys_error "Only Unicode version of \
+                                   Windows ACL API is currently supported. \
+                                   Please file a feature request for your \
+                                   scenario.")
+  let acl_get_text v = if !unicode then W.acl_get_text v
+    else onlyUnicodeACL ()
+  let acl_set_text v1 v2 = if !unicode then W.acl_set_text v1 v2
+    else onlyUnicodeACL ()
 end
