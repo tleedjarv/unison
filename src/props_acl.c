@@ -1,5 +1,5 @@
 /* Unison file synchronizer: src/props_acl.c */
-/* Copyright 2020, Tõivo Leedjärv
+/* Copyright 2020-2021, Tõivo Leedjärv
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,10 +16,10 @@
 */
 
 /* Supporting POSIX draft ACLs is not a goal, but may incidentally work
- * on some platforms. Only NFSv4 ACLs and eventually Windows ACLs are
- * intended to be supported.
+ * on some platforms. Only NFSv4 ACLs and Windows ACLs are intended to be
+ * supported.
  *
- * On Solarish both NFSv4 ACLs and POSIX draft ACLs are supported.
+ * On Solarish, both NFSv4 ACLs and POSIX draft ACLs are supported.
  * There is even support for cross-synchronizing between NFSv4 and
  * POSIX draft ACLs, but this support is currently disabled in props.ml
  * by checking if the resulting ACL matches the requested ACL (the check
@@ -30,11 +30,10 @@
  *
  * On Darwin, extended ACLs are supported.
  *
- * Currently there is no support for Windows NTFS ACLs. Theoretically
- * this can be added as the interface towards synchronization logic is
- * just a text representation of the ACL. The only requirement is that
- * the string representation must be deterministic and stable. This
- * should be possible either with SDDL format or a custom format. */
+ * On Windows, NTFS ACLs are supported via SDDL format. Only explicit
+ * ACEs are synchronized, ignoring inherited ACEs completely. Users and
+ * groups are represented as SID strings in SDDL, not as names.
+ */
 
 /* The external interface is defined as follows. Every supported platform
  * must implement this interface. ACL format can be platform-specific,
@@ -188,8 +187,15 @@
 #endif
 #endif
 
+#if defined(_WIN32)
+#define UNSN_HAS_FS_ACL
+#endif
+
 
 #define UNSN_ACL_NOT_SUPPORTED "-1"
+#if defined(_WIN32)
+#define UNSN_ACL_NOT_SUPPORTED_W L"-1"
+#endif
 
 
 #ifndef UNSN_HAS_FS_ACL
@@ -206,7 +212,265 @@ CAMLprim value unison_acl_to_text(value path)
   CAMLreturn(caml_copy_string(UNSN_ACL_NOT_SUPPORTED));
 }
 
-#else /* UNSN_HAS_FS_ACL */
+#elif defined(_WIN32)
+
+
+/*#define ACL_DEBUG*/
+
+#ifndef UNICODE
+#define UNICODE
+#endif
+#ifndef _UNICODE
+#define _UNICODE
+#endif
+
+#include <windows.h>
+#include <aclapi.h>
+#include <sddl.h>
+#include <strsafe.h>
+
+#ifdef ACL_DEBUG
+#include <stdio.h>
+#endif
+
+/* While OCaml does support Windows Unicode mode, this support is at the time
+ * of writing still experimental. Until this support is completed, all input
+ * and output to the C stubs must be non-Unicode (i.e. 8-bit code page),
+ * or be explicitly converted on OCaml side.
+ *
+ * All Windows API functions default to Unicode mode (UNICODE is defined above).
+ * This means that explicit Unicode functions (such as *W() names) do not need
+ * to be used. Non-Unicode functions (for example, *A() names) must be used
+ * explicitly, where required.
+ *
+ * The code below does not use the OCaml Windows Unicode mode API (defined in
+ * <caml/misc.h> and <caml/osdeps.h>). */
+
+/* This function has 8-bit inputs and outputs. *A() functions must be used. */
+CAMLprim void unison_acl_fail(char *msg, DWORD err)
+{
+  DWORD flags;
+  char *sys_msg;
+  DWORD sys_len;
+  char fail_msg[160];
+  const size_t LEN = sizeof(fail_msg) / sizeof(fail_msg[0]);
+
+  flags =
+    FORMAT_MESSAGE_ALLOCATE_BUFFER |
+    FORMAT_MESSAGE_FROM_SYSTEM |
+    FORMAT_MESSAGE_IGNORE_INSERTS;
+
+  sys_len = FormatMessageA(flags, NULL, err, 0, (char *) &sys_msg, 0, NULL);
+  if (!sys_len) {
+    StringCbPrintfA(fail_msg, LEN, "%s (Windows error code: %d)", msg, err);
+  } else {
+    /* Assume last 3 characters are ".\r\n" (doesn't matter if they aren't),
+     * and remove them. */
+    if (sys_len > 3) {
+      sys_msg[sys_len - 3] = '\0';
+    }
+
+    StringCbPrintfA(fail_msg, LEN,
+      "%s (Windows error code: %d) %s", msg, err, sys_msg);
+    LocalFree(sys_msg);
+  }
+
+  caml_failwith(fail_msg);
+}
+
+/* This function is copied from
+   system/system_win_stubs.c */
+static value copy_wstring(PCWSTR s)
+{
+  int len;
+  value res;
+
+  len = 2 * wcslen(s) + 2;  /* NULL character included */
+  res = caml_alloc_string(len);
+  memmove((char *)String_val(res), s, len);
+
+  return res;
+}
+
+/* The input and output of the following functions, except failures, is
+ * explicitly converted between UTF-8 and UTF-16 in OCaml code. Therefore,
+ * only Windows Unicode API must be used for normal input and output values. */
+
+CAMLprim value unison_acl_from_text(value path, value acl)
+{
+  CAMLparam2(path, acl);
+  PCWSTR acl_text;
+  PSECURITY_DESCRIPTOR sd;
+  SECURITY_DESCRIPTOR_CONTROL sdc;
+  DWORD sdc_rev;
+  PSID owner = NULL, group = NULL;
+  PACL DACL;
+  BOOL DACLpresent = FALSE, isDef;
+  BOOL ok = TRUE;
+  SECURITY_INFORMATION si = 0;
+  DWORD res;
+
+#ifdef ACL_DEBUG
+  printf_s(" ===> Setting ACL for |%ls|\n", (PCWSTR) String_val(path));
+  printf_s(" ---> Input ACL value   |%ls|\n", (PCWSTR) String_val(acl));
+#endif
+
+  if (String_val(acl) == NULL || wcslen((PCWSTR) String_val(acl)) == 0) {
+    acl_text = L"D:"; /* SDDL representation of empty ACL */
+  } else {
+    acl_text = (PCWSTR) String_val(acl);
+  }
+#ifdef ACL_DEBUG
+  printf_s(" ---> Setting ACL value |%ls|\n", acl_text);
+#endif
+
+  if (!ConvertStringSecurityDescriptorToSecurityDescriptor(acl_text,
+         SDDL_REVISION_1, &sd, NULL)) {
+    unison_acl_fail("Error converting ACL from text", GetLastError());
+  }
+
+  ok = ok && GetSecurityDescriptorDacl(sd, &DACLpresent, &DACL, &isDef);
+  ok = ok && GetSecurityDescriptorControl(sd, &sdc, &sdc_rev);
+
+  if (DACLpresent) si |= DACL_SECURITY_INFORMATION;
+
+  if (!ok || (si == 0)) {
+    LocalFree(sd);
+
+    caml_failwith("Error converting ACL from text");
+  }
+
+  if (DACLpresent && (sdc & SE_DACL_PROTECTED))
+    si |= PROTECTED_DACL_SECURITY_INFORMATION;
+  if ((sdc & SE_DACL_AUTO_INHERITED) || (sdc & SE_DACL_AUTO_INHERIT_REQ))
+    si |= UNPROTECTED_DACL_SECURITY_INFORMATION;
+
+  res = SetNamedSecurityInfo((PWSTR) String_val(path), SE_FILE_OBJECT,
+          si, owner, group, DACL, NULL);
+
+  LocalFree(sd);
+
+  if (res == ERROR_ACCESS_DENIED) {
+    caml_failwith("Error setting ACL: access denied. The process may require "
+      "Administrator or \"Restore files\" privileges to set the ACL");
+  }
+
+  if (res != ERROR_SUCCESS) {
+    unison_acl_fail("Error setting ACL", res);
+  }
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value unison_acl_to_text(value path)
+{
+  CAMLparam1(path);
+  CAMLlocal1(result);
+  int i, aceCnt;
+  PWSTR acl_text;
+  PSECURITY_DESCRIPTOR sd;
+  SECURITY_DESCRIPTOR_CONTROL sdc;
+  DWORD sdc_rev;
+  PSID owner, group;
+  PACL DACL;
+  ACL_SIZE_INFORMATION aclInfo;
+  PVOID ace;
+  SECURITY_INFORMATION si = DACL_SECURITY_INFORMATION;
+  DWORD res1, err;
+  BOOL res2;
+
+#ifdef ACL_DEBUG
+  printf_s(" ===> Getting ACL for %ls\n", (PCWSTR) String_val(path));
+#endif
+
+  res1 = GetNamedSecurityInfo((PCWSTR) String_val(path), SE_FILE_OBJECT, si,
+           &owner, &group, &DACL, NULL, &sd);
+
+  if (res1 != ERROR_SUCCESS || sd == NULL) {
+    unison_acl_fail("Error getting ACL", res1);
+  }
+
+#ifdef ACL_DEBUG
+  res2 = ConvertSecurityDescriptorToStringSecurityDescriptor(sd,
+           SDDL_REVISION_1, si, &acl_text, NULL);
+
+  if (acl_text != NULL) {
+    printf_s(" ---> Initial ACL text representation: %ls\n", acl_text);
+
+    LocalFree(acl_text);
+  }
+#endif /* ACL_DEBUG */
+
+  if (DACL == NULL) {
+    LocalFree(sd);
+
+#ifdef ACL_DEBUG
+    printf_s(" ---> ACL not supported\n");
+#endif
+    CAMLreturn(copy_wstring(UNSN_ACL_NOT_SUPPORTED_W));
+  }
+
+  if (!GetAclInformation(DACL, &aclInfo, sizeof(aclInfo), AclSizeInformation)) {
+    unison_acl_fail("Error getting ACL information", GetLastError());
+  }
+  aceCnt = aclInfo.AceCount;
+
+  /* Remove all inherited ACEs -- those cannot be restored in the other
+   * replica, they are inherited from the parent directory. */
+  for (i = aclInfo.AceCount - 1; i >= 0; i--) {
+    if (!GetAce(DACL, i, &ace)) {
+#ifdef ACL_DEBUG
+      printf_s("GetAce failed (Windows error code %d)\n", GetLastError());
+#endif
+    } else if (((PACE_HEADER) ace)->AceFlags & INHERITED_ACE) {
+      if (!DeleteAce(DACL, i)) {
+#ifdef ACL_DEBUG
+        printf_s("DeleteAce failed (Windows error code %d)\n", GetLastError());
+#endif
+      } else {
+        aceCnt--;
+      }
+    }
+  }
+
+  if (aceCnt == 0) { /* No explicit entries */
+    if (!GetSecurityDescriptorControl(sd, &sdc, &sdc_rev)) {
+      unison_acl_fail("Error getting ACL control information", GetLastError());
+    }
+
+    if (!(sdc & SE_DACL_PROTECTED)) { /* No control flags we care about */
+      LocalFree(sd);
+
+#ifdef ACL_DEBUG
+      printf_s(" ---> Empty ACL (no explict ACE, may have inherited ACE)\n");
+#endif
+      CAMLreturn(copy_wstring(L"")); /* Empty ACL (or only inherited) */
+    }
+  }
+
+  res2 = ConvertSecurityDescriptorToStringSecurityDescriptor(sd,
+           SDDL_REVISION_1, si, &acl_text, NULL);
+  err = GetLastError();
+
+  LocalFree(sd);
+
+  if (!res2 || (acl_text == NULL)) {
+    unison_acl_fail("Error converting ACL to text", err);
+  }
+
+#ifdef ACL_DEBUG
+  printf_s(" ---> Final ACL text representation:   %ls\n", acl_text);
+#endif
+
+  result = copy_wstring(acl_text);
+
+  LocalFree(acl_text);
+
+  CAMLreturn(result);
+}
+
+
+#else /* UNSN_HAS_FS_ACL or _WIN32 */
 
 
 #if defined(__Solaris__)
