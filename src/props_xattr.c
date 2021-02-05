@@ -1,4 +1,19 @@
 /* Unison file synchronizer: src/props_xattr.c */
+/* Copyright 2020-2021, Tõivo Leedjärv
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 /* Conceptually, here, an extended attribute is just a name-value pair,
  * where name is a text string and value is a binary string.
@@ -92,56 +107,25 @@
  *
  */
 
-#define UNSN_MAX_XATTR_VALUE_SIZE 383
+#define CAML_NAME_SPACE
+#include <caml/memory.h>
+#include <caml/alloc.h>
+#include <caml/fail.h>
+#include <caml/callback.h>
 
-#define UNSN_XATTR_NOT_SUPPORTED_EX "XattrNotSupported"
 
-#if defined(sun) || defined(__sun)
-#define __Solaris__ 1  /* Solarish, all illumos-based OS,   */
-#endif                 /* OpenIndiana, OmniOS, SmartOS, ... */
+#if defined(sun) || defined(__sun)  /* Solarish, all illumos-based OS,   */
+#define __Solaris__                 /* OpenIndiana, OmniOS, SmartOS, ... */
+#endif
 
 #undef UNSN_HAS_XATTR
 #if defined(__Solaris__) || defined(__FreeBSD__) || defined(__APPLE__) || defined(__linux)
-#define UNSN_HAS_XATTR 1
+#define UNSN_HAS_XATTR
 #endif
 
-#if defined(__Solaris__)
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <string.h>
-#endif
+#define UNSN_MAX_XATTR_VALUE_SIZE 383
 
-#if defined(__FreeBSD__)
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/extattr.h>
-#include <string.h>
-
-#define ENOTSUP EOPNOTSUPP
-#endif
-
-#if defined(__APPLE__)
-#include <errno.h>
-#include <sys/xattr.h>
-#include <string.h>
-#endif
-
-#if defined(__linux)
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/xattr.h>
-#include <string.h>
-#endif
-
-#define CAML_NAME_SPACE
-#include "caml/memory.h"
-#include "caml/alloc.h"
-#include "caml/fail.h"
-#include "caml/callback.h"
+#define UNSN_XATTR_NOT_SUPPORTED_EX "XattrNotSupported"
 
 
 static void unsn_xattr_not_supported()
@@ -177,6 +161,39 @@ CAMLprim value unison_xattrs_get(value path)
 }
 
 #else /* UNSN_HAS_XATTR */
+
+
+#if defined(__Solaris__)
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <string.h>
+#endif
+
+#if defined(__FreeBSD__)
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/extattr.h>
+#include <string.h>
+
+#define ENOTSUP EOPNOTSUPP
+#endif
+
+#if defined(__APPLE__)
+#include <errno.h>
+#include <sys/xattr.h>
+#include <string.h>
+#endif
+
+#if defined(__linux)
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/xattr.h>
+#include <string.h>
+#endif
 
 
 /* FIXME: Remove when support for OCaml < 4.06 is dropped */
