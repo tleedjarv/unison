@@ -28,7 +28,7 @@
  *
  * SET the value of one xattr
  * ==========================
- * unit unison_xattr_set(String path, (String * Bytes) xattr)
+ * unit unison_xattr_set(String path, (String * String) xattr)
  *
  *   Create the requested extended attribute on the requested file or
  *   directory and set the attribute value.
@@ -80,7 +80,7 @@
  *
  * GET the list of xattrs with values
  * ==================================
- * List of (String * Bytes) unison_xattrs_get(String path)
+ * List of (String * String) unison_xattrs_get(String path)
  *
  *   Get the list of all extended attributes on the requested file or
  *   directory. Attributes are returned together with their values.
@@ -276,7 +276,7 @@ CAMLprim value unison_xattr_set(value path, value xattr)
   CAMLparam2(path, xattr);
   const char *name = String_val(path);
   const char *attr;
-  unsigned char *attrvalue;
+  const char *attrvalue;
   unsigned int len;
 
   if (!Is_block(xattr)) {
@@ -290,7 +290,7 @@ CAMLprim value unison_xattr_set(value path, value xattr)
     CAMLreturn(Val_unit);
   }
 
-  attrvalue = Bytes_val(Field(xattr, 1));
+  attrvalue = String_val(Field(xattr, 1));
   len = caml_string_length(Field(xattr, 1));
 
   int error = unsn_set_xattr_os(name, attr, attrvalue, len);

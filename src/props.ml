@@ -661,9 +661,7 @@ end = struct
 (* None indicates xattrs are not supported. This is not synchronized.
  * An empty list means xattrs are supported but there are none on the file.
  * This will be synchronized. *)
-type xa = (string * bytes)
-type xas = xa list
-type t = xas option
+type t = (string * string) list option
 
 let dummy = None
 
@@ -709,19 +707,12 @@ let skipIgnoredXattr l =
               (if keep then "not ignored" else "IGNORED by user request"));
        keep) l
 
-exception XattrNotSupported
-let _ = Callback.register_exception "XattrNotSupported" XattrNotSupported
-
-external sysGetXattrs: string -> xas = "unison_xattrs_get"
-external sysSetXattr: string -> xa -> unit = "unison_xattr_set"
-external sysRemoveXattr: string -> string -> unit = "unison_xattr_remove"
-
 (* getXattrs must be an option, where None means xattrs not supported *)
 let getXattrs path =
   try
-    Some (skipIgnoredXattr (sysGetXattrs path))
+    Some (skipIgnoredXattr (Fs.xattr_get_all path))
   with
-  | XattrNotSupported -> None
+  | Fs.XattrNotSupported -> None
   | Failure msg -> begin
       Trace.logverbose (msg ^
                ". You can set preference \"xattrs\" to false \
@@ -742,18 +733,18 @@ let setXattrs path t =
                    if not(Safelist.mem m xattrs0) then
                    let (n, _) = m in
                    debugverbose (fun() -> Util.msg "Writing xattr: %s\n" n);
-                   sysSetXattr path m
+                   Fs.xattr_set path m
                 ) xattrs;
             Safelist.iter
                 (fun (n, _) ->
                    if not(Safelist.exists (fun (n', _) -> n' = n) xattrs) then
                    begin
                      debugverbose (fun() -> Util.msg "Removing xattr: %s\n" n);
-                     sysRemoveXattr path n
+                     Fs.xattr_remove path n
                    end
                 ) xattrs0
           with
-          | XattrNotSupported ->
+          | Fs.XattrNotSupported ->
               Trace.logverbose ("Extended attributes are not supported. \
                        You can set preference \"xattrs\" to false \
                        to avoid this error.\n");
@@ -776,7 +767,7 @@ let set fspath path kind t =
         (fun() ->
           Util.msg "Setting xattrs for %s (%s)\n"
             (Fspath.toDebugString abspath) (toString t));
-      setXattrs (Fspath.toString abspath) t
+      setXattrs abspath t
   | _ -> ()
 
 let get _ _ = dummy
@@ -787,7 +778,7 @@ let getP abspath stats _ =
      stats.Unix.LargeFile.st_kind = Unix.S_DIR)*)
     (* Actually, there is no props stored for symlinks in the archive anyway. But could sync still? *)
   then
-    let xattrs = getXattrs (Fspath.toString abspath) in
+    let xattrs = getXattrs abspath in
     debug
       (fun() ->
         Util.msg "Xattr: got %s for %s\n"
@@ -1163,7 +1154,11 @@ let get ?(wantAllSyncProps = false) ?(archProps = dummy) abspath stats infos =
      * because even though the ctime has not changed, the archive may have
      * been created without these properties being synced (due to that being
      * a user preference). *)
-    xattr = Xattr.getP abspath stats infos;
+    xattr =
+      if wantAllSyncProps && (ctimeChanged || archProps.xattr = Xattr.dummy) then
+        Xattr.getP abspath stats infos
+      else
+        archProps.xattr;
     acl =
       if wantAllSyncProps && (ctimeChanged || archProps.acl = ACL.dummy) then
         ACL.getP abspath stats infos

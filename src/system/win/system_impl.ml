@@ -62,6 +62,12 @@ module Fs = struct
   let hasInodeNumbers v = c1 W.hasInodeNumbers G.hasInodeNumbers v
   let hasCorrectCTime = if !unicode then W.hasCorrectCTime else G.hasCorrectCTime
 
+  exception XattrNotSupported = G.XattrNotSupported
+
+  let xattr_get_all = G.xattr_get_all
+  let xattr_set = G.xattr_set
+  let xattr_remove = G.xattr_remove
+
   let onlyUnicodeACL () = raise (Sys_error "Only Unicode version of \
                                    Windows ACL API is currently supported. \
                                    Please file a feature request for your \

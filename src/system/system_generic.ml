@@ -130,5 +130,14 @@ let fingerprint f =
 
 (****)
 
+exception XattrNotSupported
+let _ = Callback.register_exception "XattrNotSupported" XattrNotSupported
+
+external xattr_get_all : string -> (string * string) list = "unison_xattrs_get"
+external xattr_set : string -> string * string -> unit = "unison_xattr_set"
+external xattr_remove : string -> string -> unit = "unison_xattr_remove"
+
+(****)
+
 external acl_get_text : string -> string = "unison_acl_to_text"
 external acl_set_text : string -> string -> unit = "unison_acl_from_text"

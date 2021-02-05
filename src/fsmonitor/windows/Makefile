@@ -11,7 +11,7 @@ FSMOCAMLOBJS = \
    $(DIR)/shortnames.cmo fsmonitor/watchercommon.cmo $(DIR)/watcher.cmo
 FSMCOBJS = \
    system/system_win_stubs.o lwt/lwt_unix_stubs.o $(DIR)/shortnames_stubs.o \
-   props_acl.o
+   props_acl.o props_xattr.o
 FSMOCAMLLIBS=bigarray.cma unix.cma
 
 ifeq ($(NATIVE), true)

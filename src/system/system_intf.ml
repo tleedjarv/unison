@@ -56,6 +56,14 @@ val hasCorrectCTime : bool
 
 (****)
 
+exception XattrNotSupported
+
+val xattr_get_all : fspath -> (string * string) list
+val xattr_set : fspath -> string * string -> unit
+val xattr_remove : fspath -> string -> unit
+
+(****)
+
 val acl_get_text : fspath -> string
 val acl_set_text : fspath -> string -> unit
 
