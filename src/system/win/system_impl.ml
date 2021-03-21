@@ -67,6 +67,7 @@ module Fs = struct
   let xattr_get_all = G.xattr_get_all
   let xattr_set = G.xattr_set
   let xattr_remove = G.xattr_remove
+  let xattrUpdatesCTime = G.xattrUpdatesCTime
 
   let onlyUnicodeACL () = raise (Sys_error "Only Unicode version of \
                                    Windows ACL API is currently supported. \

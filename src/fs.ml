@@ -81,6 +81,8 @@ let xattr_get_all f = System.xattr_get_all (Fspath.toString f)
 let xattr_set f xattr = System.xattr_set (Fspath.toString f) xattr
 let xattr_remove f n = System.xattr_remove (Fspath.toString f) n
 
+let xattrUpdatesCTime = System.xattrUpdatesCTime
+
 (****)
 
 let acl_get_text f = System.acl_get_text (Fspath.toString f)

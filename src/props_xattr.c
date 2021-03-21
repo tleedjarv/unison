@@ -105,6 +105,30 @@
  *     Can't access file to get the attributes
  *     Error reading attribute values
  *
+ *
+ * Indicate platform/system capabilities
+ * =====================================
+ * Boolean unison_xattr_updates_ctime()
+ *
+ *   Indicate whether the platform/system updates file ctime when
+ *   extended attributes change on the file. Not all platforms do this
+ *   (Solaris/illumos are known to not update any stat times of the
+ *   file/directory when its extended attributes are modified).
+ *   The capabilities of the system are important to know because
+ *   detecting updates quickly yet correctly relies on knowing when to
+ *   get the list of xattrs with values.
+ *
+ * Input parameters
+ *   none
+ *
+ * Return value
+ *   True if file ctime is updated at xattr changes. False otherwise.
+ *   For a platform that does not support ctime, true can be returned
+ *   if xattr changes update file mtime.
+ *
+ * Exceptions
+ *   none
+ *
  */
 
 #define CAML_NAME_SPACE
@@ -158,6 +182,12 @@ CAMLprim value unison_xattrs_get(value path)
 {
   CAMLparam1(path);
   unsn_xattr_not_supported();
+}
+
+CAMLprim value unison_xattr_updates_ctime()
+{
+  CAMLparam0();
+  CAMLreturn(Val_true);
 }
 
 #else /* UNSN_HAS_XATTR */
@@ -525,6 +555,20 @@ CAMLprim value unison_xattrs_get(value path)
 #endif
 
   CAMLreturn(result);
+}
+
+
+/************************************
+ *        ctime capabilities
+ ************************************/
+CAMLprim value unison_xattr_updates_ctime()
+{
+  CAMLparam0();
+#if defined(__Solaris__)
+  CAMLreturn(Val_false);
+#else
+  CAMLreturn(Val_true);
+#endif
 }
 
 

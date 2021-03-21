@@ -655,8 +655,11 @@ let ignoreXattrsPred =
 
 module Xattr : sig
   include S
+  val ctimeDetect : bool
   val getP : Fspath.t -> Unix.LargeFile.stats -> Osx.info -> t
 end = struct
+
+let ctimeDetect = System.xattrUpdatesCTime
 
 (* None indicates xattrs are not supported. This is not synchronized.
  * An empty list means xattrs are supported but there are none on the file.
@@ -1155,7 +1158,8 @@ let get ?(wantAllSyncProps = false) ?(archProps = dummy) abspath stats infos =
      * been created without these properties being synced (due to that being
      * a user preference). *)
     xattr =
-      if wantAllSyncProps && (ctimeChanged || archProps.xattr = Xattr.dummy) then
+      if wantAllSyncProps && (not Xattr.ctimeDetect
+          || ctimeChanged || archProps.xattr = Xattr.dummy) then
         Xattr.getP abspath stats infos
       else
         archProps.xattr;

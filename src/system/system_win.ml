@@ -359,6 +359,9 @@ let _ = Callback.register_exception "XattrNotSupported" XattrNotSupported
 external xattr_get_all : string -> (string * string) list = "unison_xattrs_get"
 external xattr_set : string -> string * string -> unit = "unison_xattr_set"
 external xattr_remove : string -> string -> unit = "unison_xattr_remove"
+external xattr_updates_ctime : unit -> bool = "unison_xattr_updates_ctime"
+
+let xattrUpdatesCTime = xattr_updates_ctime ()
 
 (****)
 
