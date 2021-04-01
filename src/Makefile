@@ -360,14 +360,21 @@ ifeq ($(OSARCH),Linux)
   XATTR_RM_ALL=setfattr -x user.unison_xattr_test_name2 test1.tmp/a.txt ; setfattr -x user.unison_xattr_test_name3 test1.tmp/a.txt ; setfattr -x user.unison_xattr_test_name2 test1.tmp/b.txt ; setfattr -x user.unison_xattr_test_name2 test2.tmp/a.txt ; setfattr -x user.unison_xattr_test_name3 test2.tmp/a.txt ; setfattr -x user.unison_xattr_test_name2 test2.tmp/b.txt
 endif
 ifeq ($(shell uname),FreeBSD)
+  XATTR_BSD=1
+else ifeq ($(OSARCH),NetBSD)
+  XATTR_BSD=1
+else
+  XATTR_BSD=0
+endif
+ifeq ($(XATTR_BSD),1)
   ## lsextattr user filenames for listing just names
-  XATTR_LS=bash -c "for f in test{1,2}.tmp/* ; do echo \$$f ; for a in \`lsextattr -q user \$$f\` ; do echo -n \$$a '= ' ; getextattr -fhq user \$$a \$$f ; done ; done"
+  XATTR_LS=sh -c "for f in \$$(ls -P test1.tmp) \$$(ls -P test2.tmp) ; do echo \$$f ; for a in \$$(lsextattr -q user \$$f) ; do echo -n \$$a '= ' ; getextattr -fhq user \$$a \$$f ; done ; done"
   XATTR_SET1=setextattr -h user unison_xattr_test_name1 testxattrvalue1 test1.tmp/a.txt ; setextattr -h user unison_xattr_test_name2 testxattrvalue2 test1.tmp/a.txt
   XATTR_SET2=setextattr -h user unison_xattr_test_name2 testxattrvalue2 test2.tmp/b.txt
   XATTR_SET3=setextattr -h user unison_xattr_test_name3 testxattrvalue3 test1.tmp/a.txt
   XATTR_CH1=setextattr -h user unison_xattr_test_name2 NEWVALUE test1.tmp/a.txt
   XATTR_RM1=rmextattr -h user unison_xattr_test_name1 test1.tmp/a.txt
-  XATTR_RM_ALL=bash -c "for f in test{1,2}.tmp/* ; do for a in unison_xattr_test_name1 unison_xattr_test_name2 unison_xattr_test_name3 ; do rmextattr -fhq user \$$a \$$f ; done ; done"
+  XATTR_RM_ALL=sh -c "for f in \$$(ls -P test1.tmp) \$$(ls -P test2.tmp) ; do for a in unison_xattr_test_name1 unison_xattr_test_name2 unison_xattr_test_name3 ; do rmextattr -fhq user \$$a \$$f ; done ; done"
 endif
 
 testxattr:

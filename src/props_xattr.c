@@ -143,7 +143,8 @@
 #endif
 
 #undef UNSN_HAS_XATTR
-#if defined(__Solaris__) || defined(__FreeBSD__) || defined(__APPLE__) || defined(__linux)
+#if defined(__Solaris__) || defined(__FreeBSD__) || defined(__NetBSD__) \
+    || defined(__APPLE__) || defined(__linux)
 #define UNSN_HAS_XATTR
 #endif
 
@@ -203,12 +204,14 @@ CAMLprim value unison_xattr_updates_ctime()
 #include <string.h>
 #endif
 
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__NetBSD__)
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/extattr.h>
 #include <string.h>
+#endif
 
+#if defined(__FreeBSD__)
 #define ENOTSUP EOPNOTSUPP
 #endif
 
@@ -245,7 +248,7 @@ static int unsn_is_system_attr_os(const char *attrname)
 #elif defined(__APPLE__)
   return (strcmp(attrname, XATTR_FINDERINFO_NAME) == 0 ||
           strcmp(attrname, XATTR_RESOURCEFORK_NAME) == 0);
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
   return 0;
 #elif defined(__Solaris__)
   /* Special system "extensible attributes" xattrs are defined in sys/attr.h
@@ -266,7 +269,7 @@ static int unsn_set_xattr_os(const char *path, const char *attrname,
   return lsetxattr(path, attrname, attrvalue, valuesize, 0);
 #elif defined(__APPLE__)
   return setxattr(path, attrname, attrvalue, valuesize, 0, XATTR_NOFOLLOW);
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
   return (int) extattr_set_link(path, EXTATTR_NAMESPACE_USER, attrname,
                                 attrvalue, valuesize);
 #elif defined(__Solaris__)
@@ -345,7 +348,7 @@ static int unsn_remove_xattr_os(const char *path, const char *attrname)
   return lremovexattr(path, attrname);
 #elif defined(__APPLE__)
   return removexattr(path, attrname, XATTR_NOFOLLOW);
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
   return (int) extattr_delete_link(path, EXTATTR_NAMESPACE_USER, attrname);
 #elif defined(__Solaris__)
   if (pathconf(path, _PC_XATTR_ENABLED) < 1) {
@@ -394,7 +397,7 @@ static ssize_t unsn_get_xattr_os(const char *path, const char *attrname,
   return lgetxattr(path, attrname, buf, size);
 #elif defined(__APPLE__)
   return getxattr(path, attrname, buf, size, 0, XATTR_NOFOLLOW);
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
   return extattr_get_link(path, EXTATTR_NAMESPACE_USER, attrname, buf, size);
 #elif defined(__Solaris__)
   int attrfd = attropen(path, attrname, O_RDONLY);
@@ -417,7 +420,7 @@ static ssize_t unsn_list_xattr_os(const char *path, char *buf, size_t size)
   return llistxattr(path, buf, size);
 #elif defined(__APPLE__)
   return listxattr(path, buf, size, XATTR_NOFOLLOW);
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
   return extattr_list_link(path, EXTATTR_NAMESPACE_USER, buf, size);
 #endif
 }
@@ -505,7 +508,7 @@ CAMLprim value unison_xattrs_get(value path)
     CAMLreturn(result);
   }
 
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__NetBSD__)
   size_t nl = 0;
   char xattrname[256];
 

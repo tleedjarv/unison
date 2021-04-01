@@ -2788,7 +2788,7 @@ let docs =
       \032      process privileges.\n\
       \032    * Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,\n\
       \032      OmniOS, etc.)\n\
-      \032    * FreeBSD Attributes in user namespace.\n\
+      \032    * FreeBSD, NetBSD Attributes in user namespace.\n\
       \032    * Darwin (macOS)\n\
       \n\
       \032  Not all filesystems on the listed platforms may support extended\n\
