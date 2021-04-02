@@ -286,7 +286,13 @@ endif
 ########################################################################
 ### Filesystem monitoring
 
-ifeq ($(OSARCH),Linux)
+ifndef INOTIFY
+  ifeq ($(OSARCH),Linux)
+    INOTIFY=true
+  endif
+endif
+
+ifeq ($(INOTIFY),true)
 -include fsmonitor/inotify/Makefile src/fsmonitor/inotify/Makefile
 endif
 

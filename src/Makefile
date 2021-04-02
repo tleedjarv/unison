@@ -25,6 +25,13 @@ THREADS=false
 #
 # UISTYLE=text
 
+# Build inotify fsmonitor. Set INOTIFY=true if you want to force building
+# the inotify fsmonitor.
+# You probably don't need to set this yourself -- it will be set to
+# an appropriate value automatically.
+#
+# INOTIFY=false
+
 ########################################################################
 ########################################################################
 #     (There should be no need to change anything from here on)       ##
