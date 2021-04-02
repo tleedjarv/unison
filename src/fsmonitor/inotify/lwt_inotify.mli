@@ -1,4 +1,4 @@
-(* Unison file synchronizer: src/monitoring-linux/lwt_inotify.mli *)
+(* Unison file synchronizer: src/fsmonitor/inotify/lwt_inotify.mli *)
 (* Copyright 2012, Benjamin C. Pierce (see COPYING for details) *)
 
 type t

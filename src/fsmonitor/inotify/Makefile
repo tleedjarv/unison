@@ -1,7 +1,7 @@
 
 FSMONITOR = $(NAME)-fsmonitor
 
-DIR=fsmonitor/linux
+DIR=fsmonitor/inotify
 FSMOCAMLOBJS = \
    lwt/lwt.cmo lwt/pqueue.cmo lwt/generic/lwt_unix_impl.cmo lwt/lwt_unix.cmo \
    $(DIR)/inotify.cmo $(DIR)/lwt_inotify.cmo \

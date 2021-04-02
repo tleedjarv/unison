@@ -1,4 +1,4 @@
-(* Unison file synchronizer: src/monitoring-linux/lwt_inotify.ml *)
+(* Unison file synchronizer: src/fsmonitor/inotify/lwt_inotify.ml *)
 (* Copyright 1999-2012, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
