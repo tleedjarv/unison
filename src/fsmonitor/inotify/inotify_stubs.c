@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#define BSD_COMP // For FIONREAD definition on illumos
 #include <sys/ioctl.h>
 #include <sys/inotify.h>
 #include <caml/mlvalues.h>
