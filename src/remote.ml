@@ -1010,16 +1010,20 @@ let sendString conn s = sendStrings conn [s]
 
 (****)
 
+type initState = Complete | Continue
+
 let rpcOk = "OK\n"
+let rpcOkCont = "OK+\n"
 
 let rpcNokTag = "NOK "
 let rpcErr err = rpcNokTag ^ err ^ "\n"
 
-type handshakeMsg = Ok | Error of string | Unknown of string
+type handshakeMsg = Ok | OkCont | Error of string | Unknown of string
 
 let receiveHandshakeMsg conn =
   receiveUntilSpaceOrNl conn >>= fun msg ->
   if msg = rpcOk then Lwt.return Ok
+  else if msg = rpcOkCont then Lwt.return OkCont
   else if msg = rpcNokTag then begin
     receiveUntilNewlineNb conn >>= fun msg -> Lwt.return (Error msg)
   end else
@@ -1038,6 +1042,7 @@ let receiveHandshakeData conn keyw =
 
 let sendHandshakeMsg conn = function
   | Ok -> sendString conn rpcOk
+  | OkCont -> sendString conn rpcOkCont
   | Error err -> sendString conn (rpcErr err)
   | Unknown _ -> assert false
 
@@ -1072,8 +1077,11 @@ let sendHandshakeData conn keyw data =
       ** Client receives "NOK" and closes connection.
 
    7. Server selects proposed version and sends "OK".
+   7a. If handshake process shall continue with extensions (for example,
+       with authentication) then server sends "OK+".
 
-   8. Client receives "OK". Version negotiation is complete.
+   8. Client receives "OK" or "OK+". Version negotiation is complete.
+   8a. If client receives "OK+" then handshake continues (version is fixed).
 *)
 
 let connectionHeader = "Unison RPC\n"
@@ -1147,7 +1155,8 @@ let selectServerVersion conn =
           debug (fun () -> Util.msg "Selected RPC version: %i\n" ver);
           sendHandshakeData conn rpcVersionTag (string_of_int ver) >>= fun () ->
           receiveHandshakeMsg conn >>= function
-          | Ok -> Lwt.return ()
+          | Ok -> Lwt.return Complete
+          | OkCont -> Lwt.return Continue
           | Error reply -> handshakeError reply
           | Unknown reply -> handshakeUnknown (reply ^ getTheRest ())
 
@@ -1155,7 +1164,7 @@ let checkServerVersion conn header =
   if header = compatConnectionHeader then begin
     setConnectionVersion conn 0;
     debug (fun () -> Util.msg "Selected RPC version: 2.51-compatibility\n");
-    (* skip negotiation *) Lwt.return ()
+    (* skip negotiation *) Lwt.return Complete
   end else
     selectServerVersion conn
 
@@ -1198,6 +1207,52 @@ let checkHeader conn =
 
 (****)
 
+(* RPC handshake extension process (run in sequence for each extension):
+   1. Server sends a space- or newline-terminated unique keyword that
+      identifies the extension (for example, authentication).
+
+   2. Client receives and verifies the keyword.
+      * If OK then proceeds.
+      * If NOK then closes connection.
+
+   3. Client and server communicate freely with extension-defined protocol.
+      * In case of any error, server sends "NOK", a space, and an error
+        message terminated by newline.
+      * Client closes connection in case of communication or processing error.
+
+   4. When done, server sends newline-terminated "OK".
+   4a. If handshake process shall continue with a next extension then
+       server sends newline-terminated "OK+".
+
+   5. Client receives "OK" or "OK+".
+   5a. If client receives "OK" then the handshake is complete and full RPC
+       connection has been initialized.
+   5b. If client receives "OK+" then handshake continues with the next
+       extension (go to step 1).
+*)
+
+type handshakeFunction = connection -> initState Lwt.t
+
+(* Handshake extensions are looked up from this list by
+   a keyword received from server. *)
+let handshakeFunctions : (string * handshakeFunction) list =
+  []
+
+let doServerHandshake conn keyw =
+  try
+    (Safelist.assoc keyw handshakeFunctions) conn
+  with Not_found ->
+    handshakeUnknown keyw
+
+let rec completeInitHandshake conn = function
+  | Complete -> Lwt.return ()
+  | Continue ->
+      receiveUntilSpaceOrNl ~includesep:false conn >>=
+      doServerHandshake conn >>=
+      completeInitHandshake conn
+
+(****)
+
 (*
    Disable flow control if possible.
    Both hosts must use non-blocking I/O (otherwise a dead-lock is
@@ -1236,9 +1291,10 @@ let negociateFlowControl conn =
 let initConnection onClose in_ch out_ch =
   let conn = setupIO false in_ch out_ch in
   checkHeader conn >>=
-  checkServerVersion conn >>= (fun () ->
+  checkServerVersion conn >>=
   (* From this moment forward, the RPC version has been selected. All
      communication must now adhere to that version's specification. *)
+  completeInitHandshake conn >>= (fun () ->
   enableFlowControl conn false;
   Lwt.ignore_result (Lwt.catch
     (fun () -> receive conn)
@@ -1687,11 +1743,22 @@ let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
 (*                     SERVER-MODE COMMAND PROCESSING LOOP                  *)
 (****************************************************************************)
 
+let getHandshakeExts conn =
+  []
+
+let rec completeHandshake conn exts =
+  match exts with
+  | [] -> Lwt.return ()
+  | extFunc :: l -> extFunc conn (l <> []) >>= fun () ->
+                    completeHandshake conn l
+
+(****)
+
 let checkClientVersion conn () =
   let reply msg = sendHandshakeMsg conn msg in
   (* FIX: In future when gaining the ability to close connections from server
      side, make errors close the connection, not just send to client. *)
-  let error = sendHandshakeErr conn in
+  let error msg = sendHandshakeErr conn msg >>= fun () -> Lwt.return [] in
   receiveHandshakeData conn rpcVersionTag >>= function
   | Error msg ->
       error ("Could not negotiate RPC version. "
@@ -1706,13 +1773,15 @@ let checkClientVersion conn () =
       | Some clientVer ->
           if verIsSupported clientVer then begin
             setConnectionVersion conn clientVer;
-            reply Ok
+            let handshakeExts = getHandshakeExts conn in
+            reply (if handshakeExts = [] then Ok else OkCont) >>= fun () ->
+            Lwt.return handshakeExts
           end else
             error ("Client RPC version not supported. "
                    ^ "Version received from client: \""
                    ^ string_of_int clientVer ^ "\". "
                    ^ "Supported RPC versions: " ^ rpcSupportedVersionStr)
-      | None -> Lwt.return ()
+      | None -> Lwt.return []
       | exception Util.Transient e -> error e
 
 (****)
@@ -1767,9 +1836,10 @@ let commandLoop in_ch out_ch =
          compatServer conn
        else
        sendStrings conn [connectionHeader; rpcVersionsStr] >>=
-       checkClientVersion conn >>= (fun () ->
+       checkClientVersion conn >>=
        (* From this moment forward, the RPC version has been selected. All
           communication must now adhere to that version's specification. *)
+       completeHandshake conn >>= (fun () ->
        (* Flow control was disabled for RPC version handshake. Enable it
           for flow control negotiation. *)
        enableFlowControl conn true;
