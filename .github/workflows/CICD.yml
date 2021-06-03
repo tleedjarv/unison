@@ -143,7 +143,6 @@ jobs:
         # * notes: darwin/macos doesn't build `unison-fsmonitor` ; windows gtk2 build hangs at "looking for changes" when `unison-fsmonitor.exe` is present
         for file in ${PROJECT_EXES} ; do
           if [ -f "src/${file}${{ steps.vars.outputs.EXE_suffix }}" ]; then
-            case '${{ matrix.job.os }}' in windows-*) if [ "${file}" = "unison-fsmonitor" ]; then continue; fi ;; esac
             cp "src/${file}${{ steps.vars.outputs.EXE_suffix }}" '${{ steps.vars.outputs.PKG_DIR }}/bin'
             echo "'src/${file}${{ steps.vars.outputs.EXE_suffix }}' copied to '${{ steps.vars.outputs.PKG_DIR }}/bin'"
           fi
