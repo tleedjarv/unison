@@ -69,5 +69,3 @@ let fingerprint f = System.fingerprint (Fspath.toString f)
 
 let canSetTime f = System.canSetTime (Fspath.toString f)
 let hasInodeNumbers () = System.hasInodeNumbers ()
-
-let setUnicodeEncoding = System.setUnicodeEncoding
