@@ -2661,11 +2661,18 @@ let docs =
       \032  to the profile, where pathspec is a path pattern as described in the\n\
       \032  section \226\128\156Path Specification\226\128\157 .\n\
       \n\
-      \032  Windows file systems do not support symbolic links; Unison will refuse\n\
-      \032  to propagate an opaque symbolic link from Unix to Windows and flag the\n\
-      \032  path as erroneous. When a Unix replica is to be synchronized with a\n\
-      \032  Windows system, all symbolic links should match either an ignore\n\
-      \032  pattern or a follow pattern.\n\
+      \032  Not all Windows versions and file systems support symbolic links;\n\
+      \032  Unison will refuse to propagate an opaque symbolic link from Unix to\n\
+      \032  Windows and flag the path as erroneous if the support or privileges are\n\
+      \032  lacking on the Windows side. When a Unix replica is to be synchronized\n\
+      \032  with such Windows system, all symbolic links should match either an\n\
+      \032  ignore pattern or a follow pattern.\n\
+      \n\
+      \032  You may need to acquire extra privileges to create symbolic links under\n\
+      \032  Windows. By default, this is only allowed for administrators. Unison\n\
+      \032  may not be able to automatically detect support for symbolic links\n\
+      \032  under Windows. In that case, set the preference links to true\n\
+      \032  explicitly.\n\
       \n\
       Permissions\n\
       \n\
