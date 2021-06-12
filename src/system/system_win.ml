@@ -103,7 +103,6 @@ type dir_entry = Dir_empty | Dir_read of string | Dir_toread
 type dir_handle = System_generic.dir_handle
                 = { readdir : unit -> string; closedir : unit -> unit }
 
-external stat_impl : string -> string -> Unix.LargeFile.stats = "win_stat"
 external rmdir_impl : string -> string -> unit = "win_rmdir"
 external mkdir_impl : string -> string -> unit = "win_mkdir"
 external unlink_impl : string -> string -> unit = "win_unlink"
@@ -120,8 +119,8 @@ external findfirst : string -> string * int = "win_findfirstw"
 external findnext : int -> string = "win_findnextw"
 external findclose : int -> unit = "win_findclosew"
 
-let stat f = stat_impl f (epath f)
-let lstat = stat
+let stat = Unix.LargeFile.stat
+let lstat = Unix.LargeFile.lstat
 let rmdir f = rmdir_impl f (epath f)
 let mkdir f perms = mkdir_impl f (epath f)
 let unlink f = unlink_impl f (epath f)
