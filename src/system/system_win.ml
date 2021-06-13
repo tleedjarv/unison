@@ -50,17 +50,7 @@ let fspathAddSuffixToFinalName f suffix = f ^ suffix
 
 (****)
 
-let encodingError p =
-  raise
-    (Sys_error
-       (Format.sprintf "The file path '%s' is not encoded in Unicode." p))
-
 let path8 = Unicode.from_utf_16(*_filename*)
-let epath f =
-  try
-    Unicode.to_utf_16(*_filename*) (extendedPath f)
-  with
-    Unicode.Invalid -> encodingError f
 
 let sys_error e =
   match e with
