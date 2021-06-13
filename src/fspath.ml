@@ -28,7 +28,7 @@
 (*      All fspaths are absolute                                             *)
 (*                                                                         - *)
 
-module Fs = System_impl.Fs
+module Fs = System_impl
 
 let debug = Util.debug "fspath"
 let debugverbose = Util.debug "fsspath+"

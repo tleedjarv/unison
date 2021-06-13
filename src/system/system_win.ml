@@ -22,11 +22,24 @@ http://www.codeproject.com/KB/cpp/unicode_console_output.aspx?display=Print
 
 *)
 
-module M (P : sig val useLongUNCPaths : bool end) = struct
+let fixPath f = String.map (function '/' -> '\\' | c -> c) f
+let winRootRx = Rx.rx "[a-zA-Z]:[/\\].*"
+let winUncRx = Rx.rx "[/\\][/\\][^/\\]+[/\\][^/\\]+[/\\].*"
+let extendedPath f =
+  if Rx.match_string winRootRx f then
+    fixPath ("\\\\?\\" ^ f)
+  else if Rx.match_string winUncRx f then
+    fixPath ("\\\\?\\UNC" ^ String.sub f 1 (String.length f - 1))
+  else
+    f
+
+(****)
 
 type fspath = string
 
 let fspathFromString f = f
+(* Intended to be used only with Fspath as input. *)
+let fspathExtFromString f = extendedPath f
 let fspathToPrintString f = f
 let fspathToString f = f
 let fspathToDebugString f = String.escaped f
@@ -36,26 +49,6 @@ let fspathDirname = Filename.dirname
 let fspathAddSuffixToFinalName f suffix = f ^ suffix
 
 (****)
-
-let fixPath f =
-  let length = String.length f in
-  let buffer = Bytes.create length in
-  String.blit f 0 buffer 0 length;
-  for i = 0 to length - 1 do
-    if Bytes.get buffer i = '/' then Bytes.set buffer i '\\'
-  done;
-  Bytes.to_string buffer
-let winRootRx = Rx.rx "[a-zA-Z]:[/\\].*"
-let winUncRx = Rx.rx "[/\\][/\\][^/\\]+[/\\][^/\\]+[/\\].*"
-let extendedPath f =
-  if not P.useLongUNCPaths then
-    f
-  else if Rx.match_string winRootRx f then
-    fixPath ("\\\\?\\" ^ f)
-  else if Rx.match_string winUncRx f then
-    fixPath ("\\\\?\\UNC" ^ String.sub f 1 (String.length f - 1))
-  else
-    f
 
 let encodingError p =
   raise
@@ -216,5 +209,3 @@ let fingerprint f =
   let d = Digest.channel ic (-1) in
   close_in ic;
   d
-
-end

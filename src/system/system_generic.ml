@@ -18,6 +18,7 @@
 type fspath = string
 
 let fspathFromString f = f
+let fspathExtFromString f = f
 let fspathToPrintString f = f
 let fspathToString f = f
 let fspathToDebugString f = String.escaped f
