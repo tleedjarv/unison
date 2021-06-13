@@ -58,6 +58,7 @@ val getenv : string -> string
 val argv : unit -> string array
 
 val fspathFromString : string -> fspath
+val fspathExtFromString : string -> fspath
 val fspathToPrintString : fspath -> string
 val fspathToDebugString : fspath -> string
 val fspathToString : fspath -> string
