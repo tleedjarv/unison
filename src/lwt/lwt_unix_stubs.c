@@ -9,6 +9,9 @@
 #include <caml/fail.h>
 #include <caml/bigarray.h>
 #include <caml/callback.h>
+#include <caml/misc.h>
+#define CAML_INTERNALS /* was needed from OCaml 4.06 to 4.12 */
+#include <caml/osdeps.h>
 
 //#define D(x) x
 #define D(x) while(0){}
@@ -683,16 +686,19 @@ CAMLprim value win_parse_directory_changes (value buf_val) {
   CAMLreturn(lst);
 }
 
-CAMLprim value win_open_directory (value path, value wpath) {
-  CAMLparam2 (path, wpath);
+CAMLprim value win_open_directory (value path) {
+  CAMLparam1 (path);
   HANDLE h;
-  h = CreateFileW((LPCWSTR) String_val(wpath),
+  wchar_t *wpath = caml_stat_strdup_to_os(String_val(path));
+
+  h = CreateFileW(wpath,
                   FILE_LIST_DIRECTORY,
                   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                   NULL,
                   OPEN_EXISTING,
                   FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
                   NULL);
+  caml_stat_free(wpath);
   if (h == INVALID_HANDLE_VALUE) {
     win32_maperr (GetLastError ());
     uerror("open", path);
@@ -700,14 +706,14 @@ CAMLprim value win_open_directory (value path, value wpath) {
   CAMLreturn(win_alloc_handle(h));
 }
 
-value copy_wstring(LPCWSTR s);
-
 CAMLprim value win_long_path_name(value path) {
   CAMLparam1(path);
+  wchar_t *wpath = caml_stat_strdup_to_os(String_val(path));
   wchar_t lbuf[32768] = L"";
   DWORD res;
 
-  res = GetLongPathNameW((LPCWSTR) String_val(path), lbuf, 32768);
+  res = GetLongPathNameW(wpath, lbuf, 32768);
+  caml_stat_free(wpath);
 
-  CAMLreturn(res == 0 || res > 32767 ? path : copy_wstring(lbuf));
+  CAMLreturn(res == 0 || res > 32767 ? path : caml_copy_string_of_os(lbuf));
 }

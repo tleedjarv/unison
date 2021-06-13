@@ -1,24 +1,12 @@
 #define WINVER 0x0500
 
 #include <caml/mlvalues.h>
-#include <caml/alloc.h>
 #include <caml/fail.h>
 
 #include <windows.h>
 #include <fcntl.h>
 
 #define Nothing ((value) 0)
-
-value copy_wstring(LPCWSTR s)
-{
-  int len;
-  value res;
-
-  len = 2 * wcslen(s) + 2;  /* NULL character included */
-  res = caml_alloc_string(len);
-  memmove((char *)String_val(res), s, len);
-  return res;
-}
 
 extern void win32_maperr (DWORD errcode);
 extern void uerror (char * cmdname, value arg);
