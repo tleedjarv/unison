@@ -28,8 +28,6 @@
 (*      All fspaths are absolute                                             *)
 (*                                                                         - *)
 
-module Fs = System_impl
-
 let debug = Util.debug "fspath"
 let debugverbose = Util.debug "fsspath+"
 
@@ -240,12 +238,12 @@ let canonizeFspath p0 =
   let p = match p0 with None -> "." | Some "" -> "." | Some s -> s in
   let p' =
     begin
-      let original = Fs.getcwd() in
+      let original = System.getcwd() in
       try
         let newp =
-          (Fs.chdir p; (* This might raise Sys_error *)
-           Fs.getcwd()) in
-        Fs.chdir original;
+          (System.chdir (System.fspathFromString p); (* This might raise Sys_error *)
+           System.fspathToString (System.getcwd())) in
+        System.chdir original;
         newp
       with
         Sys_error why ->
@@ -265,12 +263,12 @@ let canonizeFspath p0 =
                "Cannot find canonical name of root directory %s\n(%s)" p why));
           let parent = myDirname p in
           let parent' = begin
-            (try Fs.chdir parent with
+            (try System.chdir (System.fspathFromString parent) with
                Sys_error why2 -> raise (Util.Fatal (Printf.sprintf
                  "Cannot find canonical name of %s: unable to cd either to it\n
 (%s)\nor to its parent %s\n(%s)" p why parent why2)));
-            Fs.getcwd() end in
-          Fs.chdir original;
+            System.fspathToString (System.getcwd()) end in
+          System.chdir original;
           let bn = Filename.basename p in
           if bn="" then parent'
           else toString(child (localString2fspath parent')
@@ -310,10 +308,10 @@ let findWorkingDir fspath path =
           (Util.Transient (Printf.sprintf
              "Too many symbolic links from %s" abspath));
       try
-        let link = Fs.readlink p in
+        let link = System.readlink (System.fspathExtFromString p) in
         let linkabs =
           if Filename.is_relative link then
-            Fs.fspathConcat (Fs.fspathDirname p) link
+            Filename.concat (Filename.dirname p) link
           else link in
         followlinks (n+1) linkabs
       with
