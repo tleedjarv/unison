@@ -82,8 +82,13 @@ let close_process_full = Unix.close_process_full
 
 let isNotWindows = Sys.os_type <> "Win32"
 
+let ocaml407 =
+  let (major, minor, patch) =
+    Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun x y z -> (x, y, z)) in
+  major > 4 || major = 4 && minor >= 7
+
 let canSetTime f =
-  isNotWindows ||
+  isNotWindows || ocaml407 || (* Works in Windows since OCaml 4.07 *)
   try
     Unix.access f [Unix.W_OK];
     true
@@ -92,7 +97,11 @@ let canSetTime f =
 
 (* Note that Cygwin provides some kind of inode numbers, but we only
    have access to the lower 32 bits on 32bit systems... *)
-let hasInodeNumbers () = isNotWindows
+(* Best effort inode numbers are provided in Windows since OCaml 4.03 *)
+(* However, these inode numbers are not usable on FAT filesystems, as
+   renaming a file "b" over a file "a" does not change the inode
+   number of "a". *)
+let hasInodeNumbers () = true
 
 (****)
 

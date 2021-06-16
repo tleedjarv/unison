@@ -114,18 +114,6 @@ let open_out_gen = open_out_gen
 
 (****)
 
-(* The new implementation of utimes does not have the limitation of
-   the standard one *)
-let canSetTime f = true
-
-(* We provide some kind of inode numbers *)
-(* However, these inode numbers are not usable on FAT filesystems, as
-   renaming a file "b" over a file "a" does not change the inode
-   number of "a". *)
-let hasInodeNumbers () = true
-
-(****)
-
 external getConsoleMode : unit -> int = "win_get_console_mode"
 external setConsoleMode : int -> unit = "win_set_console_mode"
 external getConsoleOutputCP : unit -> int = "win_get_console_output_cp"
