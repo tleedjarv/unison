@@ -22,6 +22,9 @@ http://www.codeproject.com/KB/cpp/unicode_console_output.aspx?display=Print
 
 *)
 
+include System_generic
+
+
 let fixPath f = String.map (function '/' -> '\\' | c -> c) f
 let winRootRx = Rx.rx "[a-zA-Z]:[/\\].*"
 let winUncRx = Rx.rx "[/\\][/\\][^/\\]+[/\\][^/\\]+[/\\].*"
@@ -35,18 +38,8 @@ let extendedPath f =
 
 (****)
 
-type fspath = string
-
-let fspathFromString f = f
 (* Intended to be used only with Fspath as input. *)
 let fspathExtFromString f = extendedPath f
-let fspathToPrintString f = f
-let fspathToString f = f
-let fspathToDebugString f = String.escaped f
-
-let fspathConcat = Filename.concat
-let fspathDirname = Filename.dirname
-let fspathAddSuffixToFinalName f suffix = f ^ suffix
 
 (****)
 
@@ -63,20 +56,6 @@ let sys_error e =
 
 (****)
 
-let getenv = Sys.getenv
-let putenv = Unix.putenv
-let argv () = Sys.argv
-
-(****)
-
-type dir_handle = System_generic.dir_handle
-                = { readdir : unit -> string; closedir : unit -> unit }
-
-let stat = Unix.LargeFile.stat
-let lstat = Unix.LargeFile.lstat
-let rmdir = Unix.rmdir
-let mkdir = Unix.mkdir
-let unlink = Unix.unlink
 let rename f1 f2 =
   (* Comment from original implementation:
      Windows Unicode API: when a file cannot be renamed due to a sharing
@@ -99,10 +78,9 @@ let rename f1 f2 =
     | e -> raise e
   in
   ren_aux ()
-let chmod = Unix.chmod
+
 let chown _ _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "chown", ""))
-let utimes = Unix.utimes
-let link s d = Unix.link s d
+
 let openfile f flags perm =
   let fd = Unix.openfile f flags perm in
   (* Comment from original implementation:
@@ -114,8 +92,6 @@ let openfile f flags perm =
   if List.mem Unix.O_APPEND flags then
     ignore (Unix.LargeFile.lseek fd 0L Unix.SEEK_END);
   fd
-let readlink = Unix.readlink
-let symlink s1 s2 = Unix.symlink s1 s2
 
 let chdir = Sys.chdir
 external long_name : string -> string = "win_long_path_name"
@@ -138,24 +114,6 @@ let open_out_gen = open_out_gen
 
 (****)
 
-let file_exists = Sys.file_exists
-let open_in_bin = open_in_bin
-
-(****)
-
-let create_process = Unix.create_process
-
-(****)
-
-let open_process_in = Unix.open_process_in
-let open_process_out = Unix.open_process_out
-let open_process_full cmd = Unix.open_process_full cmd (Unix.environment ())
-let close_process_in = Unix.close_process_in
-let close_process_out = Unix.close_process_out
-let close_process_full = Unix.close_process_full
-
-(****)
-
 (* The new implementation of utimes does not have the limitation of
    the standard one *)
 let canSetTime f = true
@@ -173,10 +131,6 @@ external setConsoleMode : int -> unit = "win_set_console_mode"
 external getConsoleOutputCP : unit -> int = "win_get_console_output_cp"
 external setConsoleOutputCP : int -> unit = "win_set_console_output_cp"
 
-type terminalStateFunctions =
-  { defaultTerminal : unit -> unit; rawTerminal : unit -> unit;
-    startReading : unit -> unit; stopReading : unit -> unit }
-
 let terminalStateFunctions () =
   let oldstate = getConsoleMode () in
   let oldcp = getConsoleOutputCP () in
@@ -191,11 +145,3 @@ let terminalStateFunctions () =
     rawTerminal = (fun () -> setConsoleMode 0x19; setConsoleOutputCP 65001);
     startReading = (fun () -> setConsoleMode 0x18);
     stopReading = (fun () -> setConsoleMode 0x19) }
-
-(****)
-
-let fingerprint f =
-  let ic = open_in_bin f in
-  let d = Digest.channel ic (-1) in
-  close_in ic;
-  d
