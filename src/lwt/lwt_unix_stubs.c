@@ -667,14 +667,16 @@ CAMLprim value win_parse_directory_changes (value buf_val) {
   struct caml_bigarray *buf_arr = Bigarray_val(buf_val);
   char * pos = Array_data (buf_arr, 0);
   FILE_NOTIFY_INFORMATION * entry;
+  wchar_t *namebuf;
 
   lst = Val_long(0);
   while (1) {
     entry = (FILE_NOTIFY_INFORMATION *)pos;
+    namebuf = calloc(entry->FileNameLength + 2, 1);
+    memmove(namebuf, entry->FileName, entry->FileNameLength);
     elt = caml_alloc_tuple(2);
-    filename = caml_alloc_string(entry->FileNameLength);
-    memmove((char *)String_val(filename), entry->FileName, entry->FileNameLength);
-    Store_field (elt, 0, filename);
+    Store_field (elt, 0, caml_copy_string_of_os(namebuf));
+    free(namebuf);
     Store_field (elt, 1, Val_long(entry->Action - 1));
     tmp = caml_alloc_tuple(2);
     Store_field (tmp, 0, elt);

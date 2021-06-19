@@ -707,9 +707,7 @@ if !d then Format.eprintf "Reading started@.";
   if len = 0 then
     Lwt.return []
   else
-    Lwt.return (List.rev_map (fun (nm, act) ->
-                                (System_win.path8 nm, act))
-                        (parse_directory_changes buf)))
+    Lwt.return (parse_directory_changes buf))
 
 let close_dir = Unix.close
 

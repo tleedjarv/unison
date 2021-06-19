@@ -43,8 +43,6 @@ let fspathExtFromString f = extendedPath f
 
 (****)
 
-let path8 = Unicode.from_utf_16(*_filename*)
-
 let sys_error e =
   match e with
     Unix.Unix_error (err, _, "") ->

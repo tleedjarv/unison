@@ -920,11 +920,9 @@ system/system_generic.cmx :
 system/system_intf.cmo :
 system/system_intf.cmx :
 system/system_win.cmo : \
-    unicode.cmi \
     system/system_generic.cmo \
     ubase/rx.cmi
 system/system_win.cmx : \
-    unicode.cmx \
     system/system_generic.cmx \
     ubase/rx.cmx
 system/win/system_impl.cmo : \
