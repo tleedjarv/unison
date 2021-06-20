@@ -15,29 +15,12 @@ jobs:
       fail-fast: false
       matrix:
         job:
+        - { os: macos-10.15   , ocaml-version: 4.13.0~alpha1 }
         - { os: macos-10.15   , ocaml-version: 4.12.0 }
-        - { os: macos-10.15   , ocaml-version: 4.11.2 }
-        - { os: macos-10.15   , ocaml-version: 4.10.2 }
-        - { os: macos-10.15   , ocaml-version: 4.09.1 }
-        - { os: macos-10.15   , ocaml-version: 4.08.1 }
-        - { os: macos-10.15   , ocaml-version: 4.07.1 }
-        - { os: macos-10.15   , ocaml-version: 4.05.0 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.13.0~alpha1 }
         - { os: ubuntu-18.04  , ocaml-version: 4.12.0 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.11.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.10.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.10.0+musl+static+flambda }
-        - { os: ubuntu-18.04  , ocaml-version: 4.09.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.08.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.07.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.05.0 }
+        - { os: windows-latest , ocaml-version: 4.13.0~alpha1+mingw64c }
         - { os: windows-latest , ocaml-version: 4.12.0+mingw64c }
-        - { os: windows-latest , ocaml-version: 4.11.2+mingw64c }
-        - { os: windows-latest , ocaml-version: 4.10.2+mingw64c }
-        - { os: windows-latest , ocaml-version: 4.10.2+mingw32c }
-        - { os: windows-latest , ocaml-version: 4.09.1+mingw64c }
-        - { os: windows-latest , ocaml-version: 4.08.1+mingw64c }
-        - { os: windows-latest , ocaml-version: 4.07.1+mingw64c }
-        - { os: windows-latest , ocaml-version: 4.05.0+mingw64c }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -115,6 +98,9 @@ jobs:
         ocaml-compiler: "${{ steps.vars.outputs.OCAML_COMPILER }}"
         opam-pin: false
         opam-depext: false
+        opam-repositories: |
+          beta: https://github.com/ocaml/ocaml-beta-repository.git
+          default: https://github.com/ocaml/opam-repository.git
       # setup-ocaml can prepare the build environment from unison.opam
       # We're not relying on that capability here, to make sure the builds
       # also work without using unison.opam
