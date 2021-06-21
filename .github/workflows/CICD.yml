@@ -101,6 +101,7 @@ jobs:
         opam-repositories: |
           beta: https://github.com/ocaml/ocaml-beta-repository.git
           default: https://github.com/ocaml/opam-repository.git
+          win: https://github.com/fdopen/opam-repository-mingw.git#opam2
       # setup-ocaml can prepare the build environment from unison.opam
       # We're not relying on that capability here, to make sure the builds
       # also work without using unison.opam
