@@ -671,7 +671,9 @@ let file_dialog ~parent ~title ~callback ?filename () =
 (* ------ *)
 
 let fatalError message =
-  Trace.log (message ^ "\n");
+  let () =
+    try Trace.log (message ^ "\n")
+    with _ -> () in (* Can't allow fatal errors in fatal error handler *)
   let title = "Fatal error" in
   let t =
     GWindow.dialog ~parent:(toplevelWindow ())
