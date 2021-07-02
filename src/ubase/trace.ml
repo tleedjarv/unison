@@ -138,24 +138,12 @@ let _ =
       Printf.eprintf "Warning: SIGUSR1 handler not set: %s\n"
         (Printexc.to_string e)
 
-let createDirTree file =
-  let rec dirTreeAux path =
-    match Filename.dirname path with
-    | "." | ".." | "/" -> ()
-    | dir ->
-        dirTreeAux dir;
-        try System.mkdir (System.fspathFromString path) 0o750
-        with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
-  in
-  dirTreeAux (Filename.dirname file)
-
 let rec getLogch() =
   Util.convertUnixErrorsToFatal "getLogch" (fun() ->
   match !logch with
     None ->
       let prefstr = System.fspathToString (Prefs.read logfile) in
       let file = Util.fileMaybeRelToUnisonDir prefstr in
-      let () = createDirTree (System.fspathToString file) in
       let ch =
         System.open_out_gen [Open_wronly; Open_creat; Open_append] 0o600 file in
       logch := Some (ch, file);
