@@ -1,7 +1,7 @@
 (library
  (name unison_lib)
  (wrapped false)
- (modules :standard \ linktext linkgtk2 uigtk2 uimacbridge uimacbridgenew test)
+ (modules :standard \ linktext linkgtk3 uigtk3 uimacbridge uimacbridgenew test)
  (modules_without_implementation ui)
  (flags :standard
         -w -3-6-9-10-26-27-32-34-35-38-39-50-52
@@ -20,8 +20,8 @@
  (libraries unison_lib))
 
 (executable
- (name linkgtk2)
- (public_name unison-gtk2)
+ (name linkgtk3)
+ (public_name unison-gtk3)
  (flags :standard -w -3-6-9-27-32-52)
- (modules linkgtk2 uigtk2)
+ (modules linkgtk3 uigtk3)
  (libraries threads unison_lib lablgtk3))
