@@ -24,4 +24,4 @@
  (public_name unison-gtk2)
  (flags :standard -w -3-6-9-27-32-52)
  (modules linkgtk2 uigtk2)
- (libraries threads unison_lib lablgtk2))
+ (libraries threads unison_lib lablgtk3))

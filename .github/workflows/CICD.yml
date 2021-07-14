@@ -134,7 +134,7 @@ jobs:
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
       if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '+musl') || contains(matrix.job.ocaml-version, '+32bit') ) }}
-      run: opam depext --install --verbose --yes lablgtk
+      run: opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
 
     - shell: bash
       run: |
