@@ -109,6 +109,8 @@ let () = if build_macGUI then outp "macuimaybe: macui"
 (* Generate backtrace information for exceptions *)
 let () = "CAMLFLAGS" <-+= "-g $(INCLFLAGS)"
 
+let () = "CAMLFLAGS" <-+= "-ccopt -D_FILE_OFFSET_BITS=64"
+
 let () =
   [
     "CAMLCFLAGS", "CFLAGS", "-ccopt";
@@ -171,7 +173,8 @@ let () =
       end;
       if osarch = "SunOS" then begin
         (* ACL functions *)
-        "CLIBS" <-+= "-cclib -lsec"
+        "CLIBS" <-+= "-cclib -lsec";
+        "CLIBS" <-+= "-cclib -lsendfile"
       end;
       "building_for" <-- "Building for Unix";
     end;
