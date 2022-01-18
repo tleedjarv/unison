@@ -541,10 +541,12 @@ linktext.cmx : \
     main.cmx
 lock.cmo : \
     ubase/util.cmi \
+    ubase/trace.cmi \
     system.cmi \
     lock.cmi
 lock.cmx : \
     ubase/util.cmx \
+    ubase/trace.cmx \
     system.cmx \
     lock.cmi
 lock.cmi : \

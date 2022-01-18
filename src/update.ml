@@ -1026,6 +1026,7 @@ let ignorelocks =
 let locked = ref false
 
 let lockArchives () =
+  debug (fun () -> Util.msg "Trying to lock archives...\n");
   assert (!locked = false);
   Globals.allRootsMap
     (fun r -> lockArchiveOnRoot r ()) >>= (fun result ->
@@ -1052,6 +1053,7 @@ let lockArchives () =
     end)
 
 let unlockArchives () =
+  debug (fun () -> Util.msg "Trying to unlock archives...\n");
   if !locked then begin
     Globals.allRootsIter (fun r -> unlockArchiveOnRoot r ()) >>= (fun () ->
     locked := false;

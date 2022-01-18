@@ -15,6 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
+let debug = Trace.debug "lock"
 
 let rename oldFile newFile =
   begin try System.link oldFile newFile with Unix.Unix_error _ -> () end;
@@ -42,13 +43,14 @@ let acquire name =
   Util.convertUnixErrorsToTransient
     "Lock.acquire"
     (fun () ->
+       debug (fun () -> Util.msg "Acquiring lock %s\n" (System.fspathToString name));
        match Util.osType with
          `Unix -> (* O_EXCL is broken under NFS... *)
            rename (unique name (Unix.getpid ()) 0o600) name
        | _ ->
            create name 0o600)
 
-let release name = try System.unlink name with Unix.Unix_error _ -> ()
+let release name = try debug (fun () -> Util.msg "Releasing lock %s\n" (System.fspathToString name)); System.unlink name with Unix.Unix_error _ -> ()
 
 let is_locked name =
   Util.convertUnixErrorsToTransient
