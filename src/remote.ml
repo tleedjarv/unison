@@ -1134,6 +1134,7 @@ let connectionHeader = "Unison RPC\n"
 let compatConnectionHeader = "Unison 2.51 with OCaml >= 4.01.2\n"
 (* Every supported version released prior to the RPC version negotiation
    mechanism uses this connection header string. *)
+let compat248ConnectionHeader = "Unison 2.48\n"
 
 let rpcVersionsTag = "VERSIONS "
 let rpcVersionsStr = rpcVersionsTag ^ rpcSupportedVersionStrHdr ^ "\n"
@@ -1209,6 +1210,10 @@ let checkServerVersion conn header =
     setConnectionVersion conn 0;
     debug (fun () -> Util.msg "Selected RPC version: 2.51-compatibility\n");
     (* skip negotiation *) Lwt.return ()
+  end else if header = compat248ConnectionHeader then begin
+    setConnectionVersion conn 0;
+    debug (fun () -> Util.msg "Selected RPC version: 2.48-compatibility\n");
+    (* skip negotiation *) Lwt.return ()
   end else
     selectServerVersion conn
 
@@ -1217,7 +1222,14 @@ let rec checkHeaderRec conn buffer pos len connectionHeader =
     Lwt.return connectionHeader
   else begin
     (grab conn.inputBuffer buffer 1 >>= (fun () ->
-    if buffer.{0} <> connectionHeader.[pos] && buffer.{0} <> compatConnectionHeader.[pos] then
+    let chOk =
+      try buffer.{0} = connectionHeader.[pos] with Invalid_argument _ -> false
+    and compatChOk =
+      try buffer.{0} = compatConnectionHeader.[pos] with Invalid_argument _ -> false
+    and compat248ChOk =
+      try buffer.{0} = compat248ConnectionHeader.[pos] with Invalid_argument _ -> false
+    in
+    if not chOk && not compatChOk && not compat248ChOk then
       let prefix =
         String.sub connectionHeader 0 pos ^ Bytearray.to_string buffer in
       let rest = peekWithoutBlocking conn.inputBuffer in
@@ -1235,12 +1247,15 @@ let rec checkHeaderRec conn buffer pos len connectionHeader =
            ^ "message, or because your remote login shell is printing\n"
            ^ "something itself before starting Unison."))
     else
-    if buffer.{0} <> connectionHeader.[pos] && buffer.{0} = compatConnectionHeader.[pos] then
+    if not chOk && compatChOk then
       (* We make use of the fact that that the new header is almost a prefix
          of the old header. It is not an exact comparison here but good
          enough for this purpose. *)
       checkHeaderRec conn buffer (pos + 1)
         (String.length compatConnectionHeader) compatConnectionHeader
+    else if not chOk && compat248ChOk then
+      checkHeaderRec conn buffer (pos + 1)
+        (String.length compat248ConnectionHeader) compat248ConnectionHeader
     else
       checkHeaderRec conn buffer (pos + 1) len connectionHeader))
   end
@@ -1888,7 +1903,12 @@ let forwardMsgToClient =
           Lwt.return (Trace.displayMessageLocally str)))
 
 (* Compatibility mode for 2.51 clients. *)
-let compatServerInit conn =
+let compatServerInit mode conn =
+  let compatConnectionHeader =
+    match mode with
+    | Some "2.48" -> compat248ConnectionHeader
+    | _ -> compatConnectionHeader
+  in
   dump conn [(Bytearray.of_string compatConnectionHeader, 0,
                 String.length compatConnectionHeader)] >>= fun () ->
   (* Send the magic string to notify new clients *)
@@ -1920,9 +1940,9 @@ let commandLoop ~compatMode in_ch out_ch =
   let conn = setupIO true in_ch out_ch in
   Lwt.catch
     (fun () ->
-       (if compatMode then
+       (if compatMode <> None then
          let () = setConnectionVersion conn 0 in
-         compatServerInit conn >>= (fun upgrade ->
+         compatServerInit compatMode conn >>= (fun upgrade ->
          if upgrade then begin
            (* Restore the state before starting protocol negotiation *)
            allowWrites conn.outputQueue;
@@ -1984,6 +2004,11 @@ let killServer =
 (* For backward compatibility *)
 let _ = Prefs.alias killServer "killServer"
 
+(* FIX: This code should be removed when removing 2.51-compatibility code. *)
+let is248Exe =
+  let exeName = Filename.basename (Sys.executable_name) in
+  String.length exeName >= 11 && String.sub exeName 0 11 = "unison-2.48"
+
 (* Used by the socket mechanism: Create a socket on portNum and wait
    for a request. Each request is processed by commandLoop. When a
    session finishes, the server waits for another request. *)
@@ -2013,7 +2038,8 @@ let waitOnPort hostOpt port =
          Lwt_unix.setsockopt connected Unix.SO_KEEPALIVE true;
          begin try
            (* Accept a connection *)
-           Lwt_unix.run (commandLoop ~compatMode:true connected connected)
+           let compatMode = Some (if is248Exe then "2.48" else "2.51") in
+           Lwt_unix.run (commandLoop ~compatMode connected connected)
          with Util.Fatal "Lost connection with the server" -> () end;
          (* The client has closed its end of the connection *)
          begin try Lwt_unix.close connected with Unix.Unix_error _ -> () end;
@@ -2044,6 +2070,15 @@ let beAServer () =
             |> Safelist.mem rpcServerCmdlineOverride)
      with Not_found -> true
   in
+  (* Additionally, do a best effort emulation of 2.48.
+     FIX: remove together with code above. *)
+  let compatMode =
+    match compatMode with
+    | true when is248Exe -> Some "2.48"
+    | true -> Some "2.51"
+    | false -> None
+  in
+  begin end;
   Lwt_unix.run
     (commandLoop ~compatMode
        (Lwt_unix.of_unix_file_descr Unix.stdin)
