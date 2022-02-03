@@ -249,7 +249,7 @@ let archiveHash fspath =
   let thisRoot = thisRootsGlobalName fspath in
   let r = Prefs.read rootsName in
   let n = Printf.sprintf "%s;%s;%d" thisRoot r archiveFormat in
-  let d = Fingerprint.toString (Fingerprint.string n) in
+  let d = Hash.MD5.toString (Hash.MD5.string n) in
   debugverbose (fun()-> Util.msg "Archive name is %s; hashcode is %s\n" n d);
   if Prefs.read showArchiveName then
     Util.msg "Archive name is %s; hashcode is %s\n" n d;
@@ -286,7 +286,7 @@ let archiveName251 fspath (v: archiveVersion): string * string =
     let thisRoot = thisRootsGlobalName fspath in
     let r = Prefs.read rootsName in
     let n = Printf.sprintf "%s;%s;22" thisRoot r in
-    let d = Fingerprint.toString (Fingerprint.string n) in
+    let d = Hash.MD5.toString (Hash.MD5.string n) in
     (String.sub d 0 significantDigits)
   in
   let n = archiveHash251 fspath in

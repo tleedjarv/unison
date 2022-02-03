@@ -24,7 +24,7 @@ let m = Umarshal.string
 let pseudo_prefix = "LEN"
 
 let pseudo path len = pseudo_prefix ^ (Uutil.Filesize.toString len) ^ "@" ^
-                      (Digest.string (Path.toString path))
+                      (Hash.string (Path.toString path))
 
 let ispseudo f = Util.startswith f pseudo_prefix
 
@@ -34,7 +34,11 @@ let file fspath path =
   let f = Fspath.concat fspath path in
   Util.convertUnixErrorsToTransient
     ("digesting " ^ Fspath.toPrintString f)
-    (fun () -> Fs.fingerprint f)
+    (fun () ->
+      let ic = Fs.open_in_bin f in
+      let d = Hash.channel ic (-1) in
+      close_in ic;
+      d)
 
 let maxLength = Uutil.Filesize.ofInt max_int
 let subfile path offset len =
@@ -48,7 +52,7 @@ let subfile path offset len =
        let inch = Fs.open_in_bin path in
        begin try
          LargeFile.seek_in inch offset;
-         let res = Digest.channel inch (Uutil.Filesize.toInt len) in
+         let res = Hash.channel inch (Uutil.Filesize.toInt len) in
          close_in inch;
          res
        with
@@ -86,7 +90,7 @@ let toString md5 =
     Bytes.to_string string
   end
 
-let string = Digest.string
+let string = Hash.string
 
 let dummy = ""
 

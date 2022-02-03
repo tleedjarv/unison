@@ -304,6 +304,7 @@ fingerprint.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
     path.cmi \
+    hash.cmi \
     fspath.cmi \
     fs.cmi \
     fingerprint.cmi
@@ -312,6 +313,7 @@ fingerprint.cmx : \
     ubase/util.cmx \
     ubase/umarshal.cmx \
     path.cmx \
+    hash.cmx \
     fspath.cmx \
     fs.cmx \
     fingerprint.cmi
@@ -548,6 +550,11 @@ globals.cmi : \
     path.cmi \
     lwt/lwt.cmi \
     common.cmi
+hash.cmo : \
+    hash.cmi
+hash.cmx : \
+    hash.cmi
+hash.cmi :
 linkgtk.cmo : \
     main.cmo
 linkgtk.cmx : \
@@ -1191,6 +1198,8 @@ ubase/prefs.cmi : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
     system.cmi
+ubase/projectInfo.cmo :
+ubase/projectInfo.cmx :
 ubase/proplist.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
@@ -1247,10 +1256,12 @@ ubase/umarshal.cmi :
 ubase/util.cmo : \
     system.cmi \
     ubase/safelist.cmi \
+    ubase/projectInfo.cmo \
     ubase/util.cmi
 ubase/util.cmx : \
     system.cmx \
     ubase/safelist.cmx \
+    ubase/projectInfo.cmx \
     ubase/util.cmi
 ubase/util.cmi : \
     system.cmi
@@ -1565,12 +1576,12 @@ update.cmo : \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     lock.cmi \
+    hash.cmi \
     globals.cmi \
     fswatchold.cmi \
     fswatch.cmi \
     fspath.cmi \
     fpcache.cmi \
-    fingerprint.cmi \
     fileinfo.cmi \
     features.cmi \
     common.cmi \
@@ -1598,12 +1609,12 @@ update.cmx : \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     lock.cmx \
+    hash.cmx \
     globals.cmx \
     fswatchold.cmx \
     fswatch.cmx \
     fspath.cmx \
     fpcache.cmx \
-    fingerprint.cmx \
     fileinfo.cmx \
     features.cmx \
     common.cmx \
@@ -1628,12 +1639,14 @@ uutil.cmo : \
     ubase/umarshal.cmi \
     ubase/trace.cmi \
     ubase/projectInfo.cmo \
+    features.cmi \
     uutil.cmi
 uutil.cmx : \
     ubase/util.cmx \
     ubase/umarshal.cmx \
     ubase/trace.cmx \
     ubase/projectInfo.cmx \
+    features.cmx \
     uutil.cmi
 uutil.cmi : \
     ubase/umarshal.cmi

@@ -371,12 +371,4 @@ let terminalStateFunctions () =
     startReading = (fun () -> setConsoleMode 0x18);
     stopReading = (fun () -> setConsoleMode 0x19) }
 
-(****)
-
-let fingerprint f =
-  let ic = open_in_bin f in
-  let d = Digest.channel ic (-1) in
-  close_in ic;
-  d
-
 end

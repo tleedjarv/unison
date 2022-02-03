@@ -56,7 +56,6 @@ module Fs = struct
   let getcwd v = c1 W.getcwd G.getcwd v
   let chdir v = c1 W.chdir G.chdir v
   let readlink v = c1 W.readlink G.readlink v
-  let fingerprint v = c1 W.fingerprint G.fingerprint v
 
   let canSetTime v = c1 W.canSetTime G.canSetTime v
   let hasInodeNumbers v = c1 W.hasInodeNumbers G.hasInodeNumbers v

@@ -123,11 +123,3 @@ let terminalStateFunctions () =
          Unix.tcsetattr Unix.stdin Unix.TCSANOW newState);
     startReading = (fun () -> ());
     stopReading = (fun () -> ()) }
-
-(****)
-
-let fingerprint f =
-  let ic = open_in_bin f in
-  let d = Digest.channel ic (-1) in
-  close_in ic;
-  d
