@@ -25,8 +25,10 @@ type stamp251 =
   | CtimeStamp of float       (* creation time, for windows systems *)
 
 type stamp =
-    InodeStamp of int         (* inode number, for Unix systems *)
-  | CtimeStamp of float       (* creation time, for windows systems *)
+  | NoStamp
+  | InodeStamp of int         (* inode number, for Unix systems *)
+  | RescanStamp               (* stamp indicating file should be rescanned
+                                 (perhaps because previous transfer failed) *)
 
 val mstamp : stamp Umarshal.t
 
