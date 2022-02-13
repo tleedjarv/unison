@@ -629,6 +629,33 @@ let init _ = ()
 end
 
 (* ------------------------------------------------------------------------- *)
+(*                               Change time                                 *)
+(* ------------------------------------------------------------------------- *)
+
+(* ctime itself is never synchronized. It is only leveraged for faster
+ * metadata update detection; and stored in archive for this purpose. *)
+
+module CTime : sig
+  type t
+  val m : t Umarshal.t
+  val dummy : t
+  val get : Unix.LargeFile.stats -> t
+  val same_time : t -> t -> bool
+end = struct
+
+type t = float
+
+let m = Umarshal.float
+
+let dummy = -1.
+
+let get stats = stats.Unix.LargeFile.st_ctime
+
+let same_time t t' = t = t' && Sys.os_type <> "Win32"
+
+end
+
+(* ------------------------------------------------------------------------- *)
 (*                          Type and creator                                 *)
 (* ------------------------------------------------------------------------- *)
 
@@ -707,11 +734,16 @@ type t =
     gid : Gid.t;
     time : Time.t;
     typeCreator : TypeCreator.t;
-    length : Uutil.Filesize.t }
+    length : Uutil.Filesize.t;
+    ctime : CTime.t }
 
-let m = Umarshal.(prod6 Perm.m Uid.m Gid.m Time.m TypeCreator.m Uutil.Filesize.m
-                    (fun {perm; uid; gid; time; typeCreator; length} -> perm, uid, gid, time, typeCreator, length)
-                    (fun (perm, uid, gid, time, typeCreator, length) -> {perm; uid; gid; time; typeCreator; length}))
+let m = Umarshal.(prod2
+                    (prod6 Perm.m Uid.m Gid.m Time.m TypeCreator.m Uutil.Filesize.m id id)
+                    CTime.m
+                    (fun {perm; uid; gid; time; typeCreator; length; ctime} ->
+                       ((perm, uid, gid, time, typeCreator, length), ctime))
+                    (fun ((perm, uid, gid, time, typeCreator, length), ctime) ->
+                       {perm; uid; gid; time; typeCreator; length; ctime}))
 
 let to_compat251 (p : t) : t251 =
   { perm = p.perm;
@@ -727,12 +759,15 @@ let of_compat251 (p : t251) : t =
     gid = p.gid;
     time = p.time;
     typeCreator = p.typeCreator;
-    length = p.length }
+    length = p.length;
+    ctime = CTime.dummy
+  }
 
 let template perm =
   { perm = perm; uid = Uid.dummy; gid = Gid.dummy;
     time = Time.dummy; typeCreator = TypeCreator.dummy;
-    length = Uutil.Filesize.dummy }
+    length = Uutil.Filesize.dummy; ctime = CTime.dummy
+  }
 
 let dummy = template Perm.dummy
 
@@ -772,7 +807,9 @@ let override p p' =
     gid = Gid.override p.gid p'.gid;
     time = Time.override p.time p'.time;
     typeCreator = TypeCreator.override p.typeCreator p'.typeCreator;
-    length = p'.length }
+    length = p'.length;
+    ctime = p'.ctime
+  }
 
 let strip p =
   { perm = Perm.strip p.perm;
@@ -780,7 +817,9 @@ let strip p =
     gid = Gid.strip p.gid;
     time = Time.strip p.time;
     typeCreator = TypeCreator.strip p.typeCreator;
-    length = p.length }
+    length = p.length;
+    ctime = p.ctime
+  }
 
 let toString p =
   Printf.sprintf
@@ -810,9 +849,12 @@ let diff p p' =
     gid = Gid.diff p.gid p'.gid;
     time = Time.diff p.time p'.time;
     typeCreator = TypeCreator.diff p.typeCreator p'.typeCreator;
-    length = p'.length }
+    length = p'.length;
+    ctime = p'.ctime
+  }
 
 let get stats infos =
+  let ctime = CTime.get stats in
   { perm = Perm.get stats infos;
     uid = Uid.get stats infos;
     gid = Gid.get stats infos;
@@ -822,7 +864,9 @@ let get stats infos =
       if stats.Unix.LargeFile.st_kind = Unix.S_REG then
         Uutil.Filesize.fromStats stats
       else
-        Uutil.Filesize.zero }
+        Uutil.Filesize.zero;
+    ctime
+  }
 
 let set fspath path kind p =
   Uid.set fspath path kind p.uid;
