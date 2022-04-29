@@ -45,7 +45,7 @@ let lwt_protect f g =
    matches newfp.  Otherwise, check whether the source file has been
    modified during synchronization. *)
 let checkForChangesToSourceLocal
-      fspathFrom pathFrom archDesc archFp archStamp archRess newFpOpt paranoid =
+      fspathFrom pathFrom archDesc archFp archStamp newFpOpt paranoid =
   (* Retrieve attributes of current source file *)
   let sourceInfo = Fileinfo.getBasicWithRess true fspathFrom pathFrom in
   let sourceType = sourceInfo.Fileinfo.typ in
@@ -56,8 +56,8 @@ let checkForChangesToSourceLocal
       let clearlyChanged =
            sourceType <> `FILE
         || Props.length sourceInfo.Fileinfo.desc <> Props.length archDesc
-        || Osx.ressLength sourceInfo.Fileinfo.osX.Osx.ressInfo <>
-           Osx.ressLength archRess    in
+        || Props.ressLength sourceInfo.Fileinfo.desc <> Props.ressLength archDesc
+      in
       let dataClearlyUnchanged =
            not clearlyChanged
         && Props.same_time sourceInfo.Fileinfo.desc archDesc
@@ -69,7 +69,7 @@ let checkForChangesToSourceLocal
            | None                             -> false   in
       let ressClearlyUnchanged =
            not clearlyChanged
-        && Osx.ressUnchanged archRess sourceInfo.Fileinfo.osX.Osx.ressInfo
+        && Props.ressUnchanged archDesc sourceInfo.Fileinfo.desc
                              None dataClearlyUnchanged   in
       if dataClearlyUnchanged && ressClearlyUnchanged then begin
         if paranoid && not (Os.isPseudoFingerprint archFp) then begin
@@ -103,11 +103,24 @@ let checkForChangesToSourceLocal
            Transfer aborted."
           (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
 
+let ifArchBefore202205 = Umarshal.cond Compat.isArchBefore202205 Osx.ressDummy
+
 let mcheckForChangesToSource =
   Umarshal.(prod2
               (prod4 Path.mlocal Props.m Os.mfullfingerprint (option Fileinfo.mstamp) id id)
-              (prod3 Osx.mressStamp (option Os.mfullfingerprint) bool id id)
-              id id)
+              (prod3 (ifArchBefore202205 Osx.mressStamp) (option Os.mfullfingerprint) bool id id)
+              (fun
+                 ((pathFrom, archDesc, archFp, archStamp),
+                  (newFpOpt, paranoid)) ->
+                 ((pathFrom, archDesc, archFp, archStamp),
+                  (Props.Compat.getRessStamp archDesc, newFpOpt, paranoid)))
+              (fun
+                 ((pathFrom, archDesc, archFp, archStamp),
+                  (archRess, newFpOpt, paranoid)) ->
+                 ((pathFrom, (if Compat.isArchBefore202205 () then
+                                Props.Compat.setRessStamp archDesc archRess
+                              else archDesc), archFp, archStamp),
+                  (newFpOpt, paranoid))))
 
 let archStamp_to_compat251 = function
   | Some stamp -> Some (Fileinfo.stamp_to_compat251 stamp)
@@ -119,42 +132,41 @@ let archStamp_of_compat251 = function
 
 let convV0 = Remote.makeConvV0FunArg
   (fun (fspathFrom,
-          ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))) ->
+          ((pathFrom, archDesc, archFp, archStamp), (newFpOpt, paranoid))) ->
        (fspathFrom,
           (pathFrom, Props.to_compat251 archDesc, archFp,
-            archStamp_to_compat251 archStamp, archRess, newFpOpt, paranoid)))
+            archStamp_to_compat251 archStamp, Props.Compat.getRessStamp archDesc, newFpOpt, paranoid)))
   (fun (fspathFrom,
           (pathFrom, archDesc, archFp, archStamp, archRess, newFpOpt, paranoid)) ->
        (fspathFrom,
-          ((pathFrom, Props.of_compat251 archDesc, archFp,
-            archStamp_of_compat251 archStamp), (archRess, newFpOpt, paranoid))))
+          ((pathFrom, Props.Compat.setRessStamp (Props.of_compat251 archDesc) archRess, archFp,
+            archStamp_of_compat251 archStamp), (newFpOpt, paranoid))))
 
 let checkForChangesToSourceOnRoot =
   Remote.registerRootCmd
     "checkForChangesToSource" ~convV0
     mcheckForChangesToSource Umarshal.unit
     (fun (fspathFrom,
-          ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))) ->
+          ((pathFrom, archDesc, archFp, archStamp), (newFpOpt, paranoid))) ->
       checkForChangesToSourceLocal
-        fspathFrom pathFrom archDesc archFp archStamp archRess newFpOpt paranoid;
+        fspathFrom pathFrom archDesc archFp archStamp newFpOpt paranoid;
       Lwt.return ())
 
 let checkForChangesToSource
-      root pathFrom archDesc archFp archStamp archRess newFpOpt paranoid =
+      root pathFrom archDesc archFp archStamp newFpOpt paranoid =
   checkForChangesToSourceOnRoot
-    root ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))
+    root ((pathFrom, archDesc, archFp, archStamp), (newFpOpt, paranoid))
 
 (****)
 
-let fileIsTransferred fspathTo pathTo desc fp ress =
+let fileIsTransferred fspathTo pathTo desc fp =
   let info = Fileinfo.getBasicWithRess false fspathTo pathTo in
   (Fileinfo.basic info,
    info.Fileinfo.typ = `FILE
      &&
    Props.length info.Fileinfo.desc = Props.length desc
      &&
-   Osx.ressLength info.Fileinfo.osX.Osx.ressInfo =
-   Osx.ressLength ress
+   Props.ressLength info.Fileinfo.desc = Props.ressLength desc
      &&
    let fp' = Os.fingerprint fspathTo pathTo info.Fileinfo.typ in
    fp' = fp)
@@ -249,7 +261,7 @@ let transferStatus_of_compat251 (st : transferStatus251) : transferStatus =
    that we can check in checkForChangesToSource when we've
    calculated the current source fingerprint.
  *)
-let paranoidCheck fspathTo pathTo realPathTo desc fp ress =
+let paranoidCheck fspathTo pathTo realPathTo desc fp =
   let info = Fileinfo.getBasic false fspathTo pathTo in
   let fp' = Os.fingerprint fspathTo pathTo info.Fileinfo.typ in
   if Os.isPseudoFingerprint fp then begin
@@ -371,7 +383,7 @@ let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
     (fun () -> close_in_noerr inFd)
 
 let localFile
-     fspathFrom pathFrom fspathTo pathTo realPathTo update desc ressLength ido =
+     fspathFrom pathFrom fspathTo pathTo realPathTo update desc ido =
   Util.convertUnixErrorsToTransient
     "copying locally"
     (fun () ->
@@ -382,6 +394,7 @@ let localFile
       removeOldTempFile fspathTo pathTo;
       copyContents
         fspathFrom pathFrom fspathTo pathTo `DATA (Props.length desc) ido;
+      let ressLength = Props.ressLength desc in
       if ressLength > Uutil.Filesize.zero then
         copyContents
           fspathFrom pathFrom fspathTo pathTo `RESS ressLength ido;
@@ -389,7 +402,7 @@ let localFile
 
 (****)
 
-let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
+let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp id =
   if not (Prefs.read Xferhint.xferbycopying) then None else
   Util.convertUnixErrorsToTransient "tryCopyMovedFile" (fun() ->
     debug (fun () -> Util.msg "tryCopyMovedFile: -> %s /%s/\n"
@@ -415,9 +428,9 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
           then begin
             localFile
               candidateFspath candidatePath fspathTo pathTo realPathTo
-              update desc (Osx.ressLength ress) (Some id);
+              update desc (Some id);
             let (info, isTransferred) =
-              fileIsTransferred fspathTo pathTo desc fp ress in
+              fileIsTransferred fspathTo pathTo desc fp in
             if isTransferred then begin
               debug (fun () -> Util.msg "tryCopyMoveFile: success.\n");
               let msg =
@@ -693,11 +706,11 @@ let transferFileContents
 
 let transferResourceForkAndSetFileinfo
       connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
-      update desc fp ress id =
+      update desc fp id =
   (* Resource fork *)
   debug (fun() -> Util.msg "transferResourceForkAndSetFileinfo %s\n"
     (Path.toString pathTo));
-  let ressLength = Osx.ressLength ress in
+  let ressLength = Props.ressLength desc in
   begin if ressLength > Uutil.Filesize.zero then begin
     debug (fun() -> Util.msg "starting resource fork transfer for %s\n"
       (Path.toString pathTo));
@@ -710,11 +723,11 @@ let transferResourceForkAndSetFileinfo
   setFileinfo fspathTo pathTo realPathTo update desc;
   debug (fun() -> Util.msg "Resource fork transferred for %s; doing last paranoid check\n"
     (Path.toString realPathTo));
-  paranoidCheck fspathTo pathTo realPathTo desc fp ress
+  paranoidCheck fspathTo pathTo realPathTo desc fp
 
 let reallyTransferFile
       connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
-      update desc fp ress id tempInfo =
+      update desc fp id tempInfo =
   debug (fun() -> Util.msg "reallyTransferFile(%s,%s) -> (%s,%s,%s,%s)\n"
       (Fspath.toDebugString fspathFrom) (Path.toString pathFrom)
       (Fspath.toDebugString fspathTo) (Path.toString pathTo)
@@ -737,7 +750,7 @@ let reallyTransferFile
     (Props.length desc) id >>= fun () ->
   transferResourceForkAndSetFileinfo
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
-    update desc fp ress id
+    update desc fp id
 
 (****)
 
@@ -888,7 +901,7 @@ let prepareExternalTransfer fspathTo pathTo =
 
 let finishExternalTransferLocal connFrom
       ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-       (update, desc, fp, ress, id)) =
+       (update, desc, fp, id)) =
   let info = Fileinfo.getBasic false fspathTo pathTo in
   if
     info.Fileinfo.typ <> `FILE ||
@@ -899,19 +912,19 @@ let finishExternalTransferLocal connFrom
           (Path.toString pathTo)));
   transferResourceForkAndSetFileinfo
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
-    update desc fp ress id >>= fun res ->
+    update desc fp id >>= fun res ->
   Xferhint.insertEntry fspathTo pathTo fp;
   Lwt.return res
 
 let convV0 = Remote.makeConvV0Funs
   (fun ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, desc, fp, ress, id)) ->
+         (update, desc, fp, id)) ->
        (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-         update, Props.to_compat251 desc, fp, ress, id))
+         update, Props.to_compat251 desc, fp, Props.Compat.getRessStamp desc, id))
   (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
          update, desc, fp, ress, id) ->
        ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, Props.of_compat251 desc, fp, ress, id)))
+         (update, Props.Compat.setRessStamp (Props.of_compat251 desc) ress, fp, id)))
   transferStatus_to_compat251
   transferStatus_of_compat251
 
@@ -923,10 +936,18 @@ let mcopyOrUpdate = Umarshal.(sum2 unit (prod2 Uutil.Filesize.m Uutil.Filesize.m
                                  | I21 () -> `Copy
                                  | I22 (a, b) -> `Update (a, b)))
 
-let mfinishExternalTransfer = Umarshal.(prod2
-                                          (prod5 Fspath.m Path.mlocal Fspath.m Path.mlocal Path.mlocal id id)
-                                          (prod5 mcopyOrUpdate Props.m Os.mfullfingerprint Osx.mressStamp Uutil.File.m id id)
-                                          id id)
+let mfinishExternalTransfer =
+  Umarshal.(prod2
+              (prod5 Fspath.m Path.mlocal Fspath.m Path.mlocal Path.mlocal id id)
+              (prod5 mcopyOrUpdate Props.m Os.mfullfingerprint
+                 (ifArchBefore202205 Osx.mressStamp) Uutil.File.m
+                 (fun (update, desc, fp, id) ->
+                    (update, desc, fp, Props.Compat.getRessStamp desc, id))
+                 (fun (update, desc, fp, ress, id) ->
+                    (update, (if Compat.isArchBefore202205 () then
+                                Props.Compat.setRessStamp desc ress
+                              else desc), fp, id)))
+              id id)
 
 let finishExternalTransferOnRoot =
   Remote.registerRootCmdWithConnection
@@ -937,7 +958,7 @@ let copyprogReg = Lwt_util.make_region 1
 
 let transferFileUsingExternalCopyprog
              rootFrom pathFrom rootTo fspathTo pathTo realPathTo
-             update desc fp ress id useExistingTarget =
+             update desc fp id useExistingTarget =
   Uutil.showProgress id Uutil.Filesize.zero "ext";
   let prog =
     if useExistingTarget then
@@ -975,15 +996,15 @@ let transferFileUsingExternalCopyprog
   Uutil.showProgress id (Props.length desc) "ext";
   finishExternalTransferOnRoot rootTo rootFrom
     ((snd rootFrom, pathFrom, fspathTo, pathTo, realPathTo),
-     (update, desc, fp, ress, id))
+     (update, desc, fp, id))
 
 (****)
 
 let transferFileLocal connFrom
       ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-       (update, desc, fp, ress, id)) =
+       (update, desc, fp, id)) =
   let (tempInfo, isTransferred) =
-    fileIsTransferred fspathTo pathTo desc fp ress in
+    fileIsTransferred fspathTo pathTo desc fp in
   if isTransferred then begin
     (* File is already fully transferred (from some interrupted
        previous transfer).  So just make sure permissions are right. *)
@@ -991,7 +1012,7 @@ let transferFileLocal connFrom
       Printf.sprintf
         "%s/%s has already been transferred\n"
         (Fspath.toDebugString fspathTo) (Path.toString realPathTo) in
-    let len = Uutil.Filesize.add (Props.length desc) (Osx.ressLength ress) in
+    let len = Props.totalCombinedLength desc in
     Uutil.showProgress id len "alr";
     setFileinfo fspathTo pathTo realPathTo update desc;
     Xferhint.insertEntry fspathTo pathTo fp;
@@ -1000,7 +1021,7 @@ let transferFileLocal connFrom
     registerFileTransfer pathTo fp
       (fun () ->
          match
-           tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id
+           tryCopyMovedFile fspathTo pathTo realPathTo update desc fp id
          with
            Some (info, msg) ->
              (* Transfer was performed by copying *)
@@ -1013,20 +1034,20 @@ let transferFileLocal connFrom
              else begin
                reallyTransferFile
                  connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
-                 update desc fp ress id tempInfo >>= fun status ->
+                 update desc fp id tempInfo >>= fun status ->
                Xferhint.insertEntry fspathTo pathTo fp;
                Lwt.return (`DONE (status, None))
              end)
 
 let convV0 = Remote.makeConvV0Funs
   (fun ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, desc, fp, ress, id)) ->
+         (update, desc, fp, id)) ->
        (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-         update, Props.to_compat251 desc, fp, ress, id))
+         update, Props.to_compat251 desc, fp, Props.Compat.getRessStamp desc, id))
   (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
          update, desc, fp, ress, id) ->
        ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, Props.of_compat251 desc, fp, ress, id)))
+         (update, Props.Compat.setRessStamp (Props.of_compat251 desc) ress, fp, id)))
   (function
    | `DONE (a, b) -> `DONE (transferStatus_to_compat251 a, b)
    | `EXTERNAL a -> `EXTERNAL a)
@@ -1059,12 +1080,12 @@ let bufferSize sz =
 
 let transferFile
       rootFrom pathFrom rootTo fspathTo pathTo realPathTo
-      update desc fp ress id =
+      update desc fp id =
   let f () =
     Abort.check id;
     transferFileOnRoot rootTo rootFrom
       ((snd rootFrom, pathFrom, fspathTo, pathTo, realPathTo),
-       (update, desc, fp, ress, id)) >>= fun status ->
+       (update, desc, fp, id)) >>= fun status ->
     match status with
       `DONE (status, msg) ->
          begin match msg with
@@ -1074,7 +1095,7 @@ let transferFile
                 transferred so far here. *)
              if fst rootTo <> Common.Local then begin
                let len =
-                 Uutil.Filesize.add (Props.length desc) (Osx.ressLength ress)
+                 Props.totalCombinedLength desc
                in
                Uutil.showProgress id len "rem"
              end;
@@ -1086,20 +1107,20 @@ let transferFile
     | `EXTERNAL useExistingTarget ->
          transferFileUsingExternalCopyprog
            rootFrom pathFrom rootTo fspathTo pathTo realPathTo
-           update desc fp ress id useExistingTarget
+           update desc fp id useExistingTarget
   in
   (* When streaming, we only transfer one file at a time, so we don't
      need to limit the number of concurrent transfers *)
   if Prefs.read Remote.streamingActivated then
     f ()
   else
-    let bufSz = bufferSize (max (Props.length desc) (Osx.ressLength ress)) in
+    let bufSz = bufferSize (max (Props.length desc) (Props.ressLength desc)) in
     Lwt_util.run_in_region transferFileReg bufSz f
 
 (****)
 
 let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
-         update desc fp stamp ress id =
+         update desc fp stamp id =
   debug (fun() -> Util.msg "copyRegFile(%s,%s) -> (%s,%s,%s,%s,%s)\n"
       (Common.root2string rootFrom) (Path.toString pathFrom)
       (Common.root2string rootTo) (Path.toString realPathTo)
@@ -1110,17 +1131,17 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
     (Common.Local, fspathFrom), (Common.Local, realFspathTo) ->
       localFile
         fspathFrom pathFrom fspathTo pathTo realPathTo
-        update desc (Osx.ressLength ress) (Some id);
-        paranoidCheck fspathTo pathTo realPathTo desc fp ress
+        update desc (Some id);
+        paranoidCheck fspathTo pathTo realPathTo desc fp
   | _ ->
       transferFile
         rootFrom pathFrom rootTo fspathTo pathTo realPathTo
-        update desc fp ress id
+        update desc fp id
   end >>= fun status ->
   Trace.showTimer timer;
   match status with
     TransferSucceeded info ->
-      checkForChangesToSource rootFrom pathFrom desc fp stamp ress None false
+      checkForChangesToSource rootFrom pathFrom desc fp stamp None false
         >>= fun () ->
       Lwt.return info
   | TransferNeedsDoubleCheckAgainstCurrentSource (info,newfp) ->
@@ -1129,7 +1150,7 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
                (Path.toString realPathTo));
 
       checkForChangesToSource rootFrom pathFrom
-                              desc fp stamp ress (Some newfp) false
+                              desc fp stamp (Some newfp) false
         >>= (fun () ->
       Lwt.return info)
   | TransferFailed reason ->
@@ -1137,7 +1158,7 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
         reason (Path.toString pathTo) (Path.toString realPathTo));
       (* Maybe we failed because the source file was modified.
          We check this before reporting a failure *)
-      checkForChangesToSource rootFrom pathFrom desc fp stamp ress None true
+      checkForChangesToSource rootFrom pathFrom desc fp stamp None true
         >>= fun () ->
       (* This function never returns (it is supposed to fail) *)
       saveTempFileOnRoot rootTo (pathTo, realPathTo, reason) >>= fun () ->
@@ -1159,8 +1180,7 @@ let recursively fspathFrom pathFrom fspathTo pathTo =
           (Fspath.toDebugString fspathFrom) (Path.toString pFrom)
           (Fspath.toDebugString fspathTo) (Path.toString pTo));
         localFile fspathFrom pFrom fspathTo pTo pTo
-          `Copy info.Fileinfo.desc
-          (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)  None
+          `Copy info.Fileinfo.desc None
     | `DIRECTORY ->
         debug (fun () -> Util.msg "  Copying directory %s / %s to %s / %s\n"
           (Fspath.toDebugString fspathFrom) (Path.toString pFrom)

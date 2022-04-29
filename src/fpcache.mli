@@ -11,18 +11,18 @@ val finish : unit -> unit
 val fingerprint :
   ?newfile:bool ->
   bool -> Fspath.t -> Path.local -> Fileinfo.t -> Os.fullfingerprint option ->
-  Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  Props.t * Os.fullfingerprint * Fileinfo.stamp
 
 (* Add an entry to the cache *)
 val save :
   Path.local ->
-  Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp -> unit
+  Props.t * Os.fullfingerprint * Fileinfo.stamp -> unit
 
 (****)
 
 val dataClearlyUnchanged :
   bool -> Path.local -> Fileinfo.t -> Props.t -> Fileinfo.stamp -> bool
 val ressClearlyUnchanged :
-  bool -> Fileinfo.t -> 'a Osx.ressInfo -> bool -> bool
+  bool -> Fileinfo.t -> Props.t -> bool -> bool
 (* Is that a file for which fast checking is disabled? *)
 val excelFile : Path.local -> bool

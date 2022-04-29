@@ -32,10 +32,10 @@ let tbl = PathTbl.create 101
 (* Information for writing to the on-disk cache *)
 
 type entry =
-  int * string * (Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp)
+  int * string * (Props.t * Os.fullfingerprint * Fileinfo.stamp)
 
 let mentry = Umarshal.(prod3 int string
-                         (prod4 Props.m Os.mfullfingerprint Fileinfo.mstamp Osx.mressStamp id id)
+                         (prod3 Props.m Os.mfullfingerprint Fileinfo.mstamp id id)
                          id id)
 
 let mentry_list = Umarshal.list mentry
@@ -139,7 +139,7 @@ let finish () =
                closeOut st
   | None    -> ()
 
-let magic = "Unison fingerprint cache format 3"
+let magic = "Unison fingerprint cache format 4"
 
 let init fastCheck ignorearchives fspath =
   finish ();
@@ -198,8 +198,8 @@ let save path v =
     None ->
       ()
   | Some state ->
-      let (desc, _, _, _) = v in
-      let l = Props.length desc in
+      let (desc, _, _) = v in
+      let l = Props.totalCombinedLength desc in
       state.size <- Uutil.Filesize.add state.size l;
       state.count <- state.count + 1;
       let (l, s) = compress state path in
@@ -235,17 +235,17 @@ let dataClearlyUnchanged fastCheck path info desc stamp =
   | Fileinfo.RescanStamp ->
       false
 
-let ressClearlyUnchanged fastCheck info ress dataClearlyUnchanged =
+let ressClearlyUnchanged fastCheck info desc dataClearlyUnchanged =
   fastCheck
     &&
-  Osx.ressUnchanged ress info.Fileinfo.osX.Osx.ressInfo
+  Props.ressUnchanged desc info.Fileinfo.desc
     None dataClearlyUnchanged
 
-let clearlyUnchanged fastCheck path newInfo oldDesc oldStamp oldRess =
+let clearlyUnchanged fastCheck path newInfo oldDesc oldStamp =
   let du =
     dataClearlyUnchanged fastCheck path newInfo oldDesc oldStamp
   in
-  du && ressClearlyUnchanged fastCheck newInfo oldRess du
+  du && ressClearlyUnchanged fastCheck newInfo oldDesc du
 
 let fastercheckUNSAFE =
   Prefs.createBool "fastercheckUNSAFE" false
@@ -283,17 +283,16 @@ let fastercheckUNSAFE =
 let fingerprint ?(newfile=false) fastCheck currfspath path info optFp =
   let res =
     try
-      let (cachedDesc, cachedFp, cachedStamp, cachedRess) =
+      let (cachedDesc, cachedFp, cachedStamp) =
         PathTbl.find tbl (Path.toString path) in
       if
         not (clearlyUnchanged
-               fastCheck path info cachedDesc cachedStamp cachedRess)
+               fastCheck path info cachedDesc cachedStamp)
       then
         raise Not_found;
       debug (fun () -> Util.msg "cache hit for path %s\n"
                          (Path.toDebugString path));
-      (info.Fileinfo.desc, cachedFp, Fileinfo.stamp info,
-       Fileinfo.ressStamp info)
+      (info.Fileinfo.desc, cachedFp, Fileinfo.stamp info)
     with Not_found ->
       if fastCheck then
         debug (fun () -> Util.msg "cache miss for path %s\n"
@@ -307,7 +306,7 @@ let fingerprint ?(newfile=false) fastCheck currfspath path info optFp =
         end else begin
           Os.safeFingerprint currfspath path info optFp
         end in
-      (info.Fileinfo.desc, dig, Fileinfo.stamp info, Fileinfo.ressStamp info)
+      (info.Fileinfo.desc, dig, Fileinfo.stamp info)
   in
   save path res;
   res

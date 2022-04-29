@@ -471,7 +471,6 @@ let rec stashCurrentVersion fspath path sourcePathOpt =
                 stashFspath stashPath stashPath
                 `Copy
                 stat.Fileinfo.desc
-                (Osx.ressLength stat.Fileinfo.osX.Osx.ressInfo)
                 None
           end)
 

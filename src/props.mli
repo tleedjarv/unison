@@ -25,16 +25,21 @@ val toString : t -> string
 val syncedPartsToString : t -> string
 val set : Fspath.t -> Path.local -> [`Set | `Update] -> t -> unit
 val get' : Unix.LargeFile.stats -> basic
-val get : Unix.LargeFile.stats -> Osx.info -> t
+val get : Fspath.t -> Path.local -> Unix.LargeFile.stats -> [> `FILE | `DIRECTORY] -> t
+val getWithRess : Fspath.t -> Path.local -> Unix.LargeFile.stats -> [> `FILE | `DIRECTORY] -> basic
 val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
 val init : bool -> unit
 
 val same_time : _ props -> t -> bool
 val length : _ props -> Uutil.Filesize.t
+val totalCombinedLength : t -> Uutil.Filesize.t
 val setLength : t -> Uutil.Filesize.t -> t
 val time : _ props -> float
 val setTime : t -> float -> t
 val perms : _ props -> int
+
+val ressUnchanged : _ props -> _ props -> float option -> bool -> bool
+val ressLength : _ props -> Uutil.Filesize.t
 
 val fileDefault : basic
 val fileSafe : t
@@ -54,3 +59,11 @@ val setDirChangeFlag : t -> dirChangedStamp -> int -> t * bool
 val dirMarkedUnchanged : t -> dirChangedStamp -> int -> bool
 
 val validatePrefs: unit -> unit
+
+(* Functions for backwards compatibility with older versions.
+   DO NOT USE for any other purpose! *)
+module Compat : sig
+  val getRessStamp : _ props -> Osx.ressStamp
+  val setRessStamp : t -> Osx.ressStamp -> t
+  val basic_setRessStamp : basic -> Osx.ressStamp -> basic
+end

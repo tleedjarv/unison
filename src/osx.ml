@@ -210,9 +210,25 @@ type info =
   { ressInfo : (Fspath.t * int64) ressInfo;
     finfo : string }
 
-let minfo = Umarshal.(prod2 (mressInfo (prod2 Fspath.m int64 id id)) string
-                        (fun {ressInfo; finfo} -> ressInfo, finfo)
-                        (fun (ressInfo, finfo) -> {ressInfo; finfo}))
+(* For backwards compatibility only! Do not use for current code.
+   The real type used in old code is [Fspath.m] but it is replaced
+   here with [string] for simplicity. The wire format for these
+   types is the same. *)
+let minfo_compat =
+  Umarshal.(prod2 (mressInfo (prod2 string int64 id id)) string
+              (fun ressS -> ((
+                 match ressS with
+                 | NoRess -> NoRess
+                 | HfsRess _ as s -> s
+                 | AppleDoubleRess (inode, mtime, ctime, len, _) ->
+                     AppleDoubleRess (inode, mtime, ctime, len, ("", 0L))),
+                 ""))
+              (fun (ressS, _) ->
+                 match ressS with
+                 | NoRess -> NoRess
+                 | HfsRess _ as s -> s
+                 | AppleDoubleRess (inode, mtime, ctime, len, _) ->
+                     AppleDoubleRess (inode, mtime, ctime, len, ())))
 
 external getFileInfosInternal :
   string -> bool -> string * int64 = "getFileInfos"
@@ -470,6 +486,14 @@ let stamp info =
       s
   | AppleDoubleRess (inode, mtime, ctime, len, _) ->
       AppleDoubleRess (inode, mtime, ctime, len, ())
+
+let stampRev = function
+  | NoRess ->
+      {ressInfo = NoRess; finfo = ""}
+  | (HfsRess len) as s ->
+      {ressInfo = s; finfo = ""}
+  | AppleDoubleRess (inode, mtime, ctime, len, _) ->
+      {ressInfo = AppleDoubleRess (inode, mtime, ctime, len, (Fspath.dummy, 0L)); finfo = ""}
 
 let ressFingerprint fspath path typ =
   (* This function used to get ready-made info passed in. (Re-)getting the

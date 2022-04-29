@@ -15,6 +15,10 @@ val toString : t -> string
 val toPrintString : t -> string
 val toDebugString : t -> string
 
+(* CAUTION! Do not use! This is not a valid path! It is only used as a hack
+   to provide backwards compatibility with versions older than 2.52 *)
+val dummy : t
+
 (* If fspath+path refers to a (followed) symlink, then return the directory  *)
 (* of the symlink's target; otherwise return the parent dir of path.  If     *)
 (* fspath+path is a root directory, raise Fatal.                             *)

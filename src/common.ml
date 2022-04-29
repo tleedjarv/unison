@@ -78,17 +78,24 @@ type prevState251 =
   | New
 
 type prevState =
-    Previous of Fileinfo.typ * Props.t * Os.fullfingerprint * Osx.ressStamp
+    Previous of Fileinfo.typ * Props.t * Os.fullfingerprint
   | New
 
+let ifArchBefore202205 = Umarshal.cond Compat.isArchBefore202205 Osx.ressDummy
+
 let mprevState = Umarshal.(sum2
-                             (prod4 Fileinfo.mtyp Props.m Os.mfullfingerprint Osx.mressStamp id id)
+                             (prod4 Fileinfo.mtyp Props.m Os.mfullfingerprint (ifArchBefore202205 Osx.mressStamp) id id)
                              unit
                              (function
-                              | Previous (a, b, c, d) -> I21 (a, b, c, d)
+                              | Previous (a, b, c) ->
+                                  I21 (a, b, c, Props.Compat.getRessStamp b)
                               | New -> I22 ())
                              (function
-                              | I21 (a, b, c, d) -> Previous (a, b, c, d)
+                              | I21 (a, b, c, d) ->
+                                  Previous (a,
+                                    (if Compat.isArchBefore202205 () then
+                                       Props.Compat.setRessStamp b d
+                                     else b), c)
                               | I22 () -> New))
 
 (* IMPORTANT!
@@ -103,15 +110,15 @@ type contentschange251 =
 
 type contentschange =
     ContentsSame
-  | ContentsUpdated of Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | ContentsUpdated of Os.fullfingerprint * Fileinfo.stamp
 
-let mcontentschange = Umarshal.(sum2 unit (prod3 Os.mfullfingerprint Fileinfo.mstamp Osx.mressStamp id id)
+let mcontentschange = Umarshal.(sum2 unit (prod3 Os.mfullfingerprint Fileinfo.mstamp (ifArchBefore202205 Osx.mressStamp) id id)
                                   (function
-                                   | ContentsSame -> I21 ()
-                                   | ContentsUpdated (a, b, c) -> I22 (a, b, c))
+                                   | (ContentsSame, _) -> I21 ()
+                                   | (ContentsUpdated (a, b), c) -> I22 (a, b, c))
                                   (function
-                                   | I21 () -> ContentsSame
-                                   | I22 (a, b, c) -> ContentsUpdated (a, b, c)))
+                                   | I21 () -> (ContentsSame, Osx.ressDummy)
+                                   | I22 (a, b, c) -> (ContentsUpdated (a, b), c)))
 
 type permchange     = PropsSame    | PropsUpdated
 
@@ -192,12 +199,16 @@ let mupdateContent_rec mupdateItem =
               string
               (function
                | Absent -> I41 ()
-               | File (a, b) -> I42 (a, b)
+               | File (a, b) -> I42 (a, (b, Props.Compat.getRessStamp a))
                | Dir (a, b, c, d) -> I43 (a, b, c, d)
                | Symlink a -> I44 a)
               (function
                | I41 () -> Absent
-               | I42 (a, b) -> File (a, b)
+               | I42 (a, (b, c)) ->
+                   File ((match b with
+                          | ContentsUpdated _ when Compat.isArchBefore202205 () ->
+                              Props.Compat.setRessStamp a c
+                          | _ -> a), b)
                | I43 (a, b, c, d) -> Dir (a, b, c, d)
                | I44 a -> Symlink a))
 
@@ -208,27 +219,27 @@ let mupdateContent, mupdateItem =
 
 let prev_to_compat251 (prev : prevState) : prevState251 =
   match prev with
-  | Previous (typ, props, fp, ress) ->
-      Previous (typ, Props.to_compat251 props, fp, ress)
+  | Previous (typ, props, fp) ->
+      Previous (typ, Props.to_compat251 props, fp, Props.Compat.getRessStamp props)
   | New -> New
 
 let prev_of_compat251 (prev : prevState251) : prevState =
   match prev with
   | Previous (typ, props, fp, ress) ->
-      Previous (typ, Props.of_compat251 props, fp, ress)
+      Previous (typ, Props.Compat.setRessStamp (Props.of_compat251 props) ress, fp)
   | New -> New
 
-let change_to_compat251 (c : contentschange) : contentschange251 =
+let change_to_compat251 (c : contentschange) ress : contentschange251 =
   match c with
   | ContentsSame -> ContentsSame
-  | ContentsUpdated (fp, stamp, ress) ->
+  | ContentsUpdated (fp, stamp) ->
       ContentsUpdated (fp, Fileinfo.stamp_to_compat251 stamp, ress)
 
-let change_of_compat251 (c : contentschange251) : contentschange =
+let change_of_compat251 (c : contentschange251) : (contentschange * _) =
   match c with
-  | ContentsSame -> ContentsSame
+  | ContentsSame -> (ContentsSame, None)
   | ContentsUpdated (fp, stamp, ress) ->
-      ContentsUpdated (fp, Fileinfo.stamp_of_compat251 stamp, ress)
+      (ContentsUpdated (fp, Fileinfo.stamp_of_compat251 stamp), Some ress)
 
 let rec ui_to_compat251 (ui : updateItem) : updateItem251 =
   match ui with
@@ -252,7 +263,8 @@ and uc_to_compat251 (uc : updateContent) : updateContent251 =
   match uc with
   | Absent -> Absent
   | File (props, change) ->
-      File (Props.to_compat251 props, change_to_compat251 change)
+      File (Props.to_compat251 props,
+            change_to_compat251 change (Props.Compat.getRessStamp props))
   | Dir (props, ch, perm, empty) ->
       Dir (Props.to_compat251 props, children_to_compat251 ch, perm, empty)
   | Symlink s -> Symlink s
@@ -261,7 +273,12 @@ and uc_of_compat251 (uc : updateContent251) : updateContent =
   match uc with
   | Absent -> Absent
   | File (props, change) ->
-      File (Props.of_compat251 props, change_of_compat251 change)
+      let props' = Props.of_compat251 props
+      and (change', ress) = change_of_compat251 change in
+      begin match ress with
+        | None -> File (props', change')
+        | Some ress' -> File (Props.Compat.setRessStamp props' ress', change')
+      end
   | Dir (props, ch, perm, empty) ->
       Dir (Props.of_compat251 props, children_of_compat251 ch, perm, empty)
   | Symlink s -> Symlink s
@@ -313,15 +330,6 @@ type replicas =
 
 type reconItem = {path1 : Path.t; path2 : Path.t; replicas : replicas}
 
-let ucLength = function
-    File(desc,_)    -> Props.length desc
-  | Dir(desc,_,_,_) -> Props.length desc
-  | _               -> Uutil.Filesize.zero
-
-let uiLength = function
-    Updates(uc,_) -> ucLength uc
-  | _             -> Uutil.Filesize.zero
-
 let riAction rc rc' =
   match rc.status, rc'.status with
     `Deleted, _ ->
@@ -354,21 +362,21 @@ let riLength ri =
 
 let fileInfos ui1 ui2 =
   match ui1, ui2 with
-    (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)),
-              Previous (`FILE, desc2, fp2, ress2)),
+    (Updates (File (desc1, ContentsUpdated (fp1, _)),
+              Previous (`FILE, desc2, fp2)),
      NoUpdates)
-  | (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)),
-              Previous (`FILE, desc2, fp2, ress2)),
+  | (Updates (File (desc1, ContentsUpdated (fp1, _)),
+              Previous (`FILE, desc2, fp2)),
      Updates (File (_, ContentsSame), _))
   | (NoUpdates,
-     Updates (File (desc2, ContentsUpdated (fp2, _, ress2)),
-              Previous (`FILE, desc1, fp1, ress1)))
+     Updates (File (desc2, ContentsUpdated (fp2, _)),
+              Previous (`FILE, desc1, fp1)))
   | (Updates (File (_, ContentsSame), _),
-     Updates (File (desc2, ContentsUpdated (fp2, _, ress2)),
-              Previous (`FILE, desc1, fp1, ress1)))
-  | (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)), _),
-     Updates (File (desc2, ContentsUpdated (fp2, _, ress2)), _)) ->
-       (desc1, fp1, ress1, desc2, fp2, ress2)
+     Updates (File (desc2, ContentsUpdated (fp2, _)),
+              Previous (`FILE, desc1, fp1)))
+  | (Updates (File (desc1, ContentsUpdated (fp1, _)), _),
+     Updates (File (desc2, ContentsUpdated (fp2, _)), _)) ->
+       (desc1, fp1, desc2, fp2)
   | _ ->
       raise (Util.Transient "Can't diff")
 

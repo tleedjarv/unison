@@ -640,19 +640,18 @@ let copy
     Lwt.catch
       (fun () ->
          match f with
-           Update.ArchiveFile (desc, fp, stamp, ress) ->
+           Update.ArchiveFile (desc, fp, stamp) ->
              Lwt_util.run_in_region copyReg 1 (fun () ->
                Abort.check id;
                let stmp =
                  if Update.useFastChecking () then Some stamp else None in
                Copy.file
                  rootFrom pFrom rootTo workingDir pTo realPTo
-                 update desc fp stmp ress id
+                 update desc fp stmp id
                  >>= fun info ->
-               let ress' = Osx.stamp info.Fileinfo.osX in
                Lwt.return
                  (Update.ArchiveFile (Props.override info.Fileinfo.desc desc,
-                                      fp, Fileinfo.stamp info, ress'),
+                                      fp, Fileinfo.stamp info),
                   []))
          | Update.ArchiveSymlink l ->
              Lwt_util.run_in_region copyReg 1 (fun () ->
@@ -771,7 +770,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
       "diff %s %s %s %s ...\n"
       (root2string root1) (Path.toString path1)
       (root2string root2) (Path.toString path2));
-  let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
+  let (desc1, fp1, desc2, fp2) = Common.fileInfos ui1 ui2 in
   let displayDiff fspath1 fspath2 =
     let cmd =
       if Util.findsubstring "NEWER" (Prefs.read diffCmd) <> None then
@@ -818,7 +817,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
              (Update.translatePath root2 path2 >>= (fun path2 ->
               Copy.file root2 path2 root1 workingDir tmppath realPath
                 `Copy (Props.setLength Props.fileSafe (Props.length desc2))
-                 fp2 None ress2 id) >>= fun info ->
+                 fp2 None id) >>= fun info ->
               Lwt.return ());
            displayDiff
              (Fspath.concat workingDir realPath)
@@ -837,7 +836,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
               (* Note that we don't need the resource fork *)
               Copy.file root1 path1 root2 workingDir tmppath realPath
                 `Copy (Props.setLength Props.fileSafe (Props.length desc1))
-                 fp1 None ress1 id >>= fun info ->
+                 fp1 None id >>= fun info ->
               Lwt.return ()));
            displayDiff
              (Fspath.concat workingDir tmppath)
@@ -922,11 +921,11 @@ let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo archTo id =
     >>= (fun (workingDirForCopy, realPathTo, tempPathTo, localPathTo) ->
   let info = Fileinfo.getBasicWithRess false fspathFrom pathFrom in
   let fp = Os.fingerprint fspathFrom pathFrom info.Fileinfo.typ in
-  let stamp = Osx.stamp info.Fileinfo.osX in
+  (* TODO Should newprops also get the new resource fork? Merge with [info]? *)
   let newprops = Props.setLength propsTo (Props.length info.Fileinfo.desc) in
   Copy.file
     (Local, fspathFrom) pathFrom rootTo workingDirForCopy tempPathTo realPathTo
-    `Copy newprops fp None stamp id >>= fun info ->
+    `Copy newprops fp None id >>= fun info ->
   debugverbose (fun () -> Util.msg "rename from copyBack\n");
   rename rootTo localPathTo workingDirForCopy tempPathTo realPathTo
     uiTo archTo false)
@@ -971,7 +970,7 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
           workingDirForMerge src
           workingDirForMerge trg trg
           `Copy info.Fileinfo.desc
-          (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo) (Some id))
+          (Some id))
       l in
 
   let working1 = Path.addPrefixToFinalName basep (tempName "merge1-") in
@@ -981,7 +980,7 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
   let new2 = Path.addPrefixToFinalName basep (tempName "mergenew2-") in
   let newarch = Path.addPrefixToFinalName basep (tempName "mergenewarch-") in
 
-  let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
+  let (desc1, fp1, desc2, fp2) = Common.fileInfos ui1 ui2 in
 
   Util.convertUnixErrorsToTransient "merging files" (fun () ->
     (* Install finalizer (below) in case we unwind the stack *)
@@ -994,25 +993,25 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
       Lwt_unix.run
         (Copy.file
            root1 localPath1 root1 workingDirForMerge working1 basep
-           `Copy desc1 fp1 None ress1 id >>= fun info ->
+           `Copy desc1 fp1 None id >>= fun info ->
          Lwt.return ());
       Lwt_unix.run
         (Update.translatePath root2 path2 >>= (fun path2 ->
           Copy.file
             root2 path2 root1 workingDirForMerge working2 basep
-            `Copy desc2 fp2 None ress2 id) >>= fun info ->
+            `Copy desc2 fp2 None id) >>= fun info ->
          Lwt.return ());
 
       (* retrieve the archive for this file, if any *)
       let arch =
         match ui1, ui2 with
-        | Updates (_, Previous (_,_,fp,_)), Updates (_, Previous (_,_,fp2,_)) ->
+        | Updates (_, Previous (_,_,fp)), Updates (_, Previous (_,_,fp2)) ->
             if fp = fp2 then
               Stasher.getRecentVersion fspath1 localPath1 fp
             else
               assert false
-        | NoUpdates, Updates(_, Previous (_,_,fp,_))
-        | Updates(_, Previous (_,_,fp,_)), NoUpdates ->
+        | NoUpdates, Updates(_, Previous (_,_,fp))
+        | Updates(_, Previous (_,_,fp)), NoUpdates ->
             Stasher.getRecentVersion fspath1 localPath1 fp
         | Updates (_, New), Updates(_, New)
         | Updates (_, New), NoUpdates
@@ -1032,7 +1031,6 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
               workingDirForMerge workingarch workingarch
               `Copy
               info.Fileinfo.desc
-              (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
               None
         | None ->
             ()
@@ -1206,8 +1204,7 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
            let new_archive_entry =
              Update.ArchiveFile
                (infoarch.desc, fp,
-                Fileinfo.stamp infoarch,
-                Osx.stamp infoarch.osX) in
+                Fileinfo.stamp infoarch) in
            (Props.setTime desc1 (Props.time infoarch.Fileinfo.desc),
             Props.setTime desc2 (Props.time infoarch.Fileinfo.desc),
             Some new_archive_entry)

@@ -11,7 +11,7 @@ type archive251 =
 
 type archive =
     ArchiveDir of Props.t * archive NameMap.t
-  | ArchiveFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | ArchiveFile of Props.t * Os.fullfingerprint * Fileinfo.stamp
   | ArchiveSymlink of string
   | NoArchive
 

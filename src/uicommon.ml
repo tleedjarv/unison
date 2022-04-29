@@ -181,7 +181,7 @@ let prevProps newprops ui =
       -> ""
   | Updates (_, New) ->
       " (new)"
-  | Updates (_, Previous(_,oldprops,_,_)) ->
+  | Updates (_, Previous(_,oldprops,_)) ->
       (* || Props.similar newprops oldprops *)
       " (was: "^(Props.toString oldprops)^")"
 

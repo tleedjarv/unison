@@ -69,29 +69,44 @@ let type2string = function
    changed type also a 2.51-compatible version must be created. *)
 type t251 = { typ : typ; inode : int; desc : Props.t251; osX : Osx.info}
 
-type ('a, 'b) info = { typ : typ; inode : int; desc : 'a; osX : Osx.info }
+type ('a, 'b) info = { typ : typ; inode : int; desc : 'a }
 type t = (Props.t, [`WithRess]) info
 type basic = (Props.basic, [`NoRess]) info
 type bress = (Props.basic, [`WithRess]) info
 
-let minfo propsm = Umarshal.(prod4 mtyp int propsm Osx.minfo
-                    (fun {typ; inode; desc; osX} -> typ, inode, desc, osX)
-                    (fun (typ, inode, desc, osX) -> {typ; inode; desc; osX}))
+let ifArchBefore202205 = Umarshal.cond Compat.isArchBefore202205 Osx.ressDummy
 
-let m = minfo Props.m
-let mbasic = minfo Props.mbasic
+(* In old codebase, full [.osX] is used only locally; it is used remotely
+   for limited purposes only, to get the ressStamp.
+   For backwards compatibility, we still have to keep the type, but we only
+   provide compatible data for ressStamp disguised as a ressInfo:
+    - osX.finfo is already in Props.t; no need to provide here.
+    - osX.ressInfo is only used as ressStamp in remote contexts. *)
+let minfo propsm compat_setRessStamp =
+  Umarshal.(prod4 mtyp int propsm (ifArchBefore202205 Osx.minfo_compat)
+              (fun {typ; inode; desc} ->
+                 (typ, inode, desc, Props.Compat.getRessStamp desc))
+              (fun (typ, inode, desc, osX) ->
+                 {typ; inode; desc =
+                   if Compat.isArchBefore202205 () then
+                     compat_setRessStamp desc osX
+                   else desc}))
+
+let m = minfo Props.m Props.Compat.setRessStamp
+let mbasic = minfo Props.mbasic Props.Compat.basic_setRessStamp
 
 let to_compat251 (x : basic) : t251 =
   { typ = x.typ;
     inode = x.inode;
     desc = Props.basic_to_compat251 x.desc;
-    osX = x.osX }
+    osX = Osx.stampRev (Props.Compat.getRessStamp x.desc) }
 
 let of_compat251 (x : t251) : basic =
   { typ = x.typ;
     inode = x.inode;
-    desc = Props.basic_of_compat251 x.desc;
-    osX = x.osX }
+    desc = Props.Compat.basic_setRessStamp
+             (Props.basic_of_compat251 x.desc)
+             (Osx.stamp x.osX) }
 
 (* Stat function that pays attention to pref for following links             *)
 let statFn fromRoot fspath path =
@@ -138,28 +153,25 @@ let getAux fromRoot fspath path getProps dummyProps =
                          (Fspath.toPrintString (Fspath.concat fspath path)) ^
                          " has unknown file type"))
          in
-         let osxInfos = Osx.getFileInfos fspath path typ in
          { typ = typ;
            inode    = (* The inode number is truncated so that
                          it fits in a 31 bit ocaml integer *)
                       stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
-           desc     = getProps stats osxInfos;
-           osX      = osxInfos }
+           desc     = getProps fspath path stats typ }
        with
          Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
          { typ = `ABSENT;
            inode    = 0;
-           desc     = dummyProps;
-           osX      = Osx.getFileInfos fspath path `ABSENT })
+           desc     = dummyProps })
 
 let getType fromRoot fspath path =
-  (getAux fromRoot fspath path (fun _ _ -> Props.dummy) Props.dummy).typ
+  (getAux fromRoot fspath path (fun _ _ _ _ -> Props.dummy) Props.dummy).typ
 
 let getBasic fromRoot fspath path =
-  getAux fromRoot fspath path (fun st _ -> Props.get' st) Props.basicDummy
+  getAux fromRoot fspath path (fun _ _ st _ -> Props.get' st) Props.basicDummy
 
 let getBasicWithRess fromRoot fspath path =
-  getAux fromRoot fspath path (fun st _ -> Props.get' st) Props.basicDummy
+  getAux fromRoot fspath path Props.getWithRess Props.basicDummy
 
 let get fromRoot fspath path =
   getAux fromRoot fspath path Props.get Props.dummy
@@ -167,8 +179,7 @@ let get fromRoot fspath path =
 let basic x =
   { typ = x.typ;
     inode = x.inode;
-    desc = x.desc;
-    osX = x.osX }
+    desc = x.desc }
 
 let check fspath path props =
   Util.convertUnixErrorsToTransient
@@ -250,8 +261,6 @@ let stamp info =
   if Prefs.read ignoreInodeNumbers then NoStamp else
   if Fs.hasInodeNumbers () then InodeStamp info.inode else NoStamp
 
-let ressStamp info = Osx.stamp info.osX
-
 let unchanged fspath path info =
   (* The call to [Util.time] must be before the call to [get] *)
   let t0 = Util.time () in
@@ -268,5 +277,4 @@ let unchanged fspath path info =
       true
   in
   (info', dataUnchanged,
-   Osx.ressUnchanged info.osX.Osx.ressInfo info'.osX.Osx.ressInfo
-     (Some t0) dataUnchanged)
+   Props.ressUnchanged info.desc info'.desc (Some t0) dataUnchanged)

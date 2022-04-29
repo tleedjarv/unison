@@ -6,7 +6,7 @@ val mtyp : typ Umarshal.t
 val type2string : typ -> string
 
 type t251 = { typ : typ; inode : int; desc : Props.t251; osX : Osx.info}
-type ('a, 'b) info = private { typ : typ; inode : int; desc : 'a; osX : Osx.info }
+type ('a, 'b) info = private { typ : typ; inode : int; desc : 'a }
 type t = (Props.t, [`WithRess]) info
 type basic = (Props.basic, [`NoRess]) info
 type bress = (Props.basic, [`WithRess]) info
@@ -44,8 +44,6 @@ val stamp_to_compat251 : stamp -> stamp251
 val stamp_of_compat251 : stamp251 -> stamp
 
 val stamp : _ info -> stamp
-
-val ressStamp : t -> Osx.ressStamp
 
 (* Check whether a file is unchanged *)
 val unchanged : Fspath.t -> Path.local -> (_ Props.props, [`WithRess]) info -> (t * bool * bool)

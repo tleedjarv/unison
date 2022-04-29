@@ -39,6 +39,10 @@ let toString (Fspath f) = f
 let toPrintString (Fspath f) = f
 let toDebugString (Fspath f) = String.escaped f
 
+(* CAUTION! Do not use! This is not a valid path! It is only used as a hack
+   to provide backwards compatibility with versions older than 2.52 *)
+let dummy = Fspath "\000"
+
 (* Needed to hack around some ocaml/Windows bugs, see comment at stat, below *)
 let winRootRx = Rx.rx "(([a-zA-Z]:)?/|//[^?/]+/[^/]+/|//[?]/[Uu][Nn][Cc]/[^/]+/[^/]+/)|//[?]/([^Uu][^/]*|[Uu]|[Uu][^Nn][^/]*|[Uu][Nn]|[Uu][Nn][^Cc][^/]*|[Uu][Nn][Cc][^/]+)/"
 (* FIX I think we could just check the last character of [d]. *)

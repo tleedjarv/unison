@@ -671,6 +671,41 @@ let init _ = ()
 
 end
 
+module AppleRsrc = struct
+
+type t = Osx.ressStamp
+
+let m = Osx.mressStamp
+
+let dummy = Osx.stamp (Osx.defaultInfos `ABSENT)
+
+let hash t h = Uutil.hash2 (Uutil.hash t) h
+
+let override t t' = t'
+
+let strip t = if Prefs.read Osx.rsrc then t else dummy
+
+let getRessStamp t = t
+
+let setRessStamp t stamp = stamp
+
+let ressLength t = Osx.ressLength t
+
+let ressUnchanged t t' t0 dataUnchanged =
+  Osx.ressUnchanged t t' t0 dataUnchanged
+
+let get stats info =
+  if
+    Prefs.read Osx.rsrc &&
+    (stats.Unix.LargeFile.st_kind = Unix.S_REG ||
+     stats.Unix.LargeFile.st_kind = Unix.S_DIR)
+  then
+    Osx.stamp info
+  else
+    dummy
+
+end
+
 (* ------------------------------------------------------------------------- *)
 (*                           Properties                                      *)
 (* ------------------------------------------------------------------------- *)
@@ -694,14 +729,22 @@ type t =
     gid : Gid.t;
     time : Time.t;
     typeCreator : TypeCreator.t;
-    length : Uutil.Filesize.t }
+    length : Uutil.Filesize.t;
+    rsrc : AppleRsrc.t;
+  }
+
+let ifArchAfter202205 = Umarshal.cond Compat.isArchAfter202205
 
 type _ props = t
 type basic = [`Basic] props
 
-let m = Umarshal.(prod6 Perm.m Uid.m Gid.m Time.m TypeCreator.m Uutil.Filesize.m
-                    (fun {perm; uid; gid; time; typeCreator; length} -> perm, uid, gid, time, typeCreator, length)
-                    (fun (perm, uid, gid, time, typeCreator, length) -> {perm; uid; gid; time; typeCreator; length}))
+let m = Umarshal.(prod2
+                    (prod6 Perm.m Uid.m Gid.m Time.m TypeCreator.m Uutil.Filesize.m id id)
+                    (ifArchAfter202205 AppleRsrc.dummy AppleRsrc.m)
+                    (fun {perm; uid; gid; time; typeCreator; length; rsrc} ->
+                       ((perm, uid, gid, time, typeCreator, length), (rsrc)))
+                    (fun ((perm, uid, gid, time, typeCreator, length), (rsrc)) ->
+                       {perm; uid; gid; time; typeCreator; length; rsrc}))
 
 let mbasic = m
 
@@ -719,7 +762,9 @@ let of_compat251 (p : t251) : t =
     gid = p.gid;
     time = p.time;
     typeCreator = p.typeCreator;
-    length = p.length }
+    length = p.length;
+    rsrc = AppleRsrc.dummy;
+  }
 
 let basic_to_compat251 (p : basic) : t251 = to_compat251 p
 let basic_of_compat251 (p : t251) : basic = of_compat251 p
@@ -727,7 +772,8 @@ let basic_of_compat251 (p : t251) : basic = of_compat251 p
 let template perm =
   { perm = perm; uid = Uid.dummy; gid = Gid.dummy;
     time = Time.dummy; typeCreator = TypeCreator.dummy;
-    length = Uutil.Filesize.dummy }
+    length = Uutil.Filesize.dummy; rsrc = AppleRsrc.dummy;
+  }
 
 let dummy = template Perm.dummy
 
@@ -735,6 +781,7 @@ let basicDummy = dummy
 
 let hash p h =
   h
+  |> fun x -> if Compat.isArchAfter202205 () then AppleRsrc.hash p.rsrc x else x
   |> TypeCreator.hash p.typeCreator
   |> Time.hash p.time
   |> Gid.hash p.gid
@@ -770,7 +817,9 @@ let override p p' =
     gid = Gid.override p.gid p'.gid;
     time = Time.override p.time p'.time;
     typeCreator = TypeCreator.override p.typeCreator p'.typeCreator;
-    length = p'.length }
+    length = p'.length;
+    rsrc = AppleRsrc.override p.rsrc p'.rsrc;
+  }
 
 let strip p =
   { perm = Perm.strip p.perm;
@@ -778,7 +827,9 @@ let strip p =
     gid = Gid.strip p.gid;
     time = Time.strip p.time;
     typeCreator = TypeCreator.strip p.typeCreator;
-    length = p.length }
+    length = p.length;
+    rsrc = AppleRsrc.strip p.rsrc;
+  }
 
 let toString p =
   Printf.sprintf
@@ -808,7 +859,9 @@ let diff p p' =
     gid = Gid.diff p.gid p'.gid;
     time = Time.diff p.time p'.time;
     typeCreator = TypeCreator.diff p.typeCreator p'.typeCreator;
-    length = p'.length }
+    length = p'.length;
+    rsrc = p'.rsrc;
+  }
 
 let get' stats =
   { perm = Perm.get stats;
@@ -820,12 +873,24 @@ let get' stats =
       if stats.Unix.LargeFile.st_kind = Unix.S_REG then
         Uutil.Filesize.fromStats stats
       else
-        Uutil.Filesize.zero }
+        Uutil.Filesize.zero;
+    rsrc = AppleRsrc.dummy;
+  }
 
-let get stats infos =
+let get fspath path stats typ =
   let props = get' stats in
+  let osXinfo = Osx.getFileInfos fspath path typ in
   { props with
-    typeCreator = TypeCreator.get stats infos;
+    typeCreator = TypeCreator.get stats osXinfo;
+    rsrc = AppleRsrc.get stats osXinfo;
+  }
+
+let getWithRess fspath path stats typ =
+  let props = get' stats in
+  let osXinfo = Osx.getFileInfos fspath path typ in
+  { props with
+    typeCreator = TypeCreator.get stats osXinfo;
+    rsrc = AppleRsrc.get stats osXinfo;
   }
 
 let set fspath path kind p =
@@ -835,6 +900,9 @@ let set fspath path kind p =
   TypeCreator.set fspath path p.typeCreator;
   Time.set abspath p.time;
   Perm.set abspath kind p.perm
+
+let ressLength p =
+  AppleRsrc.ressLength p.rsrc
 
 (* Paranoid checks *)
 let check fspath path stats p =
@@ -854,6 +922,7 @@ let dirDefault = template Perm.dirDefault
 
 let same_time p p' = Time.same p.time p'.time
 let length p = p.length
+let totalCombinedLength p = Uutil.Filesize.add (length p) (ressLength p)
 let setLength p l = {p with length=l}
 
 let time p = Time.extract p.time
@@ -866,6 +935,9 @@ let permMask = Perm.permMask
 let dontChmod = Perm.dontChmod
 
 let validatePrefs = Perm.validatePrefs
+
+let ressUnchanged p p' t0 dataUnchanged =
+  AppleRsrc.ressUnchanged p.rsrc p'.rsrc t0 dataUnchanged
 
 (* ------------------------------------------------------------------------- *)
 (*                          Directory change stamps                          *)
@@ -893,3 +965,16 @@ let setDirChangeFlag p stamp inode =
 let dirMarkedUnchanged p stamp inode =
   let stamp = Uutil.Filesize.add stamp (Uutil.Filesize.ofInt inode) in
   stamp <> changedDirStamp && length p = stamp
+
+(* ------------------------------------------------------------------------- *)
+(*                Backwards compatibility helper functions                   *)
+(* ------------------------------------------------------------------------- *)
+
+module Compat = struct
+  (* Functions for backwards compatibility with older versions.
+     DO NOT USE for any other purpose! *)
+  let getRessStamp p = AppleRsrc.getRessStamp p.rsrc
+
+  let setRessStamp p stamp = {p with rsrc = AppleRsrc.setRessStamp p.rsrc stamp}
+  let basic_setRessStamp = setRessStamp
+end

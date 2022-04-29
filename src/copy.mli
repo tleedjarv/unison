@@ -11,7 +11,6 @@ val file :
  -> Props.t             (* permissions for new file *)
  -> Os.fullfingerprint  (* fingerprint of file *)
  -> Fileinfo.stamp option (* source file stamp, if available *)
- -> Osx.ressStamp       (* resource info of file *)
  -> Uutil.File.t        (* file's index in UI (for progress bars) *)
  -> Fileinfo.basic Lwt.t (* information regarding the transferred file *)
 
@@ -23,7 +22,6 @@ val localFile :
  -> Path.local           (* path of "real" [original] target *)
  -> [`Update of (Uutil.Filesize.t * Uutil.Filesize.t) | `Copy]
  -> Props.t              (* permissions for new file *)
- -> Uutil.Filesize.t     (* fork length *)
  -> Uutil.File.t option  (* file's index in UI (for progress bars), if appropriate *)
  -> unit
 

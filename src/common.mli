@@ -75,12 +75,12 @@ and updateContent251 =
       of string                       (*   - link text *)
 
 type prevState =
-    Previous of Fileinfo.typ * Props.t * Os.fullfingerprint * Osx.ressStamp
+    Previous of Fileinfo.typ * Props.t * Os.fullfingerprint
   | New
 
 type contentschange =
     ContentsSame
-  | ContentsUpdated of Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | ContentsUpdated of Os.fullfingerprint * Fileinfo.stamp
 
 (* Variable name prefix: "ui" *)
 type updateItem =
@@ -161,14 +161,12 @@ type replicas =
 (* Variable name prefix: "ri" *)
 type reconItem = {path1 : Path.t; path2 : Path.t; replicas : replicas}
 
-val ucLength : updateContent -> Uutil.Filesize.t
-val uiLength : updateItem -> Uutil.Filesize.t
 val riLength : reconItem -> Uutil.Filesize.t
 val riFileType : reconItem -> string
 val fileInfos :
   updateItem -> updateItem ->
-  Props.t * Os.fullfingerprint * Osx.ressStamp *
-  Props.t * Os.fullfingerprint * Osx.ressStamp
+  Props.t * Os.fullfingerprint *
+  Props.t * Os.fullfingerprint
 
 (* True if the ri's type is Problem or if it is Different and the direction
    is Conflict *)
