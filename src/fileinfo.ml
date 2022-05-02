@@ -261,11 +261,13 @@ let stamp info =
   if Prefs.read ignoreInodeNumbers then NoStamp else
   if Fs.hasInodeNumbers () then InodeStamp info.inode else NoStamp
 
-let unchanged fspath path info =
+let unchanged ?(ext=true) fspath path info =
   (* The call to [Util.time] must be before the call to [get] *)
   let t0 = Util.time () in
   let info' = get true fspath path in
   let dataUnchanged =
+    Props.length info.desc = Props.length info'.desc
+      &&
     Props.same_time info.desc info'.desc
       &&
     stamp info = stamp info'
@@ -277,4 +279,10 @@ let unchanged fspath path info =
       true
   in
   (info', dataUnchanged,
-   Props.ressUnchanged info.desc info'.desc (Some t0) dataUnchanged)
+   if ext then
+     Props.extUnchanged info'.desc info.desc ~t0 dataUnchanged
+   else true)
+
+let unchangedNoExt fspath path info =
+  let (info, du, _) = unchanged ~ext:false fspath path info in
+  (info, du)

@@ -38,7 +38,7 @@ val time : _ props -> float
 val setTime : t -> float -> t
 val perms : _ props -> int
 
-val ressUnchanged : _ props -> _ props -> float option -> bool -> bool
+val extUnchanged : _ props -> _ props -> ?t0:float -> bool -> bool
 val ressLength : _ props -> Uutil.Filesize.t
 
 val fileDefault : basic

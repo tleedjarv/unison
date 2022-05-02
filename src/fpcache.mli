@@ -20,9 +20,7 @@ val save :
 
 (****)
 
-val dataClearlyUnchanged :
-  bool -> Path.local -> Fileinfo.t -> Props.t -> Fileinfo.stamp -> bool
-val ressClearlyUnchanged :
-  bool -> Fileinfo.t -> Props.t -> bool -> bool
-(* Is that a file for which fast checking is disabled? *)
-val excelFile : Path.local -> bool
+val dataAndExtClearlyUnchanged :
+  bool -> Path.local -> (_ Props.props, _) Fileinfo.info -> Props.t -> Fileinfo.stamp -> bool * bool
+val dataAndExtClearlyUnchanged' :
+  bool -> Path.local -> Props.t -> Props.t -> bool

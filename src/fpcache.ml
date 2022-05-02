@@ -213,39 +213,34 @@ let save path v =
 
 (* HACK: we disable fastcheck for Excel (and MPP) files, as Excel
    sometimes modifies a file without updating the time stamp. *)
-let excelFile path =
+let noFastCheckOnPath path =
   let s = Path.toString path in
      Util.endswith s ".xls"
   || Util.endswith s ".mpp"
 
-let dataClearlyUnchanged fastCheck path info desc stamp =
+let dataClearlyUnchangedAux fastCheck path newDesc oldDesc =
+  Props.length newDesc = Props.length oldDesc
+    &&
+  Props.same_time newDesc oldDesc
+    &&
   fastCheck
     &&
-  Props.same_time info.Fileinfo.desc desc
-    &&
-  Props.length info.Fileinfo.desc = Props.length desc
-    &&
-  not (excelFile path)
-    &&
-  match stamp with
-    Fileinfo.InodeStamp inode ->
-      info.Fileinfo.inode = inode
-  | Fileinfo.NoStamp ->
-      true
-  | Fileinfo.RescanStamp ->
-      false
+  not (noFastCheckOnPath path)
 
-let ressClearlyUnchanged fastCheck info desc dataClearlyUnchanged =
-  fastCheck
-    &&
-  Props.ressUnchanged desc info.Fileinfo.desc
-    None dataClearlyUnchanged
-
-let clearlyUnchanged fastCheck path newInfo oldDesc oldStamp =
+let dataAndExtClearlyUnchanged fastCheck path newInfo oldDesc oldStamp =
   let du =
-    dataClearlyUnchanged fastCheck path newInfo oldDesc oldStamp
+    dataClearlyUnchangedAux fastCheck path newInfo.Fileinfo.desc oldDesc
+      &&
+    match oldStamp with
+    | Fileinfo.InodeStamp inode -> newInfo.Fileinfo.inode = inode
+    | NoStamp -> true
+    | RescanStamp -> false
   in
-  du && ressClearlyUnchanged fastCheck newInfo oldDesc du
+  (du, Props.extUnchanged newInfo.Fileinfo.desc oldDesc du)
+
+let dataAndExtClearlyUnchanged' fastCheck path newDesc oldDesc =
+  let du = dataClearlyUnchangedAux fastCheck path newDesc oldDesc in
+  du && Props.extUnchanged newDesc oldDesc du
 
 let fastercheckUNSAFE =
   Prefs.createBool "fastercheckUNSAFE" false
@@ -286,7 +281,7 @@ let fingerprint ?(newfile=false) fastCheck currfspath path info optFp =
       let (cachedDesc, cachedFp, cachedStamp) =
         PathTbl.find tbl (Path.toString path) in
       if
-        not (clearlyUnchanged
+        (true, true) <> (dataAndExtClearlyUnchanged
                fastCheck path info cachedDesc cachedStamp)
       then
         raise Not_found;

@@ -58,20 +58,17 @@ let checkForChangesToSourceLocal
         || Props.length sourceInfo.Fileinfo.desc <> Props.length archDesc
         || Props.ressLength sourceInfo.Fileinfo.desc <> Props.ressLength archDesc
       in
-      let dataClearlyUnchanged =
-           not clearlyChanged
-        && Props.same_time sourceInfo.Fileinfo.desc archDesc
-        && not (Fpcache.excelFile pathFrom)
-        && match archStamp with
-             Some (Fileinfo.InodeStamp inode) -> sourceInfo.Fileinfo.inode = inode
-           | Some (Fileinfo.NoStamp)          -> true
-           | Some (Fileinfo.RescanStamp)      -> false
-           | None                             -> false   in
-      let ressClearlyUnchanged =
-           not clearlyChanged
-        && Props.ressUnchanged archDesc sourceInfo.Fileinfo.desc
-                             None dataClearlyUnchanged   in
-      if dataClearlyUnchanged && ressClearlyUnchanged then begin
+      let clearlyUnchanged =
+        not clearlyChanged
+          &&
+        match archStamp with
+        | Some stamp ->
+            let (data, ext) = Fpcache.dataAndExtClearlyUnchanged true
+              pathFrom sourceInfo archDesc stamp in
+            data && ext
+        | None -> false
+      in
+      if clearlyUnchanged then begin
         if paranoid && not (Os.isPseudoFingerprint archFp) then begin
           let newFp = Os.fingerprint fspathFrom pathFrom sourceType in
           if archFp <> newFp then begin

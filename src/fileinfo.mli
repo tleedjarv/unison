@@ -46,7 +46,8 @@ val stamp_of_compat251 : stamp251 -> stamp
 val stamp : _ info -> stamp
 
 (* Check whether a file is unchanged *)
-val unchanged : Fspath.t -> Path.local -> (_ Props.props, [`WithRess]) info -> (t * bool * bool)
+val unchanged : ?ext:bool -> Fspath.t -> Path.local -> (_ Props.props, [`WithRess]) info -> (t * bool * bool)
+val unchangedNoExt : Fspath.t -> Path.local -> (_ Props.props, [`WithRess]) info -> (t * bool)
 
 (****)
 

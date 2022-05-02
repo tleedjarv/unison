@@ -1545,8 +1545,8 @@ let directoryCheckContentUnchanged
   if
     noChildChange childUpdates
       &&
-    let (info', dataUnchanged, ressUnchanged) =
-      Fileinfo.unchanged currfspath path info in
+    let (info', dataUnchanged) =
+      Fileinfo.unchangedNoExt currfspath path info in
     dataUnchanged
   then begin
     let (archDesc, updated) =
@@ -1628,12 +1628,9 @@ let checkContentsChange
              (Uutil.Filesize.toString  (Props.length info.Fileinfo.desc));
            Util.msg "\n");
   let fastCheck = scanInfo.fastCheck in
-  let dataClearlyUnchanged =
-    Fpcache.dataClearlyUnchanged fastCheck path info archDesc archStamp in
-  let ressClearlyUnchanged =
-    Fpcache.ressClearlyUnchanged fastCheck info archDesc dataClearlyUnchanged
-  in
-  if dataClearlyUnchanged && ressClearlyUnchanged then begin
+  let (dataClearlyUnchanged, extdataClearlyUnchanged) =
+    Fpcache.dataAndExtClearlyUnchanged fastCheck path info archDesc archStamp in
+  if dataClearlyUnchanged && extdataClearlyUnchanged then begin
     Xferhint.insertEntry currfspath path archFp;
     None, checkPropChange info.Fileinfo.desc archive archDesc
   end else begin
@@ -2698,15 +2695,7 @@ let updateProps fspath path propOpt ui =
 (*************************************************************************)
 
 let fastCheckMiss path desc oldDesc =
-  useFastChecking()
-    &&
-  Props.same_time desc oldDesc
-    &&
-  Props.length desc = Props.length oldDesc
-    &&
-  not (Fpcache.excelFile path)
-    &&
-  Props.ressUnchanged oldDesc desc None true
+  Fpcache.dataAndExtClearlyUnchanged' (useFastChecking ()) path desc oldDesc
 
 let doMarkPossiblyUpdated arch =
   match arch with

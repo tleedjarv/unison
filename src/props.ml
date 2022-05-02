@@ -691,8 +691,8 @@ let setRessStamp t stamp = stamp
 
 let ressLength t = Osx.ressLength t
 
-let ressUnchanged t t' t0 dataUnchanged =
-  Osx.ressUnchanged t t' t0 dataUnchanged
+let ressUnchanged newT oldT t0 dataUnchanged =
+  Osx.ressUnchanged oldT newT t0 dataUnchanged
 
 let get stats info =
   if
@@ -936,8 +936,8 @@ let dontChmod = Perm.dontChmod
 
 let validatePrefs = Perm.validatePrefs
 
-let ressUnchanged p p' t0 dataUnchanged =
-  AppleRsrc.ressUnchanged p.rsrc p'.rsrc t0 dataUnchanged
+let extUnchanged newP oldP ?t0 dataUnchanged =
+  AppleRsrc.ressUnchanged newP.rsrc oldP.rsrc t0 dataUnchanged
 
 (* ------------------------------------------------------------------------- *)
 (*                          Directory change stamps                          *)
