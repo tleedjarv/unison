@@ -126,17 +126,27 @@ let archStamp_of_compat251 = function
   | Some stamp -> Some (Fileinfo.stamp_of_compat251 stamp)
   | None -> None
 
+let fpOpt_to_compat251 = function
+  | Some fp -> Some (Os.fp_to_compat251 fp)
+  | None -> None
+
+let fpOpt_of_compat251 = function
+  | Some fp -> Some (Os.fp_of_compat251 fp)
+  | None -> None
+
 let convV0 = Remote.makeConvV0FunArg
   (fun (fspathFrom,
           ((pathFrom, archDesc, archFp, archStamp), (newFpOpt, paranoid))) ->
        (fspathFrom,
-          (pathFrom, Props.to_compat251 archDesc, archFp,
-            archStamp_to_compat251 archStamp, Props.Compat.getRessStamp archDesc, newFpOpt, paranoid)))
+          (pathFrom, Props.to_compat251 archDesc, Os.fp_to_compat251 archFp,
+            archStamp_to_compat251 archStamp, Props.Compat.getRessStamp archDesc,
+            fpOpt_to_compat251 newFpOpt, paranoid)))
   (fun (fspathFrom,
           (pathFrom, archDesc, archFp, archStamp, archRess, newFpOpt, paranoid)) ->
        (fspathFrom,
-          ((pathFrom, Props.Compat.setRessStamp (Props.of_compat251 archDesc) archRess, archFp,
-            archStamp_of_compat251 archStamp), (newFpOpt, paranoid))))
+          ((pathFrom, Props.Compat.setRessStamp (Props.of_compat251 archDesc) archRess,
+            Os.fp_of_compat251 archFp, archStamp_of_compat251 archStamp),
+            (fpOpt_of_compat251 newFpOpt, paranoid))))
 
 let checkForChangesToSourceOnRoot =
   Remote.registerRootCmd
@@ -212,7 +222,7 @@ let validFilePrefix connFrom fspathFrom pathFrom fspathTo pathTo info desc =
    changed type also a 2.51-compatible version must be created. *)
 type transferStatus251 =
     TransferSucceeded of Fileinfo.t251
-  | TransferNeedsDoubleCheckAgainstCurrentSource of Fileinfo.t251 * Os.fullfingerprint
+  | TransferNeedsDoubleCheckAgainstCurrentSource of Fileinfo.t251 * Os.fullfingerprint251
   | TransferFailed of string
 
 type transferStatus =
@@ -237,14 +247,16 @@ let transferStatus_to_compat251 (st : transferStatus) : transferStatus251 =
   match st with
   | TransferSucceeded info -> TransferSucceeded (Fileinfo.to_compat251 info)
   | TransferNeedsDoubleCheckAgainstCurrentSource (info, fp) ->
-      TransferNeedsDoubleCheckAgainstCurrentSource (Fileinfo.to_compat251 info, fp)
+      TransferNeedsDoubleCheckAgainstCurrentSource (Fileinfo.to_compat251 info,
+        Os.fp_to_compat251 fp)
   | TransferFailed s -> TransferFailed s
 
 let transferStatus_of_compat251 (st : transferStatus251) : transferStatus =
   match st with
   | TransferSucceeded info -> TransferSucceeded (Fileinfo.of_compat251 info)
   | TransferNeedsDoubleCheckAgainstCurrentSource (info, fp) ->
-      TransferNeedsDoubleCheckAgainstCurrentSource (Fileinfo.of_compat251 info, fp)
+      TransferNeedsDoubleCheckAgainstCurrentSource (Fileinfo.of_compat251 info,
+        Os.fp_of_compat251 fp)
   | TransferFailed s -> TransferFailed s
 
 (* Paranoid check: recompute the transferred file's fingerprint to match it
@@ -923,12 +935,13 @@ let convV0 = Remote.makeConvV0Funs
          (update, desc, fp, id)) ->
        (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
          update_to_compat251 update, Props.to_compat251 desc,
-         fp, Props.Compat.getRessStamp desc, id))
+         Os.fp_to_compat251 fp, Props.Compat.getRessStamp desc, id))
   (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
          update, desc, fp, ress, id) ->
        ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
          (update_of_compat251 update,
-         Props.Compat.setRessStamp (Props.of_compat251 desc) ress, fp, id)))
+         Props.Compat.setRessStamp (Props.of_compat251 desc) ress,
+         Os.fp_of_compat251 fp, id)))
   transferStatus_to_compat251
   transferStatus_of_compat251
 
@@ -1061,12 +1074,13 @@ let convV0 = Remote.makeConvV0Funs
          (update, desc, fp, id)) ->
        (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
          update_to_compat251 update, Props.to_compat251 desc,
-         fp, Props.Compat.getRessStamp desc, id))
+         Os.fp_to_compat251 fp, Props.Compat.getRessStamp desc, id))
   (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
          update, desc, fp, ress, id) ->
        ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
          (update_of_compat251 update,
-         Props.Compat.setRessStamp (Props.of_compat251 desc) ress, fp, id)))
+         Props.Compat.setRessStamp (Props.of_compat251 desc) ress,
+         Os.fp_of_compat251 fp, id)))
   (function
    | `DONE (a, b) -> `DONE (transferStatus_to_compat251 a, b)
    | `EXTERNAL a -> `EXTERNAL a)

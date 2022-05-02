@@ -243,25 +243,50 @@ let createDir fspath path perms =
 (*                              FINGERPRINTS                                 *)
 (*****************************************************************************)
 
-type fullfingerprint = Fingerprint.t * Fingerprint.t
+(* IMPORTANT!
+   This is the 2.51-compatible version of type [Os.fullfingerprint]. It must
+   always remain exactly the same as the type [Os.fullfingerprint] in version
+   2.51.5. This means that if any of the types it is composed of changes then
+   for each changed type also a 2.51-compatible version must be created. *)
+type fullfingerprint251 = Fingerprint.t * Fingerprint.t
 
-let mfullfingerprint = Umarshal.(prod2 Fingerprint.m Fingerprint.m id id)
+type fullfingerprint = Fingerprint.t * Props.fingerprint
+
+let ifArchBefore202205 = Umarshal.cond Compat.isArchBefore202205 Fingerprint.dummy
+
+let ifArchAfter202205 = Umarshal.cond Compat.isArchAfter202205 Props.fingerprintDummy
+
+let mfullfingerprint =
+  Umarshal.(prod3 Fingerprint.m
+                  (ifArchBefore202205 Fingerprint.m)
+                  (ifArchAfter202205 Props.mfingerprint)
+              (fun (a, b) -> (a, Props.Compat.getRessFingerprint b, b))
+              (fun (a, b, c) ->
+                 (a, if Compat.isArchBefore202205 () then
+                       Props.Compat.setRessFingerprint b
+                     else c)))
+
+let fp_to_compat251 ((a, b) : fullfingerprint) : fullfingerprint251 =
+  (a, Props.Compat.getRessFingerprint b)
+
+let fp_of_compat251 ((a, b) : fullfingerprint251) : fullfingerprint =
+  (a, Props.Compat.setRessFingerprint b)
 
 let fingerprint fspath path typ =
   (Fingerprint.file fspath path,
-   Osx.ressFingerprint fspath path typ)
+   Props.extFingerprint fspath path typ)
 
 let pseudoFingerprint path size =
-  (Fingerprint.pseudo path size, Fingerprint.dummy)
+  (Fingerprint.pseudo path size, Props.fingerprintDummy)
 
-let isPseudoFingerprint (fp,rfp) =
+let isPseudoFingerprint (fp, _) =
   Fingerprint.ispseudo fp
 
 (* FIX: not completely safe under Unix                                       *)
 (* (with networked file system such as NFS)                                  *)
 let safeFingerprint fspath path info optFp =
   let rec retryLoop : 'a. _ -> ('a Props.props, [`WithRess]) Fileinfo.info -> _ -> _ -> _ =
-    fun count info optFp optRessFp ->
+    fun count info optFp optXFp ->
       if count = 0 then
         raise (Util.Transient
                  (Printf.sprintf
@@ -274,39 +299,39 @@ let safeFingerprint fspath path info optFp =
             None     -> Fingerprint.file fspath path
           | Some fp -> fp
         in
-        let ressFp =
-          match optRessFp with
-            None      -> Osx.ressFingerprint fspath path info.Fileinfo.typ
-          | Some ress -> ress
+        let xFp =
+          match optXFp with
+            None   -> Props.extFingerprint fspath path info.Fileinfo.typ
+          | Some x -> x
         in
-        let (info', dataUnchanged, ressUnchanged) =
+        let (info', dataUnchanged, extUnchanged) =
           Fileinfo.unchanged fspath path info in
-        if dataUnchanged && ressUnchanged then
-          (info', (fp, ressFp))
+        if dataUnchanged && extUnchanged then
+          (info', (fp, xFp))
         else
           retryLoop (count - 1) info'
             (if dataUnchanged then Some fp else None)
-            (if ressUnchanged then Some ressFp else None)
+            (if extUnchanged then Some xFp else None)
     in
     retryLoop 10 info (* Maximum retries: 10 times *)
       (match optFp with None -> None | Some (d, _) -> Some d)
       None
 
-let fullfingerprint_to_string (fp,rfp) =
-  Printf.sprintf "(%s,%s)" (Fingerprint.toString fp) (Fingerprint.toString rfp)
+let fullfingerprint_to_string (fp, xfp) =
+  Printf.sprintf "(%s,%s)" (Fingerprint.toString fp) (Props.fingerprintToString xfp)
 
-let reasonForFingerprintMismatch (fpdata,fpress) (fpdata',fpress') =
-  if fpdata = fpdata' then "resource fork"
-  else if fpress = fpress' then "file contents"
-  else "both file contents and resource fork"
+let reasonForFingerprintMismatch (fpdata, fpext) (fpdata', fpext') =
+  if fpdata = fpdata' then (Props.reasonForFingerprintMismatch fpext fpext')
+  else if fpext = fpext' then "file contents"
+  else "file contents and " ^ (Props.reasonForFingerprintMismatch fpext fpext')
 
-let fullfingerprint_dummy = (Fingerprint.dummy,Fingerprint.dummy)
+let fullfingerprint_dummy = (Fingerprint.dummy, Props.fingerprintDummy)
 
-let fullfingerprintHash (fp, rfp) =
-  Fingerprint.hash fp + 31 * Fingerprint.hash rfp
+let fullfingerprintHash (fp, xfp) =
+  Fingerprint.hash fp + 63 * Props.fingerprintHash xfp
 
-let fullfingerprintEqual (fp, rfp) (fp', rfp') =
-  Fingerprint.equal fp fp' && Fingerprint.equal rfp rfp'
+let fullfingerprintEqual (fp, xfp) (fp', xfp') =
+  Fingerprint.equal fp fp' && Props.fingerprintEqual xfp xfp'
 
 
 (*****************************************************************************)

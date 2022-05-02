@@ -74,7 +74,7 @@ let sortRoots rootList = Safelist.sort compareRoots rootList
    2.51.5. This means that if any of the types it is composed of changes then
    for each changed type also a 2.51-compatible version must be created. *)
 type prevState251 =
-    Previous of Fileinfo.typ * Props.t251 * Os.fullfingerprint * Osx.ressStamp
+    Previous of Fileinfo.typ * Props.t251 * Os.fullfingerprint251 * Osx.ressStamp
   | New
 
 type prevState =
@@ -106,7 +106,7 @@ let mprevState = Umarshal.(sum2
    created. *)
 type contentschange251 =
     ContentsSame
-  | ContentsUpdated of Os.fullfingerprint * Fileinfo.stamp251 * Osx.ressStamp
+  | ContentsUpdated of Os.fullfingerprint251 * Fileinfo.stamp251 * Osx.ressStamp
 
 type contentschange =
     ContentsSame
@@ -220,26 +220,30 @@ let mupdateContent, mupdateItem =
 let prev_to_compat251 (prev : prevState) : prevState251 =
   match prev with
   | Previous (typ, props, fp) ->
-      Previous (typ, Props.to_compat251 props, fp, Props.Compat.getRessStamp props)
+      Previous (typ, Props.to_compat251 props, Os.fp_to_compat251 fp,
+        Props.Compat.getRessStamp props)
   | New -> New
 
 let prev_of_compat251 (prev : prevState251) : prevState =
   match prev with
   | Previous (typ, props, fp, ress) ->
-      Previous (typ, Props.Compat.setRessStamp (Props.of_compat251 props) ress, fp)
+      Previous (typ, Props.Compat.setRessStamp (Props.of_compat251 props) ress,
+        Os.fp_of_compat251 fp)
   | New -> New
 
 let change_to_compat251 (c : contentschange) ress : contentschange251 =
   match c with
   | ContentsSame -> ContentsSame
   | ContentsUpdated (fp, stamp) ->
-      ContentsUpdated (fp, Fileinfo.stamp_to_compat251 stamp, ress)
+      ContentsUpdated (Os.fp_to_compat251 fp, Fileinfo.stamp_to_compat251 stamp,
+        ress)
 
 let change_of_compat251 (c : contentschange251) : (contentschange * _) =
   match c with
   | ContentsSame -> (ContentsSame, None)
   | ContentsUpdated (fp, stamp, ress) ->
-      (ContentsUpdated (fp, Fileinfo.stamp_of_compat251 stamp), Some ress)
+      (ContentsUpdated (Os.fp_of_compat251 fp, Fileinfo.stamp_of_compat251 stamp),
+        Some ress)
 
 let rec ui_to_compat251 (ui : updateItem) : updateItem251 =
   match ui with

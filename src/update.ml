@@ -54,7 +54,7 @@ module NameMap = MyMap.Make (Name)
    compatible version must be created (like has been done for [Props.t]). *)
 type archive251 =
     ArchiveDir of Props.t251 * archive251 NameMap.t
-  | ArchiveFile of Props.t251 * Os.fullfingerprint * Fileinfo.stamp251 * Osx.ressStamp
+  | ArchiveFile of Props.t251 * Os.fullfingerprint251 * Fileinfo.stamp251 * Osx.ressStamp
   | ArchiveSymlink of string
   | NoArchive
 
@@ -95,7 +95,7 @@ let rec to_compat251 (arch : archive) : archive251 =
   | ArchiveDir (desc, children) ->
       ArchiveDir (Props.to_compat251 desc, NameMap.map to_compat251 children)
   | ArchiveFile (desc, dig, stamp) ->
-      ArchiveFile (Props.to_compat251 desc, dig,
+      ArchiveFile (Props.to_compat251 desc, Os.fp_to_compat251 dig,
         Fileinfo.stamp_to_compat251 stamp, Props.Compat.getRessStamp desc)
   | ArchiveSymlink content -> ArchiveSymlink content
   | NoArchive -> NoArchive
@@ -106,7 +106,7 @@ let rec of_compat251 (arch : archive251) : archive =
       ArchiveDir (Props.of_compat251 desc, NameMap.map of_compat251 children)
   | ArchiveFile (desc, dig, stamp, ress) ->
       ArchiveFile (Props.Compat.setRessStamp (Props.of_compat251 desc) ress,
-        dig, Fileinfo.stamp_of_compat251 stamp)
+        Os.fp_of_compat251 dig, Fileinfo.stamp_of_compat251 stamp)
   | ArchiveSymlink content -> ArchiveSymlink content
   | NoArchive -> NoArchive
 

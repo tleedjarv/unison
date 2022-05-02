@@ -994,6 +994,38 @@ let dirMarkedUnchanged p stamp inode =
   stamp <> changedDirStamp && length p = stamp
 
 (* ------------------------------------------------------------------------- *)
+(*                          Ext data fingerprinting                          *)
+(* ------------------------------------------------------------------------- *)
+
+type fingerprint =
+  { ress : Fingerprint.t;
+  }
+
+let mfingerprint = Umarshal.(sum1 Fingerprint.m
+                    (fun {ress} -> ress)
+                    (fun ress -> {ress}))
+
+let fingerprintDummy =
+  { ress = Fingerprint.dummy;
+  }
+
+let fingerprintToString fp =
+  Fingerprint.toString fp.ress
+
+let reasonForFingerprintMismatch fp fp' =
+  if fp.ress <> fp'.ress then "resource fork"
+  else ""
+
+let fingerprintHash fp =
+  Fingerprint.hash fp.ress
+
+let fingerprintEqual fp fp' = fp = fp'
+
+let extFingerprint fspath path typ =
+  { ress = Osx.ressFingerprint fspath path typ;
+  }
+
+(* ------------------------------------------------------------------------- *)
 (*                Backwards compatibility helper functions                   *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1010,4 +1042,8 @@ module Compat = struct
   let ressLength (l : lengths) = l.ress
 
   let lengths_of_compat251 (length, ress) = {lengthsDummy with length; ress} [@@warning "-23"]
+
+  let getRessFingerprint xfp = xfp.ress
+
+  let setRessFingerprint ress = {fingerprintDummy with ress} [@@warning "-23"]
 end

@@ -686,6 +686,7 @@ os.cmo : \
     fingerprint.cmi \
     fileutil.cmi \
     fileinfo.cmi \
+    compat.cmi \
     os.cmi
 os.cmx : \
     ubase/util.cmx \
@@ -703,6 +704,7 @@ os.cmx : \
     fingerprint.cmx \
     fileutil.cmx \
     fileinfo.cmx \
+    compat.cmx \
     os.cmi
 os.cmi : \
     uutil.cmi \
@@ -799,6 +801,7 @@ props.cmo : \
     lwt/lwt_unix.cmi \
     fspath.cmi \
     fs.cmi \
+    fingerprint.cmi \
     external.cmi \
     compat.cmi \
     props.cmi
@@ -812,6 +815,7 @@ props.cmx : \
     lwt/lwt_unix.cmx \
     fspath.cmx \
     fs.cmx \
+    fingerprint.cmx \
     external.cmx \
     compat.cmx \
     props.cmi
@@ -821,7 +825,8 @@ props.cmi : \
     ubase/prefs.cmi \
     path.cmi \
     osx.cmi \
-    fspath.cmi
+    fspath.cmi \
+    fingerprint.cmi
 recon.cmo : \
     uutil.cmi \
     ubase/util.cmi \

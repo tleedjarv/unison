@@ -5,7 +5,7 @@ module NameMap : MyMap.S with type key = Name.t
 
 type archive251 =
     ArchiveDir of Props.t251 * archive251 NameMap.t
-  | ArchiveFile of Props.t251 * Os.fullfingerprint * Fileinfo.stamp251 * Osx.ressStamp
+  | ArchiveFile of Props.t251 * Os.fullfingerprint251 * Fileinfo.stamp251 * Osx.ressStamp
   | ArchiveSymlink of string
   | NoArchive
 

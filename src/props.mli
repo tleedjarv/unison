@@ -67,6 +67,15 @@ val dirMarkedUnchanged : t -> dirChangedStamp -> int -> bool
 
 val validatePrefs: unit -> unit
 
+type fingerprint
+val mfingerprint : fingerprint Umarshal.t
+val fingerprintDummy : fingerprint
+val fingerprintToString : fingerprint -> string
+val reasonForFingerprintMismatch : fingerprint -> fingerprint -> string
+val fingerprintHash : fingerprint -> int
+val fingerprintEqual : fingerprint -> fingerprint -> bool
+val extFingerprint : Fspath.t -> Path.local ->  [> `FILE | `DIRECTORY] -> fingerprint
+
 (* Functions for backwards compatibility with older versions.
    DO NOT USE for any other purpose! *)
 module Compat : sig
@@ -77,4 +86,7 @@ module Compat : sig
   val length : lengths -> Uutil.Filesize.t
   val ressLength : lengths -> Uutil.Filesize.t
   val lengths_of_compat251 : Uutil.Filesize.t * Uutil.Filesize.t -> lengths
+
+  val getRessFingerprint : fingerprint -> Fingerprint.t
+  val setRessFingerprint : Fingerprint.t -> fingerprint
 end

@@ -42,12 +42,12 @@ type 'a oneperpath = ONEPERPATH of 'a list
    that path.  The other types are helpers. *)
 
 type prevState251 =
-    Previous of Fileinfo.typ * Props.t251 * Os.fullfingerprint * Osx.ressStamp
+    Previous of Fileinfo.typ * Props.t251 * Os.fullfingerprint251 * Osx.ressStamp
   | New
 
 type contentschange251 =
     ContentsSame
-  | ContentsUpdated of Os.fullfingerprint * Fileinfo.stamp251 * Osx.ressStamp
+  | ContentsUpdated of Os.fullfingerprint251 * Fileinfo.stamp251 * Osx.ressStamp
 type permchange = PropsSame | PropsUpdated
 
 (* Variable name prefix: "ui" *)

@@ -26,8 +26,13 @@ val delete : Fspath.t -> Path.local -> unit
    sensibly be compared for equality using =.  Internally, a fullfingerprint
    is a pair of the main file's fingerprint and the resource fork fingerprint,
    if any. *)
+type fullfingerprint251
 type fullfingerprint
 val mfullfingerprint : fullfingerprint Umarshal.t
+
+val fp_to_compat251 : fullfingerprint -> fullfingerprint251
+val fp_of_compat251 : fullfingerprint251 -> fullfingerprint
+
 val fullfingerprint_to_string : fullfingerprint -> string
 val reasonForFingerprintMismatch : fullfingerprint -> fullfingerprint -> string
 val fullfingerprint_dummy : fullfingerprint
