@@ -28,10 +28,10 @@ let debug = Trace.debug "transport"
 let fileSize uiFrom uiTo =
   match uiFrom, uiTo with
     _, Updates (File (props, ContentsUpdated _), _) ->
-      (Props.length props, Props.ressLength props)
+      Props.lengths props
   | Updates (_, Previous (`FILE, props, _)),
     (NoUpdates | Updates (File (_, ContentsSame), _)) ->
-      (Props.length props, Props.ressLength props)
+      Props.lengths props
   | _ ->
       assert false
 

@@ -55,8 +55,7 @@ let checkForChangesToSourceLocal
          current source *)
       let clearlyChanged =
            sourceType <> `FILE
-        || Props.length sourceInfo.Fileinfo.desc <> Props.length archDesc
-        || Props.ressLength sourceInfo.Fileinfo.desc <> Props.ressLength archDesc
+        || Props.lengths sourceInfo.Fileinfo.desc <> Props.lengths archDesc
       in
       let clearlyUnchanged =
         not clearlyChanged
@@ -161,9 +160,7 @@ let fileIsTransferred fspathTo pathTo desc fp =
   (Fileinfo.basic info,
    info.Fileinfo.typ = `FILE
      &&
-   Props.length info.Fileinfo.desc = Props.length desc
-     &&
-   Props.ressLength info.Fileinfo.desc = Props.ressLength desc
+   Props.lengths info.Fileinfo.desc = Props.lengths desc
      &&
    let fp' = Os.fingerprint fspathTo pathTo info.Fileinfo.typ in
    fp' = fp)
@@ -634,10 +631,10 @@ let transferFileContents
     match update with
       `Copy ->
         Uutil.Filesize.zero
-    | `Update (destFileDataSize, destFileRessSize) ->
+    | `Update l ->
         match fileKind with
-            `DATA | `DATA_APPEND _ -> destFileDataSize
-          | `RESS -> destFileRessSize
+            `DATA | `DATA_APPEND _ -> Props.length' l
+          | `RESS -> Props.ressLength' l
   in
   let useRsync =
     Prefs.read rsyncActivated
@@ -913,25 +910,48 @@ let finishExternalTransferLocal connFrom
   Xferhint.insertEntry fspathTo pathTo fp;
   Lwt.return res
 
+let update_to_compat251 = function
+  | `Update a -> `Update (Props.Compat.length a, Props.Compat.ressLength a)
+  | `Copy -> `Copy
+
+let update_of_compat251 = function
+  | `Update a -> `Update (Props.Compat.lengths_of_compat251 a)
+  | `Copy -> `Copy
+
 let convV0 = Remote.makeConvV0Funs
   (fun ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
          (update, desc, fp, id)) ->
        (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-         update, Props.to_compat251 desc, fp, Props.Compat.getRessStamp desc, id))
+         update_to_compat251 update, Props.to_compat251 desc,
+         fp, Props.Compat.getRessStamp desc, id))
   (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
          update, desc, fp, ress, id) ->
        ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, Props.Compat.setRessStamp (Props.of_compat251 desc) ress, fp, id)))
+         (update_of_compat251 update,
+         Props.Compat.setRessStamp (Props.of_compat251 desc) ress, fp, id)))
   transferStatus_to_compat251
   transferStatus_of_compat251
 
-let mcopyOrUpdate = Umarshal.(sum2 unit (prod2 Uutil.Filesize.m Uutil.Filesize.m id id)
-                                (function
-                                 | `Copy -> I21 ()
-                                 | `Update (a, b) -> I22 (a, b))
-                                (function
-                                 | I21 () -> `Copy
-                                 | I22 (a, b) -> `Update (a, b)))
+let mcopyOrUpdate =
+  let ifArchBefore202205_u = Umarshal.cond Compat.isArchBefore202205
+                               (Uutil.Filesize.zero, Uutil.Filesize.zero) in
+  let ifArchAfter202205_u =
+    Umarshal.cond Compat.isArchAfter202205 Props.lengthsDummy in
+  Umarshal.(sum2 unit (prod2
+                        (ifArchBefore202205_u
+                          (prod2 Uutil.Filesize.m Uutil.Filesize.m id id))
+                        (ifArchAfter202205_u Props.mlengths)
+                        (fun a -> ((Props.Compat.length a, Props.Compat.ressLength a), a))
+                        (fun (a, b) ->
+                           if Compat.isArchBefore202205 () then
+                             Props.Compat.lengths_of_compat251 a
+                           else b))
+              (function
+               | `Copy -> I21 ()
+               | `Update a -> I22 a)
+              (function
+               | I21 () -> `Copy
+               | I22 a -> `Update a))
 
 let mfinishExternalTransfer =
   Umarshal.(prod2
@@ -1040,11 +1060,13 @@ let convV0 = Remote.makeConvV0Funs
   (fun ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
          (update, desc, fp, id)) ->
        (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-         update, Props.to_compat251 desc, fp, Props.Compat.getRessStamp desc, id))
+         update_to_compat251 update, Props.to_compat251 desc,
+         fp, Props.Compat.getRessStamp desc, id))
   (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
          update, desc, fp, ress, id) ->
        ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, Props.Compat.setRessStamp (Props.of_compat251 desc) ress, fp, id)))
+         (update_of_compat251 update,
+         Props.Compat.setRessStamp (Props.of_compat251 desc) ress, fp, id)))
   (function
    | `DONE (a, b) -> `DONE (transferStatus_to_compat251 a, b)
    | `EXTERNAL a -> `EXTERNAL a)

@@ -7,7 +7,7 @@ val file :
  -> Fspath.t            (* fspath of target *)
  -> Path.local          (* path of target (temp location) *)
  -> Path.local          (* path of "real" (original) target *)
- -> [`Update of (Uutil.Filesize.t * Uutil.Filesize.t) | `Copy]
+ -> [`Update of Props.lengths | `Copy]
  -> Props.t             (* permissions for new file *)
  -> Os.fullfingerprint  (* fingerprint of file *)
  -> Fileinfo.stamp option (* source file stamp, if available *)
@@ -20,7 +20,7 @@ val localFile :
  -> Fspath.t             (* fspath of target *)
  -> Path.local           (* path of target *)
  -> Path.local           (* path of "real" [original] target *)
- -> [`Update of (Uutil.Filesize.t * Uutil.Filesize.t) | `Copy]
+ -> [`Update of Props.lengths | `Copy]
  -> Props.t              (* permissions for new file *)
  -> Uutil.File.t option  (* file's index in UI (for progress bars), if appropriate *)
  -> unit

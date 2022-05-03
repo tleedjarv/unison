@@ -22,7 +22,7 @@ val copyReg : Lwt_util.region
 (* is performed atomically (or as close to atomically as the os will         *)
 (* support) using temporary files.                                           *)
 val copy :
-     [`Update of (Uutil.Filesize.t * Uutil.Filesize.t) | `Copy]
+     [`Update of Props.lengths | `Copy]
                                 (* whether there was already a file *)
   -> Common.root                (* from what root *)
   -> Path.t                     (* from what path *)

@@ -940,6 +940,33 @@ let extUnchanged newP oldP ?t0 dataUnchanged =
   AppleRsrc.ressUnchanged newP.rsrc oldP.rsrc t0 dataUnchanged
 
 (* ------------------------------------------------------------------------- *)
+(*                               Data lengths                                *)
+(* ------------------------------------------------------------------------- *)
+
+type lengths =
+  { length : Uutil.Filesize.t;
+    ress : Uutil.Filesize.t;
+  }
+
+let mlengths = Umarshal.(prod2 Uutil.Filesize.m Uutil.Filesize.m
+                          (fun {length; ress} -> (length, ress))
+                          (fun (length, ress) -> {length; ress}))
+
+let lengthsDummy =
+  { length = Uutil.Filesize.dummy;
+    ress = Uutil.Filesize.dummy;
+  }
+
+let lengths p =
+  { length = length p;
+    ress = ressLength p;
+  }
+
+let length' (l : lengths) = l.length
+
+let ressLength' (l : lengths) = l.ress
+
+(* ------------------------------------------------------------------------- *)
 (*                          Directory change stamps                          *)
 (* ------------------------------------------------------------------------- *)
 
@@ -977,4 +1004,10 @@ module Compat = struct
 
   let setRessStamp p stamp = {p with rsrc = AppleRsrc.setRessStamp p.rsrc stamp}
   let basic_setRessStamp = setRessStamp
+
+  let length (l : lengths) = l.length
+
+  let ressLength (l : lengths) = l.ress
+
+  let lengths_of_compat251 (length, ress) = {lengthsDummy with length; ress} [@@warning "-23"]
 end

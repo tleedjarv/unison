@@ -41,6 +41,13 @@ val perms : _ props -> int
 val extUnchanged : _ props -> _ props -> ?t0:float -> bool -> bool
 val ressLength : _ props -> Uutil.Filesize.t
 
+type lengths
+val mlengths : lengths Umarshal.t
+val lengthsDummy : lengths
+val lengths : _ props -> lengths
+val length' : lengths -> Uutil.Filesize.t
+val ressLength' : lengths -> Uutil.Filesize.t
+
 val fileDefault : basic
 val fileSafe : t
 val dirDefault : basic
@@ -66,4 +73,8 @@ module Compat : sig
   val getRessStamp : _ props -> Osx.ressStamp
   val setRessStamp : t -> Osx.ressStamp -> t
   val basic_setRessStamp : basic -> Osx.ressStamp -> basic
+
+  val length : lengths -> Uutil.Filesize.t
+  val ressLength : lengths -> Uutil.Filesize.t
+  val lengths_of_compat251 : Uutil.Filesize.t * Uutil.Filesize.t -> lengths
 end
