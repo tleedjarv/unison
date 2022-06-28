@@ -696,9 +696,14 @@ type t =
     typeCreator : TypeCreator.t;
     length : Uutil.Filesize.t }
 
+type _ props = t
+type basic = [`Basic] props
+
 let m = Umarshal.(prod6 Perm.m Uid.m Gid.m Time.m TypeCreator.m Uutil.Filesize.m
                     (fun {perm; uid; gid; time; typeCreator; length} -> perm, uid, gid, time, typeCreator, length)
                     (fun (perm, uid, gid, time, typeCreator, length) -> {perm; uid; gid; time; typeCreator; length}))
+
+let mbasic = m
 
 let to_compat251 (p : t) : t251 =
   { perm = p.perm;
@@ -716,12 +721,17 @@ let of_compat251 (p : t251) : t =
     typeCreator = p.typeCreator;
     length = p.length }
 
+let basic_to_compat251 (p : basic) : t251 = to_compat251 p
+let basic_of_compat251 (p : t251) : basic = of_compat251 p
+
 let template perm =
   { perm = perm; uid = Uid.dummy; gid = Gid.dummy;
     time = Time.dummy; typeCreator = TypeCreator.dummy;
     length = Uutil.Filesize.dummy }
 
 let dummy = template Perm.dummy
+
+let basicDummy = dummy
 
 let hash p h =
   h
@@ -800,17 +810,23 @@ let diff p p' =
     typeCreator = TypeCreator.diff p.typeCreator p'.typeCreator;
     length = p'.length }
 
-let get stats infos =
+let get' stats =
   { perm = Perm.get stats;
     uid = Uid.get stats;
     gid = Gid.get stats;
     time = Time.get stats;
-    typeCreator = TypeCreator.get stats infos;
+    typeCreator = TypeCreator.dummy;
     length =
       if stats.Unix.LargeFile.st_kind = Unix.S_REG then
         Uutil.Filesize.fromStats stats
       else
         Uutil.Filesize.zero }
+
+let get stats infos =
+  let props = get' stats in
+  { props with
+    typeCreator = TypeCreator.get stats infos;
+  }
 
 let set fspath path kind p =
   let abspath = Fspath.concat fspath path in
