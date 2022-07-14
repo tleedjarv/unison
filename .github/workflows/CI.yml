@@ -153,6 +153,11 @@ jobs:
 
     - run: opam exec -- make test
 
+    - run: sudo apt-get install attr
+      if: runner.os == 'Linux'
+
+    - run: opam exec -- make -C src testxattr
+
     ## There is still code to run tests with old ocaml on Windows.
     ## That remains intentionally so that someone could turn it on if
     ## desired.
