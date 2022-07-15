@@ -95,8 +95,11 @@ let blit_from_bytes s i a j l =
 let blit_to_bytes a i s j l =
   if l < 0 || i < 0 || i > length a - l
            || j < 0 || j > Bytes.length s - l
-  then invalid_arg "Bytearray.blit_to_bytes"
-  else unsafe_blit_to_bytes a i s j l
+  then begin
+    Printf.eprintf "\nl = %d; i = %d; j = %d; len a = %d; len s = %d\n"
+      l i j (length a) (Bytes.length s);
+    invalid_arg "Bytearray.blit_to_bytes"
+  end else unsafe_blit_to_bytes a i s j l
 
 external marshal : 'a -> Marshal.extern_flags list -> t
   = "ml_marshal_to_bigarray"
