@@ -158,6 +158,8 @@ jobs:
 
     - run: opam exec -- make -C src testxattr
 
+    - run: opam exec -- make -C src testacl
+
     ## There is still code to run tests with old ocaml on Windows.
     ## That remains intentionally so that someone could turn it on if
     ## desired.
