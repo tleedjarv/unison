@@ -5,4 +5,334 @@ on:
   - push
 
 jobs:
+  freebsd:
+    runs-on: ubuntu-latest
 
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: FreeBSD
+      uses: vmactions/freebsd-vm@v1
+      with:
+        usesh: true
+        copyback: false
+        prepare: |
+          pkg install -y wget gmake libinotify pkgconf
+
+        run: |
+          ## Build OCaml compiler
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
+          tar zxf 4.14.2.tar.gz || true
+          cd ocaml-4.14.2
+          ./configure
+          gmake
+          gmake install
+          cd ..
+          rm -rf ocaml-4.14.2
+
+          ## Build unison
+          gmake
+
+          ## Run unison tests
+          # Built-in tests
+          gmake test
+          echo TEST | src/unison-fsmonitor
+          # RPC tests over local socket
+          mkdir localsocket
+          chmod 700 localsocket
+          # Separate backup dir must be set for server instance so that the central
+          # backup location of both instances doesn't overlap
+          UNISONBACKUPDIR=./src/testbak4 ./src/unison -socket ./localsocket/test.sock &
+          sleep 1 # Wait for the server to be fully started
+          test -S ./localsocket/test.sock
+          ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+          ## Build bytecode
+          rm src/unison src/unison-fsmonitor
+          gmake NATIVE=false
+
+  openbsd:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: OpenBSD
+      uses: vmactions/openbsd-vm@v1
+      with:
+        usesh: true
+        copyback: false
+        prepare: |
+          pkg_add wget gmake libinotify pkgconf
+
+        run: |
+          ## Build OCaml compiler
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
+          tar zxf 4.14.2.tar.gz || true
+          cd ocaml-4.14.2
+          ./configure
+          gmake
+          gmake install
+          cd ..
+          rm -rf ocaml-4.14.2
+
+          ## Build unison
+          gmake
+
+          ## Run unison tests
+          # Built-in tests
+          gmake test
+          echo TEST | src/unison-fsmonitor
+          # RPC tests over local socket
+          mkdir localsocket
+          chmod 700 localsocket
+          # Separate backup dir must be set for server instance so that the central
+          # backup location of both instances doesn't overlap
+          UNISONBACKUPDIR=./src/testbak4 ./src/unison -socket ./localsocket/test.sock &
+          sleep 1 # Wait for the server to be fully started
+          test -S ./localsocket/test.sock
+          ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+          ## Build bytecode
+          rm src/unison src/unison-fsmonitor
+          gmake NATIVE=false
+
+  netbsd:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: NetBSD
+      uses: vmactions/netbsd-vm@v1
+      with:
+        usesh: true
+        copyback: false
+        prepare: |
+          /usr/sbin/pkg_add wget gmake libinotify pkgconf
+
+        run: |
+          ## Build OCaml compiler
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
+          tar zxf 4.14.2.tar.gz || true
+          cd ocaml-4.14.2
+          ./configure
+          gmake
+          gmake install
+          cd ..
+          rm -rf ocaml-4.14.2
+
+          ## Build unison
+          gmake
+
+          ## Run unison tests
+          # Built-in tests
+          gmake test
+          echo TEST | src/unison-fsmonitor
+          # RPC tests over local socket
+          mkdir localsocket
+          chmod 700 localsocket
+          # Separate backup dir must be set for server instance so that the central
+          # backup location of both instances doesn't overlap
+          UNISONBACKUPDIR=./src/testbak4 ./src/unison -socket ./localsocket/test.sock &
+          sleep 1 # Wait for the server to be fully started
+          test -S ./localsocket/test.sock
+          ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+          ## Build bytecode
+          rm src/unison src/unison-fsmonitor
+          gmake NATIVE=false
+
+  dragonflybsd:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: DragonflyBSD
+      uses: vmactions/dragonflybsd-vm@v1
+      with:
+        usesh: true
+        copyback: false
+        prepare: |
+          pkg install -y wget gmake libinotify pkgconf
+
+        run: |
+          ## Build OCaml compiler
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
+          tar zxf 4.14.2.tar.gz || true
+          cd ocaml-4.14.2
+          ./configure
+          gmake
+          gmake install
+          cd ..
+          rm -rf ocaml-4.14.2
+
+          ## Build unison
+          gmake
+
+          ## Run unison tests
+          # Built-in tests
+          gmake test
+          echo TEST | src/unison-fsmonitor
+          # RPC tests over local socket
+          mkdir localsocket
+          chmod 700 localsocket
+          # Separate backup dir must be set for server instance so that the central
+          # backup location of both instances doesn't overlap
+          #export UNISONBACKUPDIR=./src/testbak4
+          #./src/unison -socket ./localsocket/test.sock &
+          #unset UNISONBACKUPDIR
+          #sleep 1 # Wait for the server to be fully started
+          #test -S ./localsocket/test.sock
+          #export UNISONBACKUPDIR=./src/testbak3
+          #./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+          ## Build bytecode
+          rm src/unison src/unison-fsmonitor
+          gmake NATIVE=false
+
+  omnios:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Omnios
+      uses: vmactions/omnios-vm@v1
+      with:
+        usesh: true
+        copyback: false
+        prepare: |
+          pkg install wget gnu-make gcc14
+
+        run: |
+          ## Build OCaml compiler
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
+          tar zxf 4.14.2.tar.gz || true
+          cd ocaml-4.14.2
+          ./configure --prefix=/usr CC="gcc -m64"
+          gmake
+          gmake install
+          cd ..
+          rm -rf ocaml-4.14.2
+
+          ## Build unison
+          gmake
+
+          ## Run unison tests
+          # Built-in tests
+          gmake test
+          echo TEST | src/unison-fsmonitor
+          # RPC tests over local socket
+          mkdir localsocket
+          chmod 700 localsocket
+          # Separate backup dir must be set for server instance so that the central
+          # backup location of both instances doesn't overlap
+          UNISONBACKUPDIR=./src/testbak4 ./src/unison -socket ./localsocket/test.sock &
+          sleep 1 # Wait for the server to be fully started
+          test -S ./localsocket/test.sock
+          ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+          ## Build bytecode
+          rm src/unison src/unison-fsmonitor
+          gmake NATIVE=false
+
+  solaris:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Solaris
+      uses: vmactions/solaris-vm@v1
+      with:
+        release: "11.4-gcc"
+        usesh: true
+        copyback: false
+        prepare: |
+          pkg install wget gnu-make gcc
+
+        run: |
+          ## Build OCaml compiler
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
+          tar zxf 4.14.2.tar.gz || true
+          cd ocaml-4.14.2
+          ./configure --prefix=/usr CC="gcc -m64"
+          gmake
+          gmake install
+          cd ..
+          rm -rf ocaml-4.14.2
+
+          ## Build unison
+          gmake
+
+          ## Run unison tests
+          # Built-in tests
+          gmake test
+          echo TEST | src/unison-fsmonitor
+          # RPC tests over local socket
+          mkdir localsocket
+          chmod 700 localsocket
+          # Separate backup dir must be set for server instance so that the central
+          # backup location of both instances doesn't overlap
+          UNISONBACKUPDIR=./src/testbak4 ./src/unison -socket ./localsocket/test.sock &
+          sleep 1 # Wait for the server to be fully started
+          test -S ./localsocket/test.sock
+          ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+          ## Build bytecode
+          rm src/unison src/unison-fsmonitor
+          gmake NATIVE=false
+
+#  solarisstudio:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - uses: actions/checkout@v4
+#
+#    - name: Solaris
+#      uses: vmactions/solaris-vm@v1
+#      with:
+#        usesh: true
+#        copyback: false
+#        prepare: |
+#          pkg install wget gnu-make sunpro-incorporation developer-studio-utilities
+#          # Installing Studio compilers requires a key and cert from Oracle
+#          #mkdir -m 0775 -p /var/pkg/ssl
+#          #mv pkg.oracle.com.key.pem /var/pkg/ssl
+#          #mv pkg.oracle.com.certificate.pem /var/pkg/ssl
+#          #pkg set-publisher -k /var/pkg/ssl/pkg.oracle.com.key.pem -c /var/pkg/ssl/pkg.oracle.com.certificate.pem -G '*' -g https://pkg.oracle.com/solarisstudio/release solarisstudio
+#          #pkg install --accept developerstudio-126/cc
+#
+#        run: |
+#          ## Build OCaml compiler
+#          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
+#          tar zxf 4.14.2.tar.gz
+#          cd ocaml-4.14.2
+#          ./configure --prefix=/usr CC="cc -m64" ## cc -xarch=generic64
+#          gmake
+#          gmake install
+#          cd ..
+#          rm -rf ocaml-4.14.2
+#
+#          ## Build unison
+#          gmake
+#
+#          ## Run unison tests
+#          # Built-in tests
+#          gmake test
+#          echo TEST | src/unison-fsmonitor
+#          # RPC tests over local socket
+#          mkdir localsocket
+#          chmod 700 localsocket
+#          # Separate backup dir must be set for server instance so that the central
+#          # backup location of both instances doesn't overlap
+#          UNISONBACKUPDIR=./src/testbak4 ./src/unison -socket ./localsocket/test.sock &
+#          sleep 1 # Wait for the server to be fully started
+#          test -S ./localsocket/test.sock
+#          ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+#
+#          ## Build bytecode
+#          rm src/unison src/unison-fsmonitor
+#          gmake NATIVE=false
