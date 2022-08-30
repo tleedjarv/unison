@@ -52,6 +52,9 @@ jobs:
           test -S ./localsocket/test.sock
           ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
+          gmake -C src testxattr
+          gmake -C src testacl
+
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
           gmake NATIVE=false
@@ -98,6 +101,9 @@ jobs:
           test -S ./localsocket/test.sock
           ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
+          gmake -C src testxattr
+          gmake -C src testacl
+
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
           gmake NATIVE=false
@@ -143,6 +149,9 @@ jobs:
           sleep 1 # Wait for the server to be fully started
           test -S ./localsocket/test.sock
           ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+          gmake -C src testxattr
+          gmake -C src testacl
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
@@ -193,6 +202,9 @@ jobs:
           #export UNISONBACKUPDIR=./src/testbak3
           #./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
+          gmake -C src testxattr
+          gmake -C src testacl
+
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
           gmake NATIVE=false
@@ -238,6 +250,9 @@ jobs:
           sleep 1 # Wait for the server to be fully started
           test -S ./localsocket/test.sock
           ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+          gmake -C src testxattr
+          gmake -C src testacl
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
@@ -285,6 +300,9 @@ jobs:
           sleep 1 # Wait for the server to be fully started
           test -S ./localsocket/test.sock
           ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+          gmake -C src testxattr
+          gmake -C src testacl
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
@@ -337,6 +355,9 @@ jobs:
 #          sleep 1 # Wait for the server to be fully started
 #          test -S ./localsocket/test.sock
 #          ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+#
+#          gmake -C src testxattr
+#          gmake -C src testacl
 #
 #          ## Build bytecode
 #          rm src/unison src/unison-fsmonitor
