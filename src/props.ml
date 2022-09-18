@@ -127,6 +127,7 @@ let fileperm2perm p = (p, Prefs.read permMask)
 (* Are two perms similar (for update detection and recon)                    *)
 let similar (p1, m1) (p2, m2) =
   let m = Prefs.read permMask in
+  debug (fun () -> Util.msg "perms: (%d, %d) (%d, %d) %d\n" p1 m1 p2 m2 m);
   m1 land m = m && m2 land m = m &&
   p1 land m = p2 land m
 
@@ -324,22 +325,23 @@ let hash id h =
      | IdNamed nm  -> Uutil.hash nm)
     h
 
+let toString id =
+  match id with
+    IdIgnored   -> ""
+  | IdNumeric i -> " " ^ M.kind ^ "=" ^ string_of_int i
+  | IdNamed n   -> " " ^ M.kind ^ "=" ^ n
+
 let similar id id' =
-  not (Prefs.read M.sync)
+  debug (fun () -> Util.msg "id: %b || %s = %s\n" (not (Prefs.read M.sync)) (toString id) (toString id'));
+  (not (Prefs.read M.sync)
     ||
-  (id <> IdIgnored && id' <> IdIgnored && id = id')
+  (id <> IdIgnored && id' <> IdIgnored && id = id'))
 
 let override id id' = id'
 
 let strip id = if Prefs.read M.sync then id else IdIgnored
 
 let diff id id' = if similar id id' then IdIgnored else id'
-
-let toString id =
-  match id with
-    IdIgnored   -> ""
-  | IdNumeric i -> " " ^ M.kind ^ "=" ^ string_of_int i
-  | IdNamed n   -> " " ^ M.kind ^ "=" ^ n
 
 let syncedPartsToString = toString
 
@@ -499,7 +501,12 @@ let hash t h =
    dealing with systems with sub-second granularity (we have no control
    on how this is may be rounded). *)
 let similar t t' =
-  not (Prefs.read sync)
+  let ds = function
+    | Synced v -> Printf.sprintf "%s %f" "Synced" v
+    | NotSynced v -> Printf.sprintf "%s %f" "NotSynced" v
+  in
+  debug (fun () -> Util.msg "time: %b || %s = %s\n" (not (Prefs.read sync)) (ds t) (ds t'));
+  (not (Prefs.read sync)
     ||
   match t, t' with
     Synced v, Synced v'      ->
@@ -508,7 +515,7 @@ let similar t t' =
   | NotSynced _, NotSynced _ ->
       true
   | _                        ->
-      false
+      false)
 
 let override t t' =
   match t, t' with
@@ -649,7 +656,12 @@ let dummy = None
 let hash t h = Uutil.hash2 (Uutil.hash t) h
 
 let similar t t' =
-  not (Prefs.read Osx.rsrc) || t = t'
+  let ds = function
+    | None -> "None"
+    | Some v -> v
+  in
+  debug (fun () -> Util.msg "rsrc: %b || %s = %s\n" (not (Prefs.read Osx.rsrc)) (ds t) (ds t'));
+  (not (Prefs.read Osx.rsrc) || t = t')
 
 let override t t' = t'
 
@@ -762,6 +774,7 @@ let hash251 (p : t251) h =
              (TypeCreator.hash p.typeCreator h))))
 
 let similar p p' =
+  let r = (
   Perm.similar p.perm p'.perm
     &&
   Uid.similar p.uid p'.uid
@@ -770,7 +783,9 @@ let similar p p' =
     &&
   Time.similar p.time p'.time
     &&
-  TypeCreator.similar p.typeCreator p'.typeCreator
+  TypeCreator.similar p.typeCreator p'.typeCreator) in
+  debug (fun () -> Util.msg "similar = %b\n--------------\n" r);
+  r
 
 let override p p' =
   { perm = Perm.override p.perm p'.perm;
