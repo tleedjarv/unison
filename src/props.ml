@@ -669,15 +669,29 @@ let strip t = t
 
 let diff t t' = if similar t t' then None else t'
 
-let zeroes = "\000\000\000\000\000\000\000\000"
+let zeroes = "\000\000\000\000\000\000\000\000\000\000\000\000"
+
+let flagsToHex s =
+  let flags = String.sub s (if s.[0] = 'F' then 9 else 1) 4 in
+  if flags = String.sub zeroes 0 4 then
+    ""
+  else
+    let fl = (Char.code flags.[0] lsl 8) + Char.code flags.[1]
+    and xfl = (Char.code flags.[2] lsl 8) + Char.code flags.[3] in
+    (Printf.sprintf " 0x%04x" fl)
+    ^ (if xfl = 0 then "" else Printf.sprintf " 0x%04x" xfl)
 
 let toString t =
   match t with
-    Some s when String.length s > 0 && s.[0] = 'F' &&
-                String.sub (s ^ zeroes) 1 8 <> zeroes ->
+    Some s when String.length s > 0 &&
+                String.sub (s ^ zeroes) 1 12 <> zeroes ->
       let s = s ^ zeroes in
-      " " ^ String.escaped (String.sub s 1 4) ^
-      " " ^ String.escaped (String.sub s 5 4)
+      begin if s.[0] = 'F' then
+        " " ^ String.escaped (String.sub s 1 4) ^
+        " " ^ String.escaped (String.sub s 5 4)
+      else
+        " "
+      end ^ (flagsToHex s)
   | _ ->
       ""
 
