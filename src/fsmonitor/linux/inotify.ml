@@ -85,31 +85,24 @@ external rm_watch : Unix.file_descr -> wd -> unit = "stub_inotify_rm_watch"
 external convert : string -> (wd * type_event list * int32 * int)
                  = "stub_inotify_convert"
 external struct_size : unit -> int = "stub_inotify_struct_size"
+external min_buf_size : unit -> int = "stub_inotify_min_buf_size"
 
-external to_read : Unix.file_descr -> int = "stub_inotify_ioctl_fionread"
+let struct_size = struct_size ()
+let min_buf_size = min_buf_size ()
 
-let read fd =
-        let ss = struct_size () in
-        let toread = to_read fd in
+let parse buf bofs blen =
+  let c_string buf ofs len =
+    Bytes.sub_string buf ofs
+      (try Bytes.index_from buf ofs '\000' - ofs with Not_found -> len)
+  in
 
-        let ret = ref [] in
-        let buf = Bytes.make toread '\000' in
-        let toread = Unix.read fd buf 0 toread in
-
-        let read_c_string offset len =
-                let index = ref 0 in
-                while !index < len && Bytes.get buf (offset + !index) <> '\000' do incr index done;
-                Bytes.sub_string buf offset !index
-                in
-
-        let i = ref 0 in
-
-        while !i < toread
-        do
-                let wd, l, cookie, len = convert (Bytes.sub_string buf !i ss) in
-                let s = if len > 0 then Some (read_c_string (!i + ss) len) else None in
-                ret := (wd, l, cookie, s) :: !ret;
-                i := !i + (ss + len);
-        done;
-
-        List.rev !ret
+  let rec parse_aux ofs acc =
+    if ofs >= blen then
+      List.rev acc
+    else
+      let struct_end = ofs + struct_size in
+      let wd, l, cookie, len = convert (Bytes.sub_string buf ofs struct_size) in
+      let s = if len > 0 then Some (c_string buf struct_end len) else None in
+      parse_aux (struct_end + len) ((wd, l, cookie, s) :: acc)
+  in
+  parse_aux bofs []

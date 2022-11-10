@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <limits.h>
 #include <sys/ioctl.h>
 #include <sys/inotify.h>
 #include <caml/mlvalues.h>
@@ -55,22 +56,10 @@ CAMLprim value stub_inotify_init(value unit)
         CAMLparam1(unit);
         int fd;
 
-        fd = inotify_init();
+        fd = inotify_init1(IN_CLOEXEC);
         if (fd == -1)
                 caml_uerror("inotify_init", Nothing);
         CAMLreturn(Val_int(fd));
-}
-
-CAMLprim value stub_inotify_ioctl_fionread(value fd)
-{
-        CAMLparam1(fd);
-        int rc, bytes;
-
-        rc = ioctl(Int_val(fd), FIONREAD, &bytes);
-        if (rc == -1)
-                caml_uerror("ioctl fionread", Nothing);
-
-        CAMLreturn(Val_int(bytes));
 }
 
 CAMLprim value stub_inotify_add_watch(value fd, value path, value mask)
@@ -100,6 +89,12 @@ CAMLprim value stub_inotify_struct_size(void)
 {
         CAMLparam0();
         CAMLreturn(Val_int(sizeof(struct inotify_event)));
+}
+
+CAMLprim value stub_inotify_min_buf_size(void)
+{
+        CAMLparam0();
+        CAMLreturn(Val_int(Int_val(stub_inotify_struct_size()) + NAME_MAX + 1));
 }
 
 CAMLprim value stub_inotify_convert(value buf)

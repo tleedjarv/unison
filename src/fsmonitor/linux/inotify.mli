@@ -62,4 +62,6 @@ val string_of_event : type_event -> string
 val init : unit -> Unix.file_descr
 val add_watch : Unix.file_descr -> string -> select_event list -> wd
 val rm_watch : Unix.file_descr -> wd -> unit
-val read : Unix.file_descr -> event list
+val parse : bytes -> int -> int -> event list
+
+val min_buf_size : int

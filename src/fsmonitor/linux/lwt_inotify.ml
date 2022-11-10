@@ -22,6 +22,9 @@ type t =
     lwt_fd : Lwt_unix.file_descr;
   }
 
+let buf_size =
+  max Inotify.min_buf_size (min (Inotify.min_buf_size * 100) 65536)
+
 let init () =
   let fd = Inotify.init () in
   { fd = fd;
@@ -37,8 +40,10 @@ let rm_watch st wd =
 (*  Lwt_unix.check_descriptor st.lwt_fd;*)
   Inotify.rm_watch st.fd wd
 
-let rec read st =
-  Lwt_unix.wait_read st.lwt_fd >>= fun () ->
-  try Lwt.return (Inotify.read st.fd) with Unix.Unix_error (EAGAIN, _, _) -> read st
+let read st =
+  (* We don't want to deal with races; create a new buffer every time *)
+  let buf = Bytes.create buf_size in
+  Lwt_unix.read st.lwt_fd buf 0 buf_size >>= fun nread ->
+  Lwt.return (Inotify.parse buf 0 nread)
 
 let close st = Lwt_unix.close st.lwt_fd
