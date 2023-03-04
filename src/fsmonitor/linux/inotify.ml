@@ -82,7 +82,7 @@ external init : unit -> Unix.file_descr = "stub_inotify_init"
 external add_watch : Unix.file_descr -> string -> select_event list -> wd
                    = "stub_inotify_add_watch"
 external rm_watch : Unix.file_descr -> wd -> unit = "stub_inotify_rm_watch"
-external convert : string -> (wd * type_event list * int32 * int)
+external convert : bytes -> int -> (wd * type_event list * int32 * int)
                  = "stub_inotify_convert"
 external struct_size : unit -> int = "stub_inotify_struct_size"
 external min_buf_size : unit -> int = "stub_inotify_min_buf_size"
@@ -90,18 +90,17 @@ external min_buf_size : unit -> int = "stub_inotify_min_buf_size"
 let struct_size = struct_size ()
 let min_buf_size = min_buf_size ()
 
-let parse buf bofs blen =
-  let c_string buf ofs len =
-    Bytes.sub_string buf ofs
-      (try Bytes.index_from buf ofs '\000' - ofs with Not_found -> len)
-  in
+let c_string buf ofs len =
+  Bytes.sub_string buf ofs
+    (try Bytes.index_from buf ofs '\000' - ofs with Not_found -> len)
 
+let parse buf bofs blen =
   let rec parse_aux ofs acc =
     if ofs >= blen then
       List.rev acc
     else
       let struct_end = ofs + struct_size in
-      let wd, l, cookie, len = convert (Bytes.sub_string buf ofs struct_size) in
+      let wd, l, cookie, len = convert buf ofs in
       let s = if len > 0 then Some (c_string buf struct_end len) else None in
       parse_aux (struct_end + len) ((wd, l, cookie, s) :: acc)
   in

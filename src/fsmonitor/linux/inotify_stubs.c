@@ -97,20 +97,20 @@ CAMLprim value stub_inotify_min_buf_size(void)
         CAMLreturn(Val_int(Int_val(stub_inotify_struct_size()) + NAME_MAX + 1));
 }
 
-CAMLprim value stub_inotify_convert(value buf)
+CAMLprim value stub_inotify_convert(value buf, value ofs)
 {
         CAMLparam1(buf);
         CAMLlocal3(event, l, tmpl);
-        struct inotify_event ev;
+        struct inotify_event *ev;
         int i;
 
         l = Val_emptylist;
         tmpl = Val_emptylist;
 
-        memcpy(&ev, String_val(buf), sizeof(struct inotify_event));
+        ev = (struct inotify_event *)(Bytes_val(buf) + Int_val(ofs));
 
         for (i = 0; inotify_return_table[i]; i++) {
-                if (!(ev.mask & inotify_return_table[i]))
+                if (!(ev->mask & inotify_return_table[i]))
                         continue;
                 tmpl = caml_alloc_small(2, Tag_cons);
                 Field(tmpl, 0) = Val_int(i);
@@ -119,10 +119,10 @@ CAMLprim value stub_inotify_convert(value buf)
         }
 
         event = caml_alloc_tuple(4);
-        Store_field(event, 0, Val_int(ev.wd));
+        Store_field(event, 0, Val_int(ev->wd));
         Store_field(event, 1, l);
-        Store_field(event, 2, caml_copy_int32(ev.cookie));
-        Store_field(event, 3, Val_int(ev.len));
+        Store_field(event, 2, caml_copy_int32(ev->cookie));
+        Store_field(event, 3, Val_int(ev->len));
 
         CAMLreturn(event);
 }
