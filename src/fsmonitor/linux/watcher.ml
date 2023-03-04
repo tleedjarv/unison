@@ -141,7 +141,8 @@ let previous_event = ref None
 let clear_event_memory () = previous_event := None
 
 let rec watch_rec () =
-  Lwt_inotify.read st >>= fun ((wd, evl, _, nm_opt) as ev) ->
+  Lwt_inotify.read st >>= fun evlist ->
+  evlist |> List.iter (fun ((wd, evl, _, nm_opt) as ev) ->
   let time = Unix.gettimeofday () in
   if !previous_event <> Some ev then begin
     previous_event := Some ev;
@@ -161,7 +162,7 @@ let rec watch_rec () =
       if !Watchercommon.debug then Format.eprintf "OVERFLOW@.";
       signal_overflow ()
     end
-  end;
+  end);
   watch_rec ()
 
 let watch () =

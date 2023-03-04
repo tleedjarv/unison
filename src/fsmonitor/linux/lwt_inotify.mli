@@ -6,5 +6,5 @@ type t
 val init : unit -> t
 val add_watch : t -> string -> Inotify.select_event list -> Inotify.wd
 val rm_watch : t -> Inotify.wd -> unit
-val read : t -> Inotify.event Lwt.t
+val read : t -> Inotify.event list Lwt.t
 val close : t -> unit (*Lwt.t*)

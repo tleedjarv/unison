@@ -20,14 +20,14 @@ let (>>=) = Lwt.bind
 type t =
   { fd : Unix.file_descr;
     lwt_fd : Lwt_unix.file_descr;
-    q : Inotify.event Queue.t }
+  }
 
 let init () =
   let fd = Inotify.init () in
   { fd = fd;
     lwt_fd =
       Lwt_unix.of_unix_file_descr (*~blocking:false ~set_flags:true*) fd;
-    q = Queue.create () }
+  }
 
 let add_watch st path sel =
 (*  Lwt_unix.check_descriptor st.lwt_fd;*)
@@ -38,12 +38,7 @@ let rm_watch st wd =
   Inotify.rm_watch st.fd wd
 
 let rec read st =
-  try
-    Lwt.return (Queue.take st.q)
-  with Queue.Empty ->
-    Lwt_unix.wait_read st.lwt_fd >>= fun () ->
-    let l = try Inotify.read st.fd with Unix.Unix_error (EAGAIN, _, _) -> [] in
-    List.iter (fun ev -> Queue.push ev st.q) l;
-    read st
+  Lwt_unix.wait_read st.lwt_fd >>= fun () ->
+  try Lwt.return (Inotify.read st.fd) with Unix.Unix_error (EAGAIN, _, _) -> read st
 
 let close st = Lwt_unix.close st.lwt_fd
