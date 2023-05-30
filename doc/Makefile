@@ -26,8 +26,12 @@ unisonversion.tex: ../src/Makefile.ProjectInfo
 # jobname (or, output name for hevea) so that files for non-text versions are
 # not overwritten. Here, suffix -text is used.
 
-%-text-directives.tex:
-	printf '$(TEXDIRECTIVES)\\textversiontrue\\draft$(DRAFT)' > $@
+%-text-directives.tex: TEXTVERSION = true
+%-directives.tex: TEXTVERSION = false
+
+.NOTINTERMEDIATE: %-directives.tex
+%-directives.tex:
+	printf '$(TEXDIRECTIVES)\\textversion$(TEXTVERSION)\\draft$(DRAFT)' > $@
 
 %.dtxt: %.tex %-text-directives.tex
 ifeq ($(HEVEA),true)
@@ -44,9 +48,6 @@ endif
 ifeq ($(HEVEA),true)
 	ocaml docs.ml < $< > $@
 endif
-
-%-directives.tex:
-	printf '$(TEXDIRECTIVES)\\textversionfalse\\draft$(DRAFT)' > $@
 
 # (pdf)latex must be run multiple times to generate toc and correct references
 
