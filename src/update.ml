@@ -299,17 +299,16 @@ let archiveName251 fspath (v: archiveVersion): string * string =
 (*****************************************************************************)
 
 (* [checkArchive] checks the sanity of an archive, and returns its
-   hash-value. 'Sanity' means (1) no repeated name under any path, and (2)
-   NoArchive appears only at root-level (indicated by [top]).  Property: Two
+   hash-value. 'Sanity' means no repeated name under any path.  Property: Two
    archives of the same labeled-tree structure have the same hash-value.
    NB: [h] is the hash accumulator *)
 (* Note that we build the current path as a list of names, as this is
    much cheaper than using values of type [Path.t] *)
 let rec checkArchive
-      (top: bool) (path: Name.t list) (arch: archive) (h: int): int =
+      ?(verify = true) (path: Name.t list) (arch: archive) (h: int): int =
   match arch with
     ArchiveDir (desc, children) ->
-      begin match NameMap.validate children with
+      if verify then begin match NameMap.validate children with
         `Ok ->
           ()
       | `Duplicate nm ->
@@ -333,7 +332,7 @@ let rec checkArchive
       NameMap.fold
         (fun n a h ->
            Uutil.hash2 (Name.hash n)
-                       (checkArchive false (n :: path) a h))
+                       (checkArchive ~verify (n :: path) a h))
         children (Props.hash desc h)
   | ArchiveFile (desc, dig, _, ress) ->
       Uutil.hash2 (Uutil.hash dig) (Props.hash desc h)
@@ -703,6 +702,31 @@ let postCommitArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
 (*                           Archive cache                               *)
 (*************************************************************************)
 
+(* Cache of archive checksum. The checksum value is valid only directly
+   after loading/storing the archive from/to the disk, and will be cleared
+   at any modification of the in-memory archive (with some exceptions). *)
+let archiveCSumCache = Hashtbl.create 7
+
+let getArchiveChecksumCached (thisRoot: string): (int * string) option =
+  Hashtbl.find_opt archiveCSumCache thisRoot
+
+let setArchiveChecksumLocal
+    ?(checksum: (int * string) option) ?(hash: archive option) (thisRoot: string) =
+  match checksum, hash with
+  | None, None -> Hashtbl.remove archiveCSumCache thisRoot
+  | None, Some archive ->
+      begin match getArchiveChecksumCached thisRoot with
+        | None -> ()
+        | Some (_, magic) ->
+            begin try
+              let csum = checkArchive ~verify:false [] archive 0 in
+              Hashtbl.replace archiveCSumCache thisRoot (csum, magic)
+            with Util.Fatal _ ->
+              Hashtbl.remove archiveCSumCache thisRoot
+            end
+      end
+  | Some h, _ -> Hashtbl.replace archiveCSumCache thisRoot h
+
 (* archiveCache: map(rootGlobalName, archive) *)
 let archiveCache = Hashtbl.create 7
 
@@ -711,9 +735,12 @@ let getArchive (thisRoot: string): archive =
   Hashtbl.find archiveCache thisRoot
 
 (* Update the cache. *)
-let setArchiveLocal (thisRoot: string) (archive: archive) =
+let setArchiveLocal
+    (thisRoot: string) ?checksum ?(calcHash = false) (archive: archive) =
   (* Also this: *)
   debug (fun () -> Printf.eprintf "Setting archive for %s\n" thisRoot);
+  setArchiveChecksumLocal thisRoot ?checksum
+    ?hash:(if calcHash then Some archive else None);
   Hashtbl.replace archiveCache thisRoot archive
 
 (* archiveCache: map(rootGlobalName, property list) *)
@@ -967,7 +994,7 @@ let setArchiveData thisRoot fspath (arch, hash, magic, properties) info =
   let archMode = archiveMode magic in
   let curMode = (Case.ops ())#modeDesc in
   let properties = Proplist.add caseKey archMode properties in
-  setArchiveLocal thisRoot arch;
+  setArchiveLocal thisRoot arch ~checksum:(hash, magic);
   setArchivePropsLocal thisRoot properties;
   internArchivePropsdata properties;
   Hashtbl.replace archiveInfoCache thisRoot info;
@@ -1011,7 +1038,8 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
            if archiveUnchanged thisRoot info then
              (* The archive is unchanged.  So, we don't need to do
                 anything. *)
-             Lwt.return (Some (0, ""))
+             let hashMagic = getArchiveChecksumCached thisRoot in
+             Lwt.return (if hashMagic = None then Some (0, "") else hashMagic)
            else begin
              match loadArchiveLocal arcFspath thisRoot with
                Some archData ->
@@ -2603,7 +2631,7 @@ let t1 = Unix.gettimeofday () in
 let t2 = Unix.gettimeofday () in
 Format.eprintf "Update detection: %f@." (t2 -. t1);
 *)
-  setArchiveLocal thisRoot archive;
+  setArchiveLocal thisRoot archive ~calcHash:true;
   abortIfAnyMountpointsAreMissing fspath;
   updates
 
@@ -2726,8 +2754,9 @@ let prepareCommitLocal compatMode (fspath, magic) =
      Format.print_flush();
    **)
   let archiveHash =
-    if not compatMode then checkArchive true [] archive 0
+    if not compatMode then checkArchive [] archive 0
     else checkArchive251 true [] (to_compat251 archive) 0 in
+  setArchiveChecksumLocal root ~checksum:(archiveHash, magic);
   let props = getArchiveProps root in
   let props = purgePropsForPaths archive props in
   let props = externArchivePropsdata archive props in
