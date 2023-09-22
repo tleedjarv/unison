@@ -21,6 +21,8 @@ val equal : t -> t -> bool
 val same_algo : t -> t -> bool
 val has_active_algo : t -> bool
 
+val init : unit -> unit
+
 (* A pseudo-fingerprint has the same type as a real one (so it can
    be stored in the archive, etc.), but it is computed just from the
    size of the file, ignoring the contents *)

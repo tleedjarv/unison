@@ -228,7 +228,7 @@ OCAMLOBJS += \
           lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo \
           lwt/$(SYSTEM)/lwt_unix_impl.cmo lwt/lwt_unix.cmo \
           \
-          features.cmo uutil.cmo case.cmo pred.cmo terminal.cmo \
+          features.cmo uutil.cmo case.cmo pred.cmo terminal.cmo xxhash.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fs.cmo fingerprint.cmo \
           abort.cmo osx.cmo fswatch.cmo propsdata.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
@@ -247,7 +247,8 @@ INCLFLAGS+=-I +unix -I +str
 
 # C objects for both bytecode and native versions
 COBJS += osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) \
-         hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT)
+         hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT) \
+         xxhash_stubs$(OBJ_EXT)
 
 ####################################################################
 ### User Interface setup
@@ -342,6 +343,19 @@ else
 endif
 
 DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/solaris -I fsmonitor/windows
+
+####################################################################
+### External dependencies
+
+#xxhash_CFLAGS := $(shell pkgconf --cflags libxxhash 2> /dev/null)
+#xxhash_LDLIBS := $(shell pkgconf --libs libxxhash 2> /dev/null)
+
+#ifneq ($(strip $(xxhash_CFLAGS)),)
+#  hash_xxhash$(OBJ_EXT): CAMLCFLAGS+=-ccopt '$(xxhash_CFLAGS)'
+#endif
+#ifneq ($(strip $(xxhash_LDLIBS)),)
+#  CLIBS+=-cclib '$(xxhash_LDLIBS)'
+#endif
 
 ####################################################################
 ### Dependencies

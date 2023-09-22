@@ -28,18 +28,20 @@ let pseudo path len = pseudo_prefix ^ (Uutil.Filesize.toString len) ^ "@" ^
 
 let ispseudo f = Util.startswith f pseudo_prefix
 
-type algorithm = MD5
+type algorithm = MD5 | XXH3_64
 
 let featAlgos =
   Features.register "Fingerprint algorithms" ~arcFormatChange:false None
 
 let internAlgo = function
   | "MD5" -> MD5
+  | "XXH3_64" -> XXH3_64
   | s -> raise (Prefs.IllegalValue
         ("Invalid fingerprinting algorithm requested: " ^ s))
 
 let externAlgo = function
   | MD5 -> "MD5"
+  | XXH3_64 -> "XXH3_64"
 
 let algopref =
   Prefs.create "fpalgo" MD5 (* Default for legacy versions *)
@@ -50,8 +52,32 @@ let algopref =
     (fun a -> [externAlgo a])
     Umarshal.(sum1 string externAlgo internAlgo)
 
+let registerAlgo featrName algo =
+  Features.register ("Fingerprint: " ^ featrName) ~arcFormatChange:false
+    None
+
+let algoXXH3_64 = registerAlgo "XXH3_64" XXH3_64
+
+(* Highest priority first in list. Not all algorithms have to be in this list;
+   if not in list then it will never be selected automatically (except for the
+   legacy MD5). *)
+let defaultAlgoPriority = [
+    ((fun () -> Features.enabled algoXXH3_64), XXH3_64);
+  ]
+
+let init () =
+  (* Default to the highest priority algorithm supported by (and enabled on)
+     both client and server. *)
+  let rec setFirstActive = function
+    | [] -> ()
+    | (active, p) :: _ when active () -> Prefs.set algopref p
+    | _ :: xs -> setFirstActive xs
+  in
+  setFirstActive defaultAlgoPriority
+
 let algo_funcs = function
   | MD5 -> ("", Digest.channel)
+  | XXH3_64 -> ("\001", Xxhash.XXH3_64.channel)
 
 let active_algo () = Prefs.read algopref
 
@@ -59,6 +85,7 @@ let algo h =
   let len = String.length h in
   if len = 0 then active_algo () (* Dummy fingerprint *)
   else match len, String.unsafe_get h 0 with
+  | 9, '\001' -> XXH3_64
   | 16, _ -> MD5 (* Algorithm is not embedded in the fingerprint, this means
                     it is MD5. For compatibility with versions which always
                     used the same algorithm (<= 2.53.4). All algorithms added

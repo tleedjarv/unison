@@ -806,6 +806,7 @@ let validateAndFixupPrefs () =
   Prefs.set Globals.someHostIsRunningWindows someHostIsRunningWindows;
   Prefs.set Globals.allHostsAreRunningWindows allHostsAreRunningWindows;
   if repeatWatcher () then Prefs.set Fswatch.useWatcher true;
+  Fingerprint.init ();
   Features.validateEnabled ();
   return ())
 
