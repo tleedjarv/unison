@@ -38,10 +38,12 @@ val fullfingerprintEqual : fullfingerprint -> fullfingerprint -> bool
 val safeFingerprint :
   Fspath.t -> Path.local -> (* coordinates of file to fingerprint *)
   Fileinfo.t ->             (* old fileinfo *)
+  ?algoOf:fullfingerprint ->
   fullfingerprint option -> (* fingerprint corresponding to the old fileinfo *)
   Fileinfo.t * fullfingerprint
                             (* current fileinfo, fingerprint and fork info *)
 val fingerprint :
+  ?algoOf:fullfingerprint ->
   Fspath.t -> Path.local -> (* coordinates of file to fingerprint *)
   Fileinfo.typ ->           (* old fileinfo *)
   fullfingerprint           (* current fingerprint *)
@@ -54,3 +56,6 @@ val pseudoFingerprint :
 
 val isPseudoFingerprint :
   fullfingerprint -> bool
+
+val fingerprintSameAlgo : fullfingerprint -> fullfingerprint -> bool
+val fingerprintIsCurrentAlgo : fullfingerprint -> bool

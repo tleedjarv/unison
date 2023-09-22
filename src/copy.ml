@@ -68,7 +68,7 @@ let checkForChangesToSourceLocal
                              None dataClearlyUnchanged   in
       if dataClearlyUnchanged && ressClearlyUnchanged then begin
         if paranoid && not (Os.isPseudoFingerprint archFp) then begin
-          let newFp = Os.fingerprint fspathFrom pathFrom sourceType in
+          let newFp = Os.fingerprint ~algoOf:archFp fspathFrom pathFrom sourceType in
           if archFp <> newFp then begin
             Update.markPossiblyUpdated fspathFrom pathFrom;
             raise (Util.Transient (Printf.sprintf
@@ -81,7 +81,7 @@ let checkForChangesToSourceLocal
         end
       end else if
            clearlyChanged
-        || archFp <> Os.fingerprint fspathFrom pathFrom sourceType
+        || archFp <> Os.fingerprint ~algoOf:archFp fspathFrom pathFrom sourceType
       then
         raise (Util.Transient (Printf.sprintf
           "The source file %s\nhas been modified during synchronization.  \
@@ -92,7 +92,7 @@ let checkForChangesToSourceLocal
       assert (Os.isPseudoFingerprint archFp);
       (* ... so we can't compare the archive with the source; instead we
          need to compare the current source to the new fingerprint: *)
-      if newfp <> Os.fingerprint fspathFrom pathFrom sourceType then
+      if newfp <> Os.fingerprint ~algoOf:newfp fspathFrom pathFrom sourceType then
         raise (Util.Transient (Printf.sprintf
           "Current source file %s\n not same as transferred file.  \
            Transfer aborted."
@@ -151,7 +151,7 @@ let fileIsTransferred fspathTo pathTo desc fp ress =
    Osx.ressLength info.Fileinfo.osX.Osx.ressInfo =
    Osx.ressLength ress
      &&
-   let fp' = Os.fingerprint fspathTo pathTo info.Fileinfo.typ in
+   let fp' = Os.fingerprint ~algoOf:fp fspathTo pathTo info.Fileinfo.typ in
    fp' = fp)
 
 (* We slice the files in 1GB chunks because that's the limit for
@@ -246,7 +246,7 @@ let transferStatus_of_compat251 (st : transferStatus251) : transferStatus =
  *)
 let paranoidCheck fspathTo pathTo realPathTo desc fp ress =
   let info = Fileinfo.getBasic false fspathTo pathTo in
-  let fp' = Os.fingerprint fspathTo pathTo info.Fileinfo.typ in
+  let fp' = Os.fingerprint ~algoOf:fp fspathTo pathTo info.Fileinfo.typ in
   if Os.isPseudoFingerprint fp then begin
     Lwt.return (TransferNeedsDoubleCheckAgainstCurrentSource (info,fp'))
   end else if fp' <> fp then begin

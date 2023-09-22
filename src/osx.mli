@@ -23,7 +23,7 @@ val setFileInfos : Fspath.t -> Path.local -> string -> unit
 val ressUnchanged :
   'a ressInfo -> 'b ressInfo -> float option -> bool -> bool
 
-val ressFingerprint : Fspath.t -> Path.local -> [> `DIRECTORY | `FILE ] -> Fingerprint.t
+val ressFingerprint : ?algoOf:Fingerprint.t -> Fspath.t -> Path.local -> [> `DIRECTORY | `FILE ] -> Fingerprint.t
 val ressLength : 'a ressInfo -> Uutil.Filesize.t
 
 val ressDummy : ressStamp

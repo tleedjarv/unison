@@ -28,16 +28,69 @@ let pseudo path len = pseudo_prefix ^ (Uutil.Filesize.toString len) ^ "@" ^
 
 let ispseudo f = Util.startswith f pseudo_prefix
 
+type algorithm = MD5
+
+let featAlgos =
+  Features.register "Fingerprint algorithms" ~arcFormatChange:false None
+
+let internAlgo = function
+  | "MD5" -> MD5
+  | s -> raise (Prefs.IllegalValue
+        ("Invalid fingerprinting algorithm requested: " ^ s))
+
+let externAlgo = function
+  | MD5 -> "MD5"
+
+let algopref =
+  Prefs.create "fpalgo" MD5 (* Default for legacy versions *)
+    ~category:(`Internal `Pseudo)
+    ~send:(fun () -> Features.enabled featAlgos)
+    "*Pseudo-preference for internal use only" ""
+    (fun _ -> internAlgo)
+    (fun a -> [externAlgo a])
+    Umarshal.(sum1 string externAlgo internAlgo)
+
+let algo_funcs = function
+  | MD5 -> ("", Digest.channel)
+
+let active_algo () = Prefs.read algopref
+
+let algo h =
+  let len = String.length h in
+  if len = 0 then active_algo () (* Dummy fingerprint *)
+  else match len, String.unsafe_get h 0 with
+  | 16, _ -> MD5 (* Algorithm is not embedded in the fingerprint, this means
+                    it is MD5. For compatibility with versions which always
+                    used the same algorithm (<= 2.53.4). All algorithms added
+                    later have the algorithm tag embedded in the fingerprint
+                    as the first byte. This means that no fingerprint value
+                    with an embedded tag will be exactly 16 bytes (128 bits)
+                    in length. *)
+  | _ ->
+      if ispseudo h then active_algo ()
+      else assert false
+
+let with_algo ?(algoOf = "") f =
+  let alg = algo algoOf in
+  let (prefix, funcs) = algo_funcs alg in
+  prefix ^ f funcs
+
+let same_algo h1 h2 =
+  algo h1 = algo h2
+
+let has_active_algo h =
+  algo h = active_algo ()
+
 (* Assumes that (fspath, path) is a file and gives its ``digest '', that is  *)
 (* a short string of cryptographic quality representing it.                  *)
-let file fspath path =
+let file_aux digestChannel fspath path =
   let f = Fspath.concat fspath path in
   Util.convertUnixErrorsToTransient
     ("digesting " ^ Fspath.toPrintString f)
     (fun () ->
        let ic = Fs.open_in_bin f in
        try
-         let d = Digest.channel ic (-1) in
+         let d = digestChannel ic (-1) in
          close_in ic;
          d
        with e ->
@@ -45,8 +98,11 @@ let file fspath path =
          raise e
     )
 
+let file ?algoOf fspath path =
+  with_algo ?algoOf (fun algo_funcs -> file_aux algo_funcs fspath path)
+
 let maxLength = Uutil.Filesize.ofInt max_int
-let subfile path offset len =
+let subfile_aux digestChannel path offset len =
   if len > maxLength then
     raise (Util.Transient
              (Format.sprintf "File '%s' too big for fingerprinting"
@@ -57,7 +113,7 @@ let subfile path offset len =
        let inch = Fs.open_in_bin path in
        begin try
          LargeFile.seek_in inch offset;
-         let res = Digest.channel inch (Uutil.Filesize.toInt len) in
+         let res = digestChannel inch (Uutil.Filesize.toInt len) in
          close_in inch;
          res
        with
@@ -71,6 +127,9 @@ let subfile path offset len =
            close_in_noerr inch;
            raise e
        end)
+
+let subfile ?algoOf path offset len =
+  with_algo ?algoOf (fun algo_funcs -> subfile_aux algo_funcs path offset len)
 
 let int2hexa quartet =
   if quartet < 10 then

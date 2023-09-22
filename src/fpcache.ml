@@ -280,7 +280,7 @@ let fastercheckUNSAFE =
        ^ "that this flag be set only for the initial run of Unison, so that new archives "
        ^ "can be created quickly, and then turned off for normal use.")
 
-let fingerprint ?(newfile=false) fastCheck currfspath path info optFp =
+let fingerprint ?(newfile=false) fastCheck currfspath path info ?algoOf optFp =
   let res =
     try
       let (cachedDesc, cachedFp, cachedStamp, cachedRess) =
@@ -290,6 +290,11 @@ let fingerprint ?(newfile=false) fastCheck currfspath path info optFp =
                fastCheck path info cachedDesc cachedStamp cachedRess)
       then
         raise Not_found;
+      begin match algoOf with
+      | Some x when Os.fingerprintSameAlgo cachedFp x ->
+          raise Not_found
+      | _ -> ()
+      end;
       debug (fun () -> Util.msg "cache hit for path %s\n"
                          (Path.toDebugString path));
       (info.Fileinfo.desc, cachedFp, Fileinfo.stamp info,
@@ -305,7 +310,7 @@ let fingerprint ?(newfile=false) fastCheck currfspath path info optFp =
           (Fileinfo.get ~archProps:info.desc false currfspath path,
            Os.pseudoFingerprint path (Props.length info.Fileinfo.desc))
         end else begin
-          Os.safeFingerprint currfspath path info optFp
+          Os.safeFingerprint currfspath path info ?algoOf optFp
         end in
       (info.Fileinfo.desc, dig, Fileinfo.stamp info, Fileinfo.ressStamp info)
   in

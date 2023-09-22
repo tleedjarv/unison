@@ -292,17 +292,21 @@ fingerprint.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     ubase/umarshal.cmi \
+    ubase/prefs.cmi \
     path.cmi \
     fspath.cmi \
     fs.cmi \
+    features.cmi \
     fingerprint.cmi
 fingerprint.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     ubase/umarshal.cmx \
+    ubase/prefs.cmx \
     path.cmx \
     fspath.cmx \
     fs.cmx \
+    features.cmx \
     fingerprint.cmi
 fingerprint.cmi : \
     uutil.cmi \

@@ -469,7 +469,7 @@ let stamp info =
   | AppleDoubleRess (inode, mtime, ctime, len, _) ->
       AppleDoubleRess (inode, mtime, ctime, len, ())
 
-let ressFingerprint fspath path typ =
+let ressFingerprint ?algoOf fspath path typ =
   (* This function used to get ready-made info passed in. (Re-)getting the
      info here may consume one or a few additional syscalls. This is not
      thought to be a problem unless there are hundreds of thousands of files
@@ -485,7 +485,7 @@ let ressFingerprint fspath path typ =
         Util.msg "resource fork fingerprint: path %s, offset %d, len %d"
         (Fspath.toString path)
         (Int64.to_int offset) (Uutil.Filesize.toInt len));
-      Fingerprint.subfile path offset len
+      Fingerprint.subfile ?algoOf path offset len
 
 let ressLength ress =
   match ress with

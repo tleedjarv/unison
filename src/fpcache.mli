@@ -10,7 +10,8 @@ val finish : unit -> unit
 (* Get the fingerprint of a file, possibly from the cache *)
 val fingerprint :
   ?newfile:bool ->
-  bool -> Fspath.t -> Path.local -> Fileinfo.t -> Os.fullfingerprint option ->
+  bool -> Fspath.t -> Path.local -> Fileinfo.t -> ?algoOf:Os.fullfingerprint ->
+  Os.fullfingerprint option ->
   Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
 
 (* Add an entry to the cache *)

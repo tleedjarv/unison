@@ -1735,13 +1735,19 @@ let checkContentsChange
   end else begin
     debugverbose (fun() -> Util.msg "  Double-check possibly updated file\n");
     showStatusAddLength scanInfo info;
-    let (newDesc, newFp, newStamp, newRess) =
-      Fpcache.fingerprint fastCheck currfspath path info
-        (if dataClearlyUnchanged then Some archFp else None) in
-    Xferhint.insertEntry currfspath path newFp;
-    debug (fun() -> Util.msg "  archive digest = %s   current digest = %s\n"
-             (Os.fullfingerprint_to_string archFp)
-             (Os.fullfingerprint_to_string newFp));
+    let recalcFingerprint ?algoOf () =
+      let (_, newFp, _, _) as res =
+        Fpcache.fingerprint fastCheck currfspath path info
+          ?algoOf
+          (if dataClearlyUnchanged then Some archFp else None) in
+      Xferhint.insertEntry currfspath path newFp;
+      debug (fun() -> Util.msg "  archive digest = %s   current digest = %s\n"
+               (Os.fullfingerprint_to_string archFp)
+               (Os.fullfingerprint_to_string newFp));
+      res
+    in
+    let (newDesc, newFp, newStamp, newRess) as newMeta =
+      recalcFingerprint ~algoOf:archFp () in
     if archFp = newFp then begin
       let propsUpdates = checkPropChange newDesc archive archDesc in
       let propsChanged = propsUpdates <> NoUpdates in
@@ -1760,6 +1766,10 @@ let checkContentsChange
       Some newarch end, propsUpdates
     end else begin
       debug (fun() -> Util.msg "  Updated file\n");
+      (* Recalculate a fresh fingerprint with the currently active algorithm *)
+      let (newDesc, newFp, newStamp, newRess) =
+        if Os.fingerprintIsCurrentAlgo newFp then newMeta
+        else recalcFingerprint () in
       (* [BCP 5/2011] We might add a sanity check here: if the file contents
          have changed but the modtime has not, signal an error.  I.e., abort if
            Props.same_time info.Fileinfo.desc archDesc

@@ -247,9 +247,9 @@ type fullfingerprint = Fingerprint.t * Fingerprint.t
 
 let mfullfingerprint = Umarshal.(prod2 Fingerprint.m Fingerprint.m id id)
 
-let fingerprint fspath path typ =
-  (Fingerprint.file fspath path,
-   Osx.ressFingerprint fspath path typ)
+let fingerprint ?algoOf fspath path typ =
+  (Fingerprint.file ?algoOf:(Option.map fst algoOf) fspath path,
+   Osx.ressFingerprint ?algoOf:(Option.map snd algoOf) fspath path typ)
 
 let pseudoFingerprint path size =
   (Fingerprint.pseudo path size, Fingerprint.dummy)
@@ -257,9 +257,17 @@ let pseudoFingerprint path size =
 let isPseudoFingerprint (fp,rfp) =
   Fingerprint.ispseudo fp
 
+let fingerprintSameAlgo (fpa, rfpa) (fpb, rfpb) =
+  Fingerprint.same_algo fpa fpb && Fingerprint.same_algo rfpa rfpb
+
+let fingerprintIsCurrentAlgo (fp, rfp) =
+  Fingerprint.has_active_algo fp && Fingerprint.has_active_algo rfp
+
 (* FIX: not completely safe under Unix                                       *)
 (* (with networked file system such as NFS)                                  *)
-let safeFingerprint fspath path info optFp =
+let safeFingerprint fspath path info ?algoOf optFp =
+  let algoFp = Option.map fst algoOf
+  and algoRfp = Option.map snd algoOf in
     let rec retryLoop count info optFp optRessFp =
       if count = 0 then
         raise (Util.Transient
@@ -270,12 +278,12 @@ let safeFingerprint fspath path info optFp =
       else
         let fp =
           match optFp with
-            None     -> Fingerprint.file fspath path
+          | None -> Fingerprint.file ?algoOf:algoFp fspath path
           | Some fp -> fp
         in
         let ressFp =
           match optRessFp with
-            None      -> Osx.ressFingerprint fspath path info.Fileinfo.typ
+          | None -> Osx.ressFingerprint ?algoOf:algoRfp fspath path info.Fileinfo.typ
           | Some ress -> ress
         in
         let (info', dataUnchanged, ressUnchanged) =

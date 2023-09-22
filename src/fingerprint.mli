@@ -6,8 +6,8 @@ type t
 val m : t Umarshal.t
 
 (* Os.safeFingerprint should usually be used rather than these functions *)
-val file : Fspath.t -> Path.local -> t
-val subfile : Fspath.t -> Int64.t -> Uutil.Filesize.t -> t
+val file : ?algoOf:t -> Fspath.t -> Path.local -> t
+val subfile : ?algoOf:t -> Fspath.t -> Int64.t -> Uutil.Filesize.t -> t
 
 val toString : t -> string
 
@@ -17,6 +17,9 @@ val dummy : t
 
 val hash : t -> int
 val equal : t -> t -> bool
+
+val same_algo : t -> t -> bool
+val has_active_algo : t -> bool
 
 (* A pseudo-fingerprint has the same type as a real one (so it can
    be stored in the archive, etc.), but it is computed just from the
