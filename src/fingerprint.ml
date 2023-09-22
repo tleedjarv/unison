@@ -52,9 +52,31 @@ let algopref =
     (fun a -> [externAlgo a])
     Umarshal.(sum1 string externAlgo internAlgo)
 
+let algoprefUser =
+  Prefs.create "fpalgorithm" None
+    ~category:(`Expert)
+    ~local:true
+    ~send:(fun () -> false)
+    "file fingerprinting algorithm"
+    "Select the algorithm that is used for fingerprinting file contents to \
+    detect changes and verify sync results. Normally, you should not need to \
+    set this preference manually; an optimal algorithm is automatically \
+    selected between client and server. Currently supported algorithms are: \
+    {\\tt MD5} - for legacy compatibility; \
+    {\\tt XXH3\\_64} - xxHash XXH3 64 bits (the default when both client and \
+    server support it)."
+    (fun _ -> function
+      | "" -> None | a -> Some (internAlgo String.(trim a |> uppercase_ascii)))
+    (function None -> [""] | Some a -> [externAlgo a])
+    Umarshal.(option (sum1 string externAlgo internAlgo))
+
 let registerAlgo featrName algo =
   Features.register ("Fingerprint: " ^ featrName) ~arcFormatChange:false
-    None
+    (Some (fun _ featrEnabled ->
+      if not featrEnabled && Prefs.read algoprefUser = Some algo then
+        Some "The requested fingerprinting algorithm (the \
+          \"fpalgorithm\" preference) is not supported by the server."
+      else None))
 
 let algoXXH3_64 = registerAlgo "XXH3_64" XXH3_64
 
@@ -73,7 +95,9 @@ let init () =
     | (active, p) :: _ when active () -> Prefs.set algopref p
     | _ :: xs -> setFirstActive xs
   in
-  setFirstActive defaultAlgoPriority
+  match Prefs.read algoprefUser with
+  | None -> setFirstActive defaultAlgoPriority
+  | Some a -> Prefs.set algopref a
 
 let algo_funcs = function
   | MD5 -> ("", Digest.channel)
