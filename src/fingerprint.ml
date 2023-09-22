@@ -123,6 +123,11 @@ let algo h =
 
 let with_algo ?(algoOf = "") f =
   let alg = algo algoOf in
+  begin match alg with
+  | MD5 -> Util.msg "Fingerprinting with MD5\n"
+  | XXH3_64 -> Util.msg "Fingerprinting with XXH3_64\n"
+  (*| XXH3_128 -> Util.msg "Fingerprinting with XXH3_128\n"*)
+  end;
   let (prefix, funcs) = algo_funcs alg in
   prefix ^ f funcs
 
@@ -141,7 +146,11 @@ let file_aux digestChannel fspath path =
     (fun () ->
        let ic = Fs.open_in_bin f in
        try
+         let t0 = Unix.gettimeofday () in
          let d = digestChannel ic (-1) in
+         let t1 = Unix.gettimeofday () in
+           Util.msg "Hashing took %.3f milliseconds\n"
+             ((t1 -. t0) *. 1000.);
          close_in ic;
          d
        with e ->
