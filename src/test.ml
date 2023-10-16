@@ -231,6 +231,18 @@ let sync ?(verbose=false) () =
     Util.msg "Sync result:\n";
     displayRis reconItemList
   end;
+  (* fastcheck and fastercheck depend on mtime being updated for every file/dir
+     contents change. This may not be the case with Linux for rapid back-to-back
+     changes (could it be a bug in the kernel or some fs? as even microsecond-
+     and nanosecond-precision mtimes do not change at every update), so we force
+     sleep a few milliseconds for each sync. This is known to be a Linux-only
+     problem but all platforms pay the penalty here.
+
+     Tests using fastcheck and fastercheck may fail if mtime is not changed at
+     every update. This is by design of fastcheck and not a bug. If the fs or
+     kernel do not provide correct mtime then fastcheck can not possibly work
+     and must be disabled by the user. *)
+  Unix.sleepf 0.01;
   Uicommon.transportItems (Array.of_list reconItemList) (fun _ -> true)
     (fun _ ri ->
       Transport.transportItem ri (Uutil.File.ofLine 0) (fun _ _ -> true));
