@@ -224,9 +224,6 @@ let displayRis ris =
       Util.msg "%s\n" (Uicommon.reconItem2string Path.empty ri ""))
     ris
 
-let minisleep (sec: float) =
-  ignore (Unix.select [] [] [] sec)
-
 let sync ?(verbose=false) () =
   let (reconItemList, _, _) =
     Recon.reconcileAll (Update.findUpdates None) in
@@ -234,7 +231,6 @@ let sync ?(verbose=false) () =
     Util.msg "Sync result:\n";
     displayRis reconItemList
   end;
-  minisleep 0.1;
   Uicommon.transportItems (Array.of_list reconItemList) (fun _ -> true)
     (fun _ ri ->
       Transport.transportItem ri (Uutil.File.ofLine 0) (fun _ _ -> true));
