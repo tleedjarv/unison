@@ -17,7 +17,8 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: ubuntu-22.04  , ocaml-version: 5.1.1+options,ocaml-option-fp , publish: true , fnsuffix: -x86_64}
+        - { os: ubuntu-22.04  , ocaml-version: 5.1.1 , publish: true , fnsuffix: -511-x86_64}
+        - { os: ubuntu-22.04  , ocaml-version: 5.2.0~beta2 , publish: true , fnsuffix: -52-x86_64}
 
     runs-on: ${{ matrix.job.os }}
 
