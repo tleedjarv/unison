@@ -21,14 +21,14 @@ jobs:
 
         run: |
           ## Build OCaml compiler
-          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
-          tar zxf 4.14.2.tar.gz || true
-          cd ocaml-4.14.2
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/5.4.0.tar.gz
+          tar zxf 5.4.0.tar.gz || true
+          cd ocaml-5.4.0
           ./configure
           gmake
           gmake install
           cd ..
-          rm -rf ocaml-4.14.2
+          rm -rf ocaml-5.4.0
 
           ## Build unison
           gmake
@@ -67,14 +67,14 @@ jobs:
 
         run: |
           ## Build OCaml compiler
-          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
-          tar zxf 4.14.2.tar.gz || true
-          cd ocaml-4.14.2
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/5.4.0.tar.gz
+          tar zxf 5.4.0.tar.gz || true
+          cd ocaml-5.4.0
           ./configure
           gmake
           gmake install
           cd ..
-          rm -rf ocaml-4.14.2
+          rm -rf ocaml-5.4.0
 
           ## Build unison
           gmake
@@ -113,14 +113,14 @@ jobs:
 
         run: |
           ## Build OCaml compiler
-          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
-          tar zxf 4.14.2.tar.gz || true
-          cd ocaml-4.14.2
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/5.4.0.tar.gz
+          tar zxf 5.4.0.tar.gz || true
+          cd ocaml-5.4.0
           ./configure
           gmake
           gmake install
           cd ..
-          rm -rf ocaml-4.14.2
+          rm -rf ocaml-5.4.0
 
           ## Build unison
           gmake
@@ -159,14 +159,14 @@ jobs:
 
         run: |
           ## Build OCaml compiler
-          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
-          tar zxf 4.14.2.tar.gz || true
-          cd ocaml-4.14.2
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/5.4.0.tar.gz
+          tar zxf 5.4.0.tar.gz || true
+          cd ocaml-5.4.0
           ./configure
           gmake
           gmake install
           cd ..
-          rm -rf ocaml-4.14.2
+          rm -rf ocaml-5.4.0
 
           ## Build unison
           gmake
@@ -208,14 +208,14 @@ jobs:
 
         run: |
           ## Build OCaml compiler
-          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
-          tar zxf 4.14.2.tar.gz || true
-          cd ocaml-4.14.2
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/5.4.0.tar.gz
+          tar zxf 5.4.0.tar.gz || true
+          cd ocaml-5.4.0
           ./configure --prefix=/usr CC="gcc -m64"
           gmake
           gmake install
           cd ..
-          rm -rf ocaml-4.14.2
+          rm -rf ocaml-5.4.0
 
           ## Build unison
           gmake
@@ -255,14 +255,14 @@ jobs:
 
         run: |
           ## Build OCaml compiler
-          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
-          tar zxf 4.14.2.tar.gz || true
-          cd ocaml-4.14.2
+          wget https://github.com/ocaml/ocaml/archive/refs/tags/5.4.0.tar.gz
+          tar zxf 5.4.0.tar.gz || true
+          cd ocaml-5.4.0
           ./configure --prefix=/usr CC="gcc -m64"
           gmake
           gmake install
           cd ..
-          rm -rf ocaml-4.14.2
+          rm -rf ocaml-5.4.0
 
           ## Build unison
           gmake
@@ -307,14 +307,14 @@ jobs:
 #
 #        run: |
 #          ## Build OCaml compiler
-#          wget https://github.com/ocaml/ocaml/archive/refs/tags/4.14.2.tar.gz
-#          tar zxf 4.14.2.tar.gz
-#          cd ocaml-4.14.2
+#          wget https://github.com/ocaml/ocaml/archive/refs/tags/5.4.0.tar.gz
+#          tar zxf 5.4.0.tar.gz
+#          cd ocaml-5.4.0
 #          ./configure --prefix=/usr CC="cc -m64" ## cc -xarch=generic64
 #          gmake
 #          gmake install
 #          cd ..
-#          rm -rf ocaml-4.14.2
+#          rm -rf ocaml-5.4.0
 #
 #          ## Build unison
 #          gmake
