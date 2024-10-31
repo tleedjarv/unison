@@ -261,14 +261,14 @@ let copyBAblack_asym = [|
    Do not use [GdkPixbuf.from_xpm_data] as it has been removed from
    upstream gdk-pixbuf. *)
 let to_pixbuf dat =
-  let colormap = Array.make 256 [| 0; 0; 0; 0 |] in
+  let colormap = Array.make 256 [| Char.chr 0; Char.chr 0; Char.chr 0; Char.chr 0 |] in
   let getColor ch = colormap.(Char.code ch) in
   let setColor ch col =
     colormap.(Char.code ch) <-
-      [| (col asr 16) land 0xff;
-         (col asr 8) land 0xff;
-         (col asr 0) land 0xff;
-         0xff |]
+      [| Char.chr ((col asr 16) land 0xff);
+         Char.chr ((col asr 8) land 0xff);
+         Char.chr ((col asr 0) land 0xff);
+         Char.chr (0xff) |]
   in
 
   (* width height num_colors chars_per_pixel *)
@@ -291,24 +291,22 @@ let to_pixbuf dat =
     Scanf.sscanf dat.(i) "%c %c %s" parseColor
   done;
 
-  let p = GdkPixbuf.create ~width ~height ~has_alpha:true () in
-  let () = (Printf.eprintf "created pixbuf w=%d h=%d\n" width height; flush stderr) in
+(*  let p = GdkPixbuf.create ~width ~height ~has_alpha:true () in
   let pixels = GdkPixbuf.get_pixels p in
   let setPixel pos v =
     let pos = pos * 4 in
-    let () = (Printf.eprintf "setting pixel at pos=%d\n" pos; flush stderr) in
-    let () = (Printf.eprintf "    subpos=%d " pos; flush stderr) in
     Gpointer.set_byte pixels ~pos:(pos + 0) v.(0);
-    let () = (Printf.eprintf "    DONE\n"; flush stderr) in
-    let () = (Printf.eprintf "    subpos=%d " (pos + 1); flush stderr) in
     Gpointer.set_byte pixels ~pos:(pos + 1) v.(1);
-    let () = (Printf.eprintf "    DONE\n"; flush stderr) in
-    let () = (Printf.eprintf "    subpos=%d " (pos + 2); flush stderr) in
     Gpointer.set_byte pixels ~pos:(pos + 2) v.(2);
-    let () = (Printf.eprintf "    DONE\n"; flush stderr) in
-    let () = (Printf.eprintf "    subpos=%d " (pos + 3); flush stderr) in
     Gpointer.set_byte pixels ~pos:(pos + 3) v.(3)
-    ;(Printf.eprintf "    DONE\n"; flush stderr)
+  in*)
+  let data = Bytes.create (width * height) in
+  let setPixel pos v =
+    let pos = pos * 4 in
+    Bytes.set data (pos + 0) v.(0);
+    Bytes.set data (pos + 1) v.(1);
+    Bytes.set data (pos + 2) v.(2);
+    Bytes.set data (pos + 3) v.(3)
   in
   let pxlStart = colors + 1 in
   for i = 0 to height - 1 do
@@ -316,7 +314,8 @@ let to_pixbuf dat =
       setPixel (i * width + j) (getColor dat.(pxlStart + i).[j])
     done
   done;
-  p
+  GdkPixbuf.from_data ~width ~height ~has_alpha:true
+    (Gpointer.region_of_bytes data)
 
 
 (***********************************************************************)
