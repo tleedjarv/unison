@@ -292,13 +292,23 @@ let to_pixbuf dat =
   done;
 
   let p = GdkPixbuf.create ~width ~height ~has_alpha:true () in
+  let () = (Printf.eprintf "created pixbuf w=%d h=%d\n" width height; flush stderr) in
   let pixels = GdkPixbuf.get_pixels p in
   let setPixel pos v =
     let pos = pos * 4 in
+    let () = (Printf.eprintf "setting pixel at pos=%d\n" pos; flush stderr) in
+    let () = (Printf.eprintf "    subpos=%d " pos; flush stderr) in
     Gpointer.set_byte pixels ~pos:(pos + 0) v.(0);
+    let () = (Printf.eprintf "    DONE\n"; flush stderr) in
+    let () = (Printf.eprintf "    subpos=%d " (pos + 1); flush stderr) in
     Gpointer.set_byte pixels ~pos:(pos + 1) v.(1);
+    let () = (Printf.eprintf "    DONE\n"; flush stderr) in
+    let () = (Printf.eprintf "    subpos=%d " (pos + 2); flush stderr) in
     Gpointer.set_byte pixels ~pos:(pos + 2) v.(2);
+    let () = (Printf.eprintf "    DONE\n"; flush stderr) in
+    let () = (Printf.eprintf "    subpos=%d " (pos + 3); flush stderr) in
     Gpointer.set_byte pixels ~pos:(pos + 3) v.(3)
+    ;(Printf.eprintf "    DONE\n"; flush stderr)
   in
   let pxlStart = colors + 1 in
   for i = 0 to height - 1 do
