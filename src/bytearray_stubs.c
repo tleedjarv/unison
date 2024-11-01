@@ -55,19 +55,3 @@ CAMLprim value ml_blit_bigarray_to_bytes
   memcpy(dest, src, Long_val(l));
   CAMLreturn(Val_unit);
 }
-
-CAMLprim value ml_gpointer_region_backing_buffer(value sz)
-{
-  CAMLparam1(sz);
-
-  /* Allocate the buffer 1 byte larger than requested to be able to adjust the
-   * pointer so that it could be cast to OCaml int value (LSB must be 1).
-   * Casting a pointer directly to OCaml value (so-called naked pointer) is no
-   * longer allowed. */
-  uintptr_t buf = (uintptr_t) caml_stat_alloc(Long_val(sz + 1));
-  if ((buf & 1) == 0) {
-    CAMLreturn((value) buf | 1);
-  } else {
-    CAMLreturn((value) buf);
-  }
-}
