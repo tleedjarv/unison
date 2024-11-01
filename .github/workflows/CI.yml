@@ -262,7 +262,7 @@ jobs:
         cp "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - uses: actions/upload-artifact@v4
-      if: false ## disable by default; only useful for debugging GHA
+      if: true ## disable by default; only useful for debugging GHA
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}
         path: ${{ steps.vars.outputs.PKG_DIR }}/bin/*
