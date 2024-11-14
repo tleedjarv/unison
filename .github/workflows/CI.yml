@@ -84,9 +84,6 @@ jobs:
                    echo "XCODEFLAGS=-arch $(uname -m) -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;
                    echo "CFLAGS=${CFLAGS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;;
         esac
-        # staging environment
-        STAGING_DIR='_staging'
-        outputs STAGING_DIR
         # parse commit reference info
         echo GITHUB_REF=${GITHUB_REF}
         echo GITHUB_SHA=${GITHUB_SHA}
@@ -104,18 +101,13 @@ jobs:
         PKG_VER="${PKG_VER#v}"
         PKG_BASENAME="unison-${PKG_VER}${{ matrix.job.fnsuffix }}"
         PKG_NAME="${PKG_BASENAME}${PKG_suffix}"
-        PKG_DIR="${STAGING_DIR}/${PKG_BASENAME}"
-        outputs PKG_VER PKG_BASENAME PKG_DIR PKG_NAME PKG_suffix
+        outputs PKG_VER PKG_NAME
         COMPRESS_CMD='tar czf'; case '${{ matrix.job.os }}' in windows-*) COMPRESS_CMD='7z -y a' ;; esac;
         outputs COMPRESS_CMD
 
     - name: Create/configure any needed build/workspace
       shell: bash
-      run: |
-        # create build/work space
-        mkdir -p '${{ steps.vars.outputs.STAGING_DIR }}'
-        mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'
-        mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'/bin
+      run: mkdir -p pkg/bin
 
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
       uses: ocaml/setup-ocaml@v3
@@ -146,8 +138,8 @@ jobs:
         # * notes: darwin/macos doesn't build `unison-fsmonitor`
         for file in unison unison-fsmonitor ; do
           if [ -f "src/${file}${{ steps.vars.outputs.EXE_suffix }}" ]; then
-            cp "src/${file}${{ steps.vars.outputs.EXE_suffix }}" '${{ steps.vars.outputs.PKG_DIR }}/bin'
-            echo "'src/${file}${{ steps.vars.outputs.EXE_suffix }}' copied to '${{ steps.vars.outputs.PKG_DIR }}/bin'"
+            cp "src/${file}${{ steps.vars.outputs.EXE_suffix }}" pkg/bin
+            echo "'src/${file}${{ steps.vars.outputs.EXE_suffix }}' copied to pkg/bin"
           fi
         done
 
@@ -234,7 +226,7 @@ jobs:
       run: |
         opam exec -- make gui
         # stage
-        cp "src/unison-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/"
+        cp "src/unison-gui${{ steps.vars.outputs.EXE_suffix }}" pkg/bin/
 
     - name: "Build WinOS text+gui hybrid"
       if: ${{ runner.os == 'Windows' && !matrix.job.noGUI }}
@@ -245,35 +237,34 @@ jobs:
         rm "src/unison-gui${{ steps.vars.outputs.EXE_suffix }}" ##.or.# opam exec -- make -C src clean #.or.# opam exec -- make clean
         # * re-create (with hybrid text+gui UI)
         opam exec -- make gui UI_WINOS=hybrid
-        cp "src/unison-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/unison-text+gui${{ steps.vars.outputs.EXE_suffix }}"
+        cp "src/unison-gui${{ steps.vars.outputs.EXE_suffix }}" "pkg/bin/unison-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - uses: actions/upload-artifact@v4
       if: false ## disable by default; only useful for debugging GHA
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}
-        path: ${{ steps.vars.outputs.PKG_DIR }}/bin/*
+        path: pkg/bin/*
 
     - name: Copy user manual
       continue-on-error: ${{ !(steps.vars.outputs.DEPLOY && matrix.job.publish) }}
       uses: actions/download-artifact@v4
       with:
         name: unison-docs
-        path: '${{ steps.vars.outputs.PKG_DIR }}'
+        path: pkg
 
     - name: Prepare package
       # if: steps.vars.outputs.DEPLOY
       shell: bash
       run: |
         ## package artifact(s)
-        PKG_DIR='${{ steps.vars.outputs.PKG_DIR }}'
         # `strip` binaries
-        strip "${PKG_DIR}/bin"/*
+        strip pkg/bin/*
         # README and LICENSE
-        cp README* "${PKG_DIR}"/
-        cp LICENSE* "${PKG_DIR}"/
-        cp INSTALL.md "${PKG_DIR}"/
-        cp CONTRIBUTING.md "${PKG_DIR}"/
-        cp NEWS.md "${PKG_DIR}"/
+        cp README* pkg/
+        cp LICENSE* pkg/
+        cp INSTALL.md pkg/
+        cp CONTRIBUTING.md pkg/
+        cp NEWS.md pkg/
 
     - if: ${{ runner.os == 'Windows' && !matrix.job.noGUI }}
       name: "Windows: Package gtk"
@@ -286,7 +277,7 @@ jobs:
         # causes the DLL extracting functions to silently fail.
         export PATH="/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/bin":"/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/bin":${PATH}
         ## package artifact(s)
-        PKG_DIR='${{ steps.vars.outputs.PKG_DIR }}'
+        PKG_DIR=pkg
         # collect any needed dlls/libraries
         # dlls
         dll_refs() { eval "$(opam env)" ; objdump -x "$@" | grep -Po "\S+[.]dll$" | xargs -I{} 2>/dev/null which "{}" | sort -u ; }
@@ -314,20 +305,19 @@ jobs:
 
     - name: Package
       shell: bash
-      run: cd '${{ steps.vars.outputs.PKG_DIR }}/' && ${{ steps.vars.outputs.COMPRESS_CMD }} '../${{ steps.vars.outputs.PKG_NAME }}' *
+      run: cd pkg && ${{ steps.vars.outputs.COMPRESS_CMD }} '${{ steps.vars.outputs.PKG_NAME }}' *
 
     - uses: actions/upload-artifact@v4
       if: matrix.job.publish
       with:
         name: ${{ steps.vars.outputs.PKG_NAME }}___ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}-publish
-        path: ${{ steps.vars.outputs.STAGING_DIR }}/${{ steps.vars.outputs.PKG_NAME }}
+        path: pkg/${{ steps.vars.outputs.PKG_NAME }}
 
     - name: Publish
       if: steps.vars.outputs.DEPLOY && matrix.job.publish
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          ${{ steps.vars.outputs.STAGING_DIR }}/${{ steps.vars.outputs.PKG_NAME }}
+        files: pkg/${{ steps.vars.outputs.PKG_NAME }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
