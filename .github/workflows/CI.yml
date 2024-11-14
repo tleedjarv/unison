@@ -269,8 +269,8 @@ jobs:
         # `strip` binaries
         strip "${PKG_DIR}/bin"/*
         # README and LICENSE
-        (shopt -s nullglob; for f in [R]'EADME'{,.*}; do cp $f "${PKG_DIR}"/ ; done)
-        (shopt -s nullglob; for f in [L]'ICENSE'{-*,}{,.*}; do cp $f "${PKG_DIR}"/ ; done)
+        cp README* "${PKG_DIR}"/
+        cp LICENSE* "${PKG_DIR}"/
         cp INSTALL.md "${PKG_DIR}"/
         cp CONTRIBUTING.md "${PKG_DIR}"/
         cp NEWS.md "${PKG_DIR}"/
