@@ -155,13 +155,16 @@ select between these methods by adjusting the PATH accordingly when running
 #### MinGW
 
 Building with MinGW, you still need a Cygwin installation as the build
-environment. It is not required to run the produced executables. You need to
+environment (if you are using OPAM, this can be installed automatically by
+OPAM). Cygwin is not required to run the produced executables. You need to
 have the following prerequisites:
 
 - MinGW gcc and MinGW binutils (Cygwin package example mingw64-x86_64-gcc-core)
 - A recent version of OCaml compiler (version 4.08 at minimum) which itself is
   built with MinGW gcc (it is possible to find pre-compiled binaries); do not
-  use the Cygwin OCaml package as that is not compiled with MinGW
+  use the Cygwin OCaml package as that is not compiled with MinGW. If using
+  OPAM, be sure to include the system-mingw OPAM package when installing the
+  OCaml compiler.
 - GNU make
 - A POSIX shell (available in Cygwin by default)
 
@@ -195,8 +198,20 @@ gcc and binutils.
 
 Building with MSVC is in principle similar to building with MinGW, except that
 the C compiler is now MSVC and the OCaml compiler must itself be built with
-MSVC (it is possible to find pre-compiler binaries). Environment for MSVC must
-be set up properly so that it can be used from Cygwin environment.
+MSVC. A complete Visual Studio installation is not required, having Build Tools
+installed is sufficient. It is possible to find pre-compiled OCaml compiler
+binaries, but it may be easiest to use OPAM as it will also automatically set
+up the correct environment for using MSVC and, if necessary, set up a Cygwin
+environment behind the scenes. Just make sure to include the system-msvc OPAM
+package when installing the OCaml compiler.
+
+For building the GUI (optional) with MSVC, you also need the following:
+
+- A native Windows GTK 3 installation (try https://github.com/wingtk/gvsbuild).
+  Do not use GTK for Cygwin or MinGW.
+  Make sure the installation location (typically C:\gtk\bin) is in the PATH
+  environment variable.
+- lablgtk3 and its prerequisites (ocamlfind, dune build system)
 
 
 ### Build options
