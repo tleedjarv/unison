@@ -46,13 +46,7 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: macos-14      , ocaml-version: 5.2.x }
-        - { os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
-        - { os: macos-13      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86_64 }
-        - { os: ubuntu-22.04  , ocaml-version: 5.2.x }
-        - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
-        - { os: ubuntu-20.04  , ocaml-version: 4.14.x }
-        - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-mingw" }
+        - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-mingw", publish: true }
         - { os: windows-2019  , ocaml-version: "ocaml.4.14.2,system-mingw,arch-x86_32"  , publish: true  , fnsuffix: -windows-i386 }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-msvc"               , publish: true  , fnsuffix: -windows-x86_64 }
         - { os: windows-2019  , ocaml-version: "ocaml.4.14.2,system-msvc,arch-x86_32"   , noGUI: true } # 32-bit GTK MSVC build N/A
@@ -62,14 +56,6 @@ jobs:
     steps:
     - if: contains(matrix.job.os, 'ubuntu')
       run: sudo apt-get update
-
-    - if: runner.os == 'Windows'
-      name: "Windows: Stash away the default MSYS installation"
-      continue-on-error: true
-      shell: cmd
-      # This conflicts with Cygwin installed by setup-ocaml
-      # Adjusting PATH alone does not seem to work
-      run: rename C:\msys64 dmsys64
 
     - name: Checkout code
       uses: actions/checkout@v4
