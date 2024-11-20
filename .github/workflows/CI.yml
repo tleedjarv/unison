@@ -18,21 +18,13 @@ jobs:
       matrix:
         job:
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-msvc"               , publish: true  , fnsuffix: -windows-x86_64 }
-        - { os: windows-2019  , ocaml-version: "ocaml.4.14.2,system-msvc,arch-x86_32"   , noGUI: true } # 32-bit GTK MSVC build N/A
+        - { os: windows-2019  , ocaml-version: "ocaml.4.14.2,system-msvc,arch-x86_32"   , publish: true  , fnsuffix: -windows-i386 }
 
     runs-on: ${{ matrix.job.os }}
 
     steps:
     - if: contains(matrix.job.os, 'ubuntu')
       run: sudo apt-get update
-
-    - if: runner.os == 'Windows'
-      name: "Windows: Stash away the default MSYS installation"
-      continue-on-error: true
-      shell: cmd
-      # This conflicts with Cygwin installed by setup-ocaml
-      # Adjusting PATH alone does not seem to work
-      run: rename C:\msys64 dmsys64
 
     - name: Checkout code
       uses: actions/checkout@v4
@@ -45,7 +37,8 @@ jobs:
         # architecture/platform vars
         EXE_suffix='' ; case '${{ matrix.job.os }}' in windows-*) EXE_suffix=".exe" ;; esac
         MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *x86_32*) MinGW_ARCH='i686' ;; *mingw*) MinGW_ARCH='x86_64' ;; esac
-        outputs EXE_suffix MinGW_ARCH
+        WINBUILD_ARCH='x64' ; case '${{ matrix.job.ocaml-version }}' in *x86_32*) WINBUILD_ARCH='x86' ;; *) WINBUILD_ARCH='x64' ;; esac
+        outputs EXE_suffix MinGW_ARCH WINBUILD_ARCH
         MACOSX_DEPLOYMENT_TARGET=10.13
         case '${{ matrix.job.os }}' in
           macos-*) echo "MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;
@@ -192,16 +185,49 @@ jobs:
         # environment.
         echo PKG_CONFIG_LIBDIR=/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/lib/pkgconfig >> "$GITHUB_ENV"
 
-    - name: Prepare lablgtk install (Windows)
+    - name: "Windows: Cache GTK installation"
+      if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') }}
+      id: win-gtk-cache
+      uses: actions/cache@v4
+      with:
+        key: wingtk-${{ matrix.job.os }}-${{ steps.vars.outputs.WINBUILD_ARCH }}
+        path: D:\gtk
+
+    - if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') && !steps.win-gtk-cache.outputs.cache-hit }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: "Windows: Install GTK"
+      # 32-bit GTK builds are not distributed; build locally
+      if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') && !steps.win-gtk-cache.outputs.cache-hit }}
+      shell: pwsh
+      run: |
+        $env:PIPX_DEFAULT_PYTHON = (Get-Command -CommandType Application python -Syntax | Select-Object -First 1)
+        mkdir pipx
+        $env:PIPX_HOME = ".\pipx"
+        pipx install gvsbuild
+        gvsbuild build --platform ${{ steps.vars.outputs.WINBUILD_ARCH }} --ninja-opts -j2 --vs-install-path $(Resolve-Path "C:\Program Files*\Microsoft Visual Studio\*\*\" | Select-Object -First 1) gtk3
+        Move-Item "C:\gtk-build\gtk\*\release" D:\gtk
+        # Reset PKG_CONFIG_PATH, which would otherwise point to Python installation
+        "PKG_CONFIG_PATH=" >> "${env:GITHUB_ENV}"
+
+    # Disabled, but here for the record. 64-bit installation only
+    #- name: "Windows: Install GTK"
+    #  if: ${{ false && runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') && !contains(matrix.job.ocaml-version, 'x86_32') }}
+    #  shell: pwsh
+    #  run: |
+    #    Invoke-WebRequest https://github.com/wingtk/gvsbuild/releases/download/2024.11.1/GTK3_Gvsbuild_2024.11.1_x64.zip -OutFile GTK3.zip
+    #    Expand-Archive -Path GTK3.zip -DestinationPath D:\gtk
+
+    - name: "Windows: Prepare lablgtk install"
       if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') && !matrix.job.noGUI }}
       shell: pwsh
       run: |
-        Invoke-WebRequest https://github.com/wingtk/gvsbuild/releases/download/2024.11.1/GTK3_Gvsbuild_2024.11.1_x64.zip -OutFile GTK3.zip
-        Expand-Archive -Path GTK3.zip -DestinationPath D:\gtk
-        echo "PATH=D:\gtk\bin;${env:Path}" >> "${env:GITHUB_ENV}"
-        echo "LIB=D:\gtk\lib;${env:LIB}" >> "${env:GITHUB_ENV}"
-        echo "INCLUDE=D:\gtk\include;D:\gtk\include\cairo;D:\gtk\include\glib-2.0;D:\gtk\include\gobject-introspection-1.0;D:\gtk\lib\glib-2.0\include;${env:INCLUDE}" >> "${env:GITHUB_ENV}"
-        echo "PKG_CONFIG_PATH=D:\gtk\lib\pkgconfig" >> "${env:GITHUB_ENV}"
+        "PATH=D:\gtk\bin;${env:Path}" >> "${env:GITHUB_ENV}"
+        "LIB=D:\gtk\lib;${env:LIB}" >> "${env:GITHUB_ENV}"
+        "INCLUDE=D:\gtk\include;D:\gtk\include\cairo;D:\gtk\include\glib-2.0;D:\gtk\include\gobject-introspection-1.0;D:\gtk\lib\glib-2.0\include;${env:INCLUDE}" >> "${env:GITHUB_ENV}"
+        "PKG_CONFIG_PATH=D:\gtk\lib\pkgconfig" >> "${env:GITHUB_ENV}"
         # [2024-11] Patch opam packages for MSVC. Only needed for as long as
         # upstream does not work with MSVC out of the box.
         mkdir _opampkgs
