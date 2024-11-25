@@ -350,7 +350,7 @@ ifneq ($(findstring $(OSARCH),FreeBSD OpenBSD NetBSD DragonFly),)
     rm -f inotifytest__.ml inotifytest__.cm[oix] inotifytest__.o inotifytest__ > /dev/null 2>&1)
   ifeq ($(FOUND_LIBINOTIFY), true)
     FSMDIR = fsmonitor/inotify
-    $(NAME_FSM)$(EXEC_EXT): CAMLCFLAGS += $(LIBINOTIFY_INC)
+    $(NAME_FSM)$(EXEC_EXT): CAMLCFLAGS_FSM_X = $(LIBINOTIFY_INC)
     $(NAME_FSM)$(EXEC_EXT): CLIBS += $(LIBINOTIFY_LIB)
   endif
 endif
@@ -415,39 +415,45 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 	$(WINDRES) win32rc/unison.rc win32rc/unison.res
 	$(WINDRES) win32rc/unison.res win32rc/unison.res.lib
 
+# Context-specific variables, enabling target local variables
+CAMLFLAGS_X = $(CAMLFLAGS) $(CAMLFLAGS_GUI_X) $(CAMLFLAGS_FSM_X)
+CAMLCFLAGS_X = $(CAMLCFLAGS) $(CAMLCFLAGS_FSM_X)
+CAMLLDFLAGS_X = $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI_X)
+CAMLLIBS_X = $(CAMLLIBS) $(CAMLLIBS_GUI_X)
+
 .SUFFIXES:
 .SUFFIXES: .mli .cmi .ml .cmo .cmx .c .o .obj
 
 .mli.cmi:
 	@echo "$(CAMLC): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS) -c $(CWD)/$<
+	$(CAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
 
 .ml.cmo:
 	@echo "$(OCAMLC): $< ---> $@"
-	$(OCAMLC) $(CAMLFLAGS) -c $(CWD)/$<
+	$(OCAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
 
 .ml.cmx:
 	@echo "$(OCAMLOPT): $< ---> $@"
-	$(OCAMLOPT) $(CAMLFLAGS) -c $(CWD)/$<
+	$(OCAMLOPT) $(CAMLFLAGS_X) -c $(CWD)/$<
 
 .c$(OBJ_EXT):
 	@echo "$(CAMLC): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS) $(CAMLCFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
+	$(CAMLC) $(CAMLFLAGS_X) $(CAMLCFLAGS_X) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
 
-$(NAME_GUI)$(EXEC_EXT): OCAMLLIBS += $(OCAMLLIBS_GUI)
-$(NAME_GUI)$(EXEC_EXT): CAMLFLAGS += $(CAMLFLAGS_GUI)
-$(NAME_GUI)$(EXEC_EXT): CAMLLDFLAGS += $(CAMLLDFLAGS_GUI)
+$(NAME_GUI)$(EXEC_EXT): CAMLLIBS_GUI_X = $(CAMLLIBS_GUI)
+$(NAME_GUI)$(EXEC_EXT): CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)
+$(NAME_GUI)$(EXEC_EXT): CAMLLDFLAGS_GUI_X = $(CAMLLDFLAGS_GUI)
 $(NAME_GUI)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
 
-$(NAME_FSM)$(EXEC_EXT): OCAMLLIBS = $(FSMOCAMLLIBS)
-$(NAME_FSM)$(EXEC_EXT): CAMLFLAGS += -I fsmonitor -I $(FSMDIR)
+$(NAME_FSM)$(EXEC_EXT): CAMLLIBS = $(CAMLLIBS_FSM)
+$(NAME_FSM)$(EXEC_EXT): CAMLFLAGS_FSM_X = -I fsmonitor -I $(FSMDIR)
 $(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
 
 $(NAME)$(EXEC_EXT) $(NAME_GUI)$(EXEC_EXT) $(NAME_FSM)$(EXEC_EXT):
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS_X) -o $@ $(CAMLLIBS_X) $^ $(CLIBS)
 
 $(NAME)-blob.o: INCLFLAGS += $(INCLFLAGS_MAC)
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
