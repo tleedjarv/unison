@@ -437,23 +437,22 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 # Context-specific variables, enabling target local variables
 CAMLFLAGS_X = $(CAMLFLAGS) $(OCAMLINCLUDES) $(CAMLFLAGS_GUI_X) $(CAMLFLAGS_FSM_X)
 
-%.ml: %.mll
-	-$(RM) $@
-	ocamllex $<
+.SUFFIXES:
+.SUFFIXES: .mli .cmi .ml .cmo .cmx .c .o .obj
 
-%.cmi : %.mli
+.mli.cmi:
 	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
 
-%.cmo: %.ml
+.ml.cmo:
 	@echo "$(OCAMLC): $< ---> $@"
 	$(OCAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
 
-%.cmx: %.ml
+.ml.cmx:
 	@echo "$(OCAMLOPT): $< ---> $@"
 	$(OCAMLOPT) $(CAMLFLAGS_X) -c $(CWD)/$<
 
-%$(OBJ_EXT): %.c
+.c$(OBJ_EXT):
 	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS_X) $(CAMLCFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
