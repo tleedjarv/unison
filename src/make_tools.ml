@@ -179,7 +179,8 @@ let () =
         "CLIBS" <-+= "-cclib -lsec"
       end;
       "building_for" <-- "Building for Unix";
-    end
+    end;
+    deps := "manpage: manpagefile" :: !deps;
   end
 
 (*********************************************************************
