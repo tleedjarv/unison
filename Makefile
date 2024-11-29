@@ -23,35 +23,14 @@ src: FRC
 FRC: ;
 # Not all make seem to work without FRC, even with .PHONY
 
-.PHONY: tui gui macui fsmonitor manpage
-tui gui macui fsmonitor manpage:
+.PHONY: tui gui macui fsmonitor manpage docs clean depend
+tui gui macui fsmonitor manpage docs clean depend:
 	cd src && $(MAKE) $@
-
-# It's a wart that docs need "unison" built (vs some docs utility).
-.PHONY: docs
-docs: src manpage
-	cd doc && $(MAKE)
 
 .PHONY: test
 test: ./src/unison
 	./src/unison -ui text -selftest
 # Note: unison binary is not built automatically for the test target.
-
-.PHONY: depend
-depend:
-	cd src && $(MAKE) depend
-
-# This construct is here to remain compatible with make implementations
-# that do not have the -C option, work with different (also non-POSIX)
-# shells, and not rely on single shell per line execution.
-.PHONY: clean
-clean: clean_doc clean_src
-.PHONY: clean_doc
-clean_doc:
-	cd doc && $(MAKE) clean
-.PHONY: clean_src
-clean_src:
-	cd src && $(MAKE) clean
 
 prefix = /usr/local
 
