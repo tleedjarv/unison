@@ -181,6 +181,8 @@ let () =
       "building_for" <-- "Building for Unix";
     end;
     deps := "manpage: manpagefile" :: !deps;
+    deps := "docs: docfiles" :: !deps;
+    deps := "clean::\n\tcd ../doc && $(MAKE) clean" :: !deps;
   end
 
 (*********************************************************************
