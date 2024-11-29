@@ -438,8 +438,6 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 
 # Context-specific variables, enabling target local variables
 CAMLFLAGS_X = $(CAMLFLAGS) $(CAMLFLAGS_GUI_X) $(CAMLFLAGS_FSM_X)
-CAMLLDFLAGS_X = $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI_X)
-CAMLLIBS_X = $(CAMLLIBS) $(CAMLLIBS_GUI_X)
 
 %.ml: %.mll
 	-$(RM) $@
@@ -462,19 +460,18 @@ CAMLLIBS_X = $(CAMLLIBS) $(CAMLLIBS_GUI_X)
 	$(CAMLC) $(CAMLFLAGS_X) $(CAMLCFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
+	@echo Linking $@
+	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
 
-$(NAME_GUI)$(EXEC_EXT): CAMLLIBS_GUI_X = $(CAMLLIBS_GUI)
 $(NAME_GUI)$(EXEC_EXT): CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)
-$(NAME_GUI)$(EXEC_EXT): CAMLLDFLAGS_GUI_X = $(CAMLLDFLAGS_GUI)
 $(NAME_GUI)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
+	@echo Linking $@
+	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(CAMLLIBS_GUI) $^ $(CLIBS)
 
-$(NAME_FSM)$(EXEC_EXT): CAMLLIBS = $(CAMLLIBS_FSM)
 $(NAME_FSM)$(EXEC_EXT): CAMLFLAGS_FSM_X = -I fsmonitor -I $(FSMDIR)
 $(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
-
-$(NAME)$(EXEC_EXT) $(NAME_GUI)$(EXEC_EXT) $(NAME_FSM)$(EXEC_EXT):
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS_X) -o $@ $(CAMLLIBS_X) $^ $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS_FSM) $^ $(CLIBS)
 
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.
