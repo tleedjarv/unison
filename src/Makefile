@@ -34,8 +34,8 @@ Makefile.cfg: _mk.cfg
 _mk.cfg: ;
 
 .NOTPARALLEL:
-.PHONY: all tui gui macui fsmonitor clean depend dependgraph paths
-all tui gui macui fsmonitor clean depend dependgraph paths: Makefile.cfg
+.PHONY: all tui gui macui fsmonitor manpage clean depend dependgraph paths
+all tui gui macui fsmonitor manpage clean depend dependgraph paths: Makefile.cfg
 	$(MAKE) -f Makefile.OCaml $@
 
 # Must use recursive make invocation here, in the name of portability.
