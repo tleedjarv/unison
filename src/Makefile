@@ -33,9 +33,12 @@ Makefile.cfg: _mk.cfg
 	@ocaml make_tools.ml conf2 MAKE="$(MAKE)" > Makefile2.cfg
 _mk.cfg: ;
 
+TARGETS = all tui gui macui fsmonitor manpage docs clean depend dependgraph paths
+FILES = unison-blob.o unison unison.exe
+
 .NOTPARALLEL:
-.PHONY: all tui gui macui fsmonitor manpage docs clean depend dependgraph paths
-all tui gui macui fsmonitor manpage docs clean depend dependgraph paths: Makefile.cfg
+.PHONY: $(TARGETS)
+$(TARGETS) $(FILES): Makefile.cfg
 	$(MAKE) -f Makefile.OCaml $@
 
 # Must use recursive make invocation here, in the name of portability.
