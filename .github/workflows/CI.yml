@@ -36,11 +36,11 @@ jobs:
           rm -rf ocaml-5.3.0-beta2
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | src/unison-fsmonitor
           # RPC tests over local socket
           mkdir localsocket
@@ -52,12 +52,12 @@ jobs:
           test -S ./localsocket/test.sock
           ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
-          gmake -C src testxattr
-          gmake -C src testacl
+          make -C src testxattr
+          make -C src testacl
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
   openbsd:
     runs-on: ubuntu-latest
@@ -85,11 +85,11 @@ jobs:
           rm -rf ocaml-5.3.0-beta2
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | src/unison-fsmonitor
           # RPC tests over local socket
           mkdir localsocket
@@ -101,12 +101,12 @@ jobs:
           test -S ./localsocket/test.sock
           ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
-          gmake -C src testxattr
-          gmake -C src testacl
+          make -C src testxattr
+          make -C src testacl
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
   netbsd:
     runs-on: ubuntu-latest
@@ -134,11 +134,11 @@ jobs:
           rm -rf ocaml-5.3.0-beta2
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | src/unison-fsmonitor
           # RPC tests over local socket
           mkdir localsocket
@@ -150,12 +150,12 @@ jobs:
           test -S ./localsocket/test.sock
           ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
-          gmake -C src testxattr
-          gmake -C src testacl
+          make -C src testxattr
+          make -C src testacl
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
   dragonflybsd:
     runs-on: ubuntu-latest
@@ -183,11 +183,11 @@ jobs:
           rm -rf ocaml-5.3.0-beta2
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | src/unison-fsmonitor
           # RPC tests over local socket
           mkdir localsocket
@@ -202,12 +202,12 @@ jobs:
           #export UNISONBACKUPDIR=./src/testbak3
           #./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
-          gmake -C src testxattr
-          gmake -C src testacl
+          make -C src testxattr
+          make -C src testacl
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
   omnios:
     runs-on: ubuntu-latest
@@ -235,11 +235,11 @@ jobs:
           rm -rf ocaml-5.3.0-beta2
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | src/unison-fsmonitor
           # RPC tests over local socket
           mkdir localsocket
@@ -251,12 +251,12 @@ jobs:
           test -S ./localsocket/test.sock
           ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
-          gmake -C src testxattr
-          gmake -C src testacl
+          make -C src testxattr
+          make -C src testacl
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
   solaris:
     runs-on: ubuntu-latest
@@ -285,11 +285,11 @@ jobs:
           rm -rf ocaml-5.3.0-beta2
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | src/unison-fsmonitor
           # RPC tests over local socket
           mkdir localsocket
@@ -301,12 +301,12 @@ jobs:
           test -S ./localsocket/test.sock
           ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
-          gmake -C src testxattr
-          gmake -C src testacl
+          make -C src testxattr
+          make -C src testacl
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
 #  solarisstudio:
 #    runs-on: ubuntu-latest
@@ -340,11 +340,11 @@ jobs:
 #          rm -rf ocaml-5.3.0-beta2
 #
 #          ## Build unison
-#          gmake
+#          make
 #
 #          ## Run unison tests
 #          # Built-in tests
-#          gmake test
+#          make test
 #          echo TEST | src/unison-fsmonitor
 #          # RPC tests over local socket
 #          mkdir localsocket
@@ -356,9 +356,9 @@ jobs:
 #          test -S ./localsocket/test.sock
 #          ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 #
-#          gmake -C src testxattr
-#          gmake -C src testacl
+#          make -C src testxattr
+#          make -C src testacl
 #
 #          ## Build bytecode
 #          rm src/unison src/unison-fsmonitor
-#          gmake NATIVE=false
+#          make NATIVE=false
