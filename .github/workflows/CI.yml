@@ -31,11 +31,11 @@ jobs:
           rm -rf ocaml-5.4.0
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
@@ -49,7 +49,7 @@ jobs:
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
   openbsd:
     runs-on: ubuntu-latest
@@ -77,11 +77,11 @@ jobs:
           rm -rf ocaml-5.4.0
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/inotify src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
@@ -95,7 +95,7 @@ jobs:
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
   netbsd:
     runs-on: ubuntu-latest
@@ -123,11 +123,11 @@ jobs:
           rm -rf ocaml-5.4.0
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/pkg/lib src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
@@ -141,7 +141,7 @@ jobs:
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
   dragonflybsd:
     runs-on: ubuntu-latest
@@ -169,11 +169,11 @@ jobs:
           rm -rf ocaml-5.4.0
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
@@ -190,7 +190,7 @@ jobs:
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
   omnios:
     runs-on: ubuntu-latest
@@ -218,11 +218,11 @@ jobs:
           rm -rf ocaml-5.4.0
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
@@ -236,7 +236,7 @@ jobs:
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
   solaris:
     runs-on: ubuntu-latest
@@ -265,11 +265,11 @@ jobs:
           rm -rf ocaml-5.4.0
 
           ## Build unison
-          gmake
+          make
 
           ## Run unison tests
           # Built-in tests
-          gmake test
+          make test
           echo TEST | src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
@@ -283,7 +283,7 @@ jobs:
 
           ## Build bytecode
           rm src/unison src/unison-fsmonitor
-          gmake NATIVE=false
+          make NATIVE=false
 
 #  solarisstudio:
 #    runs-on: ubuntu-latest
@@ -317,11 +317,11 @@ jobs:
 #          rm -rf ocaml-5.4.0
 #
 #          ## Build unison
-#          gmake
+#          make
 #
 #          ## Run unison tests
 #          # Built-in tests
-#          gmake test
+#          make test
 #          echo TEST | src/unison-fsmonitor
 #          # RPC tests over local socket
 #          mkdir localsocket
@@ -335,4 +335,4 @@ jobs:
 #
 #          ## Build bytecode
 #          rm src/unison src/unison-fsmonitor
-#          gmake NATIVE=false
+#          make NATIVE=false
