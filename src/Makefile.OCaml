@@ -199,7 +199,7 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 	$(WINDRES) win32rc/unison.res win32rc/unison.res.lib
 
 # Context-specific variables, enabling target local variables
-CAMLFLAGS_X = $(CAMLFLAGS) $(OCAMLINCLUDES) $(CAMLFLAGS_GUI_X) $(CAMLFLAGS_FSM_X)
+CAMLFLAGS_X = $(CAMLFLAGS) $(OCAMLINCLUDES) $(CAMLFLAGS_GUI_X) $(CAMLFLAGS_FSM_X) $(CAMLFLAGS_MAC_X)
 
 .SUFFIXES:
 .SUFFIXES: .mli .cmi .ml .cmo .cmx .c .o .obj
@@ -242,7 +242,7 @@ $(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
 # threads (needed by uimacbridge): https://github.com/ocaml/ocaml/issues/7933
 $(NAME)-blob.o: $(CAMLOBJS) $(CAMLOBJS_MAC) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) $(CAMLFLAGS_MAC) -o u-b.o $(CAMLLDFLAGS) $(CAMLLIBS) $(CAMLLIBS_MAC) $(CLIBS) $(CAMLOBJS) $(CAMLOBJS_MAC)
+	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS_X) -o u-b.o $(CAMLLDFLAGS) $(CAMLLIBS) $(CAMLLIBS_MAC) $(CLIBS) $(CAMLOBJS) $(CAMLOBJS_MAC)
 	$(LD) -r -keep_private_externs -o $@ u-b.o $(COBJS)
 	$(RM) u-b.o
 

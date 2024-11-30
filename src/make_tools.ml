@@ -495,12 +495,14 @@ let target_local_vars () =
       {mk|
 $(NAME_GUI)$(EXEC_EXT) $(CAMLOBJS_GUI) $(rule_sep) CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)
 $(NAME_FSM)$(EXEC_EXT) $(CAMLOBJS_FSM) $(FSMOCAMLOBJS:.cmo=.cmi) $(rule_sep) CAMLFLAGS_FSM_X = $(CAMLFLAGS_FSM)
+$(NAME)-blob.o $(CAMLOBJS_MAC) $(rule_sep) CAMLFLAGS_MAC_X = $(CAMLFLAGS_MAC)
 |mk}
   else if old_gmake then
     print_string
       {mk|
 $(NAME_GUI)$(EXEC_EXT) $(CAMLOBJS_GUI) : CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)
 $(NAME_FSM)$(EXEC_EXT) $(CAMLOBJS_FSM) $(FSMOCAMLOBJS:.cmo=.cmi) : CAMLFLAGS_FSM_X = $(CAMLFLAGS_FSM)
+$(NAME)-blob.o $(CAMLOBJS_MAC) : CAMLFLAGS_MAC_X = $(CAMLFLAGS_MAC)
 |mk}
   else
     print_string
