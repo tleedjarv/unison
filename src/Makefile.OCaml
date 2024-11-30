@@ -181,6 +181,11 @@ dependgraph: depend
 ####################################################################
 ### Compilation
 
+__at = $(V)@
+_v = $(__at:1@=)
+__verbose = $(V)
+_verbose = $(__verbose:1=-verbose)
+
 win32rc/unison.res: win32rc/unison.rc win32rc/U.ico
 	rc win32rc/unison.rc
 
@@ -197,19 +202,19 @@ CAMLCFLAGS_X = $(CAMLCFLAGS) $(CAMLCFLAGS_FSM_X)
 
 .mli.cmi:
 	@echo "$(CAMLC): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
+	$(_v)$(CAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
 
 .ml.cmo:
 	@echo "$(OCAMLC): $< ---> $@"
-	$(OCAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
+	$(_v)$(OCAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
 
 .ml.cmx:
 	@echo "$(OCAMLOPT): $< ---> $@"
-	$(OCAMLOPT) $(CAMLFLAGS_X) -c $(CWD)/$<
+	$(_v)$(OCAMLOPT) $(CAMLFLAGS_X) -c $(CWD)/$<
 
 .c$(OBJ_EXT):
 	@echo "$(CAMLC): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS_X) $(CAMLCFLAGS_X) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
+	$(_v)$(CAMLC) $(CAMLFLAGS_X) $(CAMLCFLAGS_X) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
 # The second part of configuration must be included here because rule lines
 # are expanded at parsing, so we need all variables to be defined by then.
@@ -217,15 +222,15 @@ include Makefile2.cfg
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $(ALL__SRC) $(CLIBS)
+	$(_v)$(CAMLC) $(_verbose) $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $(ALL__SRC) $(CLIBS)
 
 $(NAME_GUI)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(CAMLLIBS_GUI) $(ALL__SRC) $(CLIBS)
+	$(_v)$(CAMLC) $(_verbose) $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(CAMLLIBS_GUI) $(ALL__SRC) $(CLIBS)
 
 $(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS_FSM) $(ALL__SRC) $(CLIBS) $(CLIBS_FSM)
+	$(_v)$(CAMLC) $(_verbose) $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS_FSM) $(ALL__SRC) $(CLIBS) $(CLIBS_FSM)
 
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.
