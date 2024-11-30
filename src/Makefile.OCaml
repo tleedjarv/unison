@@ -183,6 +183,7 @@ dependgraph: depend
 ####################################################################
 ### Compilation
 
+V=1
 silent_ = @
 silent_1 =
 _v = $(silent_$(V))
