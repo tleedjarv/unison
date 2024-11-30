@@ -147,7 +147,7 @@ fsmonitor:
 .PHONY: fsmonitorexecutable
 fsmonitorexecutable: buildexecutable $(NAME_FSM)$(EXEC_EXT)
 
-CAMLFLAGS_FSM = -I fsmonitor -I $(FSMDIR)
+CAMLFLAGS_FSM = -I fsmonitor -I ./$(FSMDIR)
 
 ####################################################################
 ### Dependencies
