@@ -30,7 +30,7 @@ default: all
 # Executed only by GNU Make and NMAKE
 Makefile.cfg: _mk.cfg
 	@ocaml make_tools.ml conf > Makefile.cfg
-	@ocaml make_tools.ml conf2 > Makefile2.cfg
+	@ocaml make_tools.ml conf2 MAKE="$(MAKE)" > Makefile2.cfg
 _mk.cfg: ;
 
 .NOTPARALLEL:

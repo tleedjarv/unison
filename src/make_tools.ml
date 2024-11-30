@@ -486,12 +486,21 @@ end
 
 let target_local_vars () =
   let open Tools in
-  if is_empty inputs.$("_NMAKE_VER") then
+  let is_old_gmake s =
+    if String.length s >= 10 then String.sub s 0 10 = "GNU Make 3" else false
+  in
+  let old_gmake = not_empty inputs.$("MAKE") && (shell ~err_null:true (inputs.$("MAKE") ^ " --version") |> is_old_gmake) in
+  if is_empty inputs.$("_NMAKE_VER") && not old_gmake then
     print_string
       {mk|
 $(NAME_GUI)$(EXEC_EXT) $(CAMLOBJS_GUI) $(rule_sep) CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)
-
 $(NAME_FSM)$(EXEC_EXT) $(CAMLOBJS_FSM) $(FSMOCAMLOBJS:.cmo=.cmi) $(rule_sep) CAMLFLAGS_FSM_X = $(CAMLFLAGS_FSM)
+|mk}
+  else if old_gmake then
+    print_string
+      {mk|
+$(NAME_GUI)$(EXEC_EXT) $(CAMLOBJS_GUI) : CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)
+$(NAME_FSM)$(EXEC_EXT) $(CAMLOBJS_FSM) $(FSMOCAMLOBJS:.cmo=.cmi) : CAMLFLAGS_FSM_X = $(CAMLFLAGS_FSM)
 |mk}
   else
     print_string
