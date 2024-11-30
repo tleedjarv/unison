@@ -183,6 +183,13 @@ dependgraph: depend
 ####################################################################
 ### Compilation
 
+silent_ = @
+silent_1 =
+_v = $(silent_$(V))
+terse_ =
+terse_1 = -verbose
+_verbose = $(terse_$(V))
+
 win32rc/unison.res: win32rc/unison.rc win32rc/U.ico
 	rc win32rc/unison.rc
 
@@ -198,33 +205,33 @@ CAMLFLAGS_X = $(CAMLFLAGS) $(OCAMLINCLUDES) $(CAMLFLAGS_GUI_X) $(CAMLFLAGS_FSM_X
 
 .mli.cmi:
 	@echo "$(CAMLC): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
+	$(_v)$(CAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
 
 .ml.cmo:
 	@echo "$(OCAMLC): $< ---> $@"
-	$(OCAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
+	$(_v)$(OCAMLC) $(CAMLFLAGS_X) -c $(CWD)/$<
 
 .ml.cmx:
 	@echo "$(OCAMLOPT): $< ---> $@"
-	$(OCAMLOPT) $(CAMLFLAGS_X) -c $(CWD)/$<
+	$(_v)$(OCAMLOPT) $(CAMLFLAGS_X) -c $(CWD)/$<
 
 .c$(OBJ_EXT):
 	@echo "$(CAMLC): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS_X) $(CAMLCFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
+	$(_v)$(CAMLC) $(CAMLFLAGS_X) $(CAMLCFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
 include Makefile2.cfg
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $(ALL__SRC) $(CLIBS)
+	$(_v)$(CAMLC) $(_verbose) $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $(ALL__SRC) $(CLIBS)
 
 $(NAME_GUI)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(CAMLLIBS_GUI) $(ALL__SRC) $(CLIBS)
+	$(_v)$(CAMLC) $(_verbose) $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(CAMLLIBS_GUI) $(ALL__SRC) $(CLIBS)
 
 $(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS_FSM) $(ALL__SRC) $(CLIBS)
+	$(_v)$(CAMLC) $(_verbose) $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS_FSM) $(ALL__SRC) $(CLIBS)
 
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.
