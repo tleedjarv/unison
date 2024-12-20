@@ -289,16 +289,26 @@ let fsmonitor_dir =
   | "FreeBSD" | "OpenBSD" | "NetBSD" | "DragonFly" ->
       begin
         let libinotify_lib =
-          let pkg_lib = shell "pkg-config --libs libinotify 2> /dev/null || printf ' -linotify'" in
+          let pkg_lib = shell "pkg-config --libs libinotify 2> /dev/null" in
           if not_empty pkg_lib then "-cclib '" ^ pkg_lib ^ "'" else "" in
         let libinotify_inc =
           let pkg_flags = shell "pkg-config --cflags libinotify 2> /dev/null" in
           if not_empty pkg_flags then "-ccopt '" ^ pkg_flags ^ "'" else "" in
-        if shell ("{ printf '' > inotifytest__.ml ;" ^ ocamlc ^ " " ^
-          ($)"CAMLCFLAGS" ^ " " ^ ($)"CAMLLDFLAGS" ^ " " ^ libinotify_lib ^
-          " -o inotifytest__ inotifytest__.ml > /dev/null 2>&1 && printf true ; } ;\
-            rm -f inotifytest__.ml inotifytest__.cm[oix] \
-            inotifytest__.o inotifytest__ > /dev/null 2>&1") = "true" then begin
+        let runtest = [
+            "{ printf '#include <sys/inotify.h>\\n\
+             void test() { int fd = inotify_init(); }' > inotifytest__.c ;";
+            ocamlc;
+            ($)"CAMLCFLAGS";
+            ($)"CAMLLDFLAGS";
+            libinotify_inc;
+            libinotify_lib;
+            "-o inotifytest__ inotifytest__.c";
+            "> /dev/null 2>&1 && printf true ; } ;\
+             rm -f inotifytest__.c inotifytest__.cm[oix] \
+             inotifytest__.o inotifytest__ > /dev/null 2>&1";
+          ]
+          |> String.concat " " in
+        if shell runtest = "true" then begin
           if not_empty libinotify_inc then begin
             (* OpenBSD make does not support local variables *)
             let target = if osarch <> "OpenBSD" then "$(FSMCOBJS): " else "" in
