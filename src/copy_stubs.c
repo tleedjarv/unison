@@ -258,6 +258,37 @@ CAMLprim value unsn_copy_file(value in_fd, value out_fd, value in_offs, value le
 #define caml_win32_maperr win32_maperr
 #endif
 
+#if defined(__MINGW32__) || defined(__MINGW64__)
+
+#ifndef FILE_SUPPORTS_BLOCK_REFCOUNTING
+#define FILE_SUPPORTS_BLOCK_REFCOUNTING 0x08000000
+#endif
+
+#ifndef FSCTL_GET_INTEGRITY_INFORMATION
+#define FSCTL_GET_INTEGRITY_INFORMATION 0x9027c
+#endif
+
+typedef struct _FSCTL_GET_INTEGRITY_INFORMATION_BUFFER {
+  WORD  ChecksumAlgorithm;
+  WORD  Reserved;
+  DWORD Flags;
+  DWORD ChecksumChunkSizeInBytes;
+  DWORD ClusterSizeInBytes;
+} FSCTL_GET_INTEGRITY_INFORMATION_BUFFER;
+
+#ifndef FSCTL_DUPLICATE_EXTENTS_TO_FILE
+#define FSCTL_DUPLICATE_EXTENTS_TO_FILE 0x98344
+#endif
+
+typedef struct _DUPLICATE_EXTENTS_DATA {
+  HANDLE        FileHandle;
+  LARGE_INTEGER SourceFileOffset;
+  LARGE_INTEGER TargetFileOffset;
+  LARGE_INTEGER ByteCount;
+} DUPLICATE_EXTENTS_DATA;
+
+#endif /* defined(__MINGW32__) || defined(__MINGW64__) */
+
 void unsn_copy_file_error(void)
 {
   caml_win32_maperr(GetLastError());
