@@ -109,7 +109,7 @@ let () = if build_macGUI then outp "macuimaybe: macui"
 (* Generate backtrace information for exceptions *)
 let () = "CAMLFLAGS" <-+= "-g $(INCLFLAGS)"
 
-let () = "CAMLFLAGS" <-+= "-ccopt -D_FILE_OFFSET_BITS=64"
+let () = "CAMLCFLAGS" <-+= "-ccopt -D_FILE_OFFSET_BITS=64"
 
 let () =
   [

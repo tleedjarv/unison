@@ -419,6 +419,8 @@ let readPropsExtDataG root path desc =
 external clone_path : string -> string -> bool = "unsn_clone_path"
 (* [unsn_clone_file] does not raise exceptions. *)
 external clone_file : Unix.file_descr -> Unix.file_descr -> bool = "unsn_clone_file"
+(* [unsn_copy_file] updates destination file seek position if and only if
+   writing succeeded, returning the number of bytes written. *)
 external copy_file : Unix.file_descr -> Unix.file_descr -> int64
   -> int -> int = "unsn_copy_file"
 
@@ -427,31 +429,44 @@ let copy_size l =
   Int64.to_int @@
   if Int64.compare l def > 0 then def else l
 
-let rec copyFileAux src dst offs len notify =
+let rec copyFileAux src dst src_offs len notify =
   let open Uutil in
   if len > Filesize.zero then begin
-    let n = copy_file src dst (Filesize.toInt64 offs)
+    let n = copy_file src dst (Filesize.toInt64 src_offs)
       (copy_size (Filesize.toInt64 len)) in
     let n' = Filesize.ofInt n in
     let () = notify n' in
     if n > 0 then
-      copyFileAux src dst (Filesize.add offs n') (Filesize.sub len n') notify
+      copyFileAux src dst (Filesize.add src_offs n') (Filesize.sub len n') notify
   end
 
-let copyFileRange src dst offs len fallback notify =
+let copyFileRange src dst src_offs len fallback notify =
+  let bytesCopied = ref Uutil.Filesize.zero in
+  let copied n =
+    bytesCopied := Uutil.Filesize.add !bytesCopied n;
+    notify n
+  in
   try
-    copyFileAux src dst offs len notify
+    copyFileAux src dst src_offs len copied
   with
   | Unix.Unix_error ((EINVAL | ENOSYS | EBADF | EXDEV
-                      | ESPIPE | ENOTSOCK | EOPNOTSUPP), _, _)
-  | Unix.Unix_error (EUNKNOWNERR -1, _, _) ->
-      (* These errors are not expected in the middle of a copy; these
+                      | ESPIPE | ENOTSOCK | EOPNOTSUPP) as err, _, _)
+  | Unix.Unix_error (EUNKNOWNERR -50 (* ERROR_NOT_SUPPORTED *) as err, _, _)
+  | Unix.Unix_error (EUNKNOWNERR -1 as err, _, _)
+      (* The errors above are not expected in the middle of a copy; these
          indicate that [copy_file] is not supported at all (by the OS or
          by the filesystem, or for these specific files) and nothing
          has been copied so far, which makes fallback straight-forward.
-         Fallback to read-write loop expects that seek positions in
-         input and output fds have not changed. *)
-      fallback ()
+         However, this can't be relied upon. While expected extremely rarely,
+         failure after partial success is to be expected and fallback routine
+         must be able to handle this; so all errors are handled the same. *)
+  | Unix.Unix_error (err, _, _) ->
+      debug (fun () -> Util.msg
+        "Falling back to regular copy: copyFileRange failed [%s]%s\n"
+        (Unix.error_message err)
+        (if !bytesCopied = Uutil.Filesize.zero then "" else
+          " (copied " ^ (Uutil.Filesize.toString !bytesCopied) ^ ")"));
+      fallback src_offs !bytesCopied
 
 let copyFile inCh outCh kind len fallback notify =
   (* Flush the buffered output channel just in case since we're going to
@@ -462,9 +477,22 @@ let copyFile inCh outCh kind len fallback notify =
   if kind = `DATA && clone_file src dst then
     notify len
   else
+    let fallback' offs copied =
+      (* Fallback to read-write loop expects that seek positions in input and
+         output fds have not changed. By invariant, if [copyFileRange]
+         succeeded partially then the seek position of output fd was updated
+         accordingly. To not break fallback, the seek position of input fd must
+         be updated by the same amount. *)
+      let open Uutil in
+      if copied <> Filesize.zero then begin
+        let pos = Int64.add (Filesize.toInt64 offs) (Filesize.toInt64 copied) in
+        LargeFile.seek_in inCh pos
+      end;
+      fallback ()
+    in
     match kind with
-    | `DATA -> copyFileRange src dst Uutil.Filesize.zero len fallback notify
-    | `DATA_APPEND offs -> copyFileRange src dst offs len fallback notify
+    | `DATA -> copyFileRange src dst Uutil.Filesize.zero len fallback' notify
+    | `DATA_APPEND offs -> copyFileRange src dst offs len fallback' notify
     | `RESS -> fallback ()
 
 let copyByPath fspathFrom pathFrom fspathTo pathTo =
