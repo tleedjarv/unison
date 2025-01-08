@@ -1,5 +1,5 @@
 /* Unison file synchronizer: src/copy_stubs.c */
-/* Copyright 2021-2023, Tõivo Leedjärv
+/* Copyright 2021-2025, Tõivo Leedjärv
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -153,10 +153,10 @@ CAMLprim value unsn_clone_file(value in_fd, value out_fd)
 #include <sys/syscall.h>
 #include <sys/sendfile.h>
 
-CAMLprim value unsn_copy_file(value in_fd, value out_fd, value offs, value len)
+CAMLprim value unsn_copy_file(value in_fd, value out_fd, value in_offs, value len)
 {
-  CAMLparam4(in_fd, out_fd, offs, len);
-  off_t off_i = Int64_val(offs);
+  CAMLparam4(in_fd, out_fd, in_offs, len);
+  off_t off_i = Int64_val(in_offs);
   ssize_t ret;
 
   caml_release_runtime_system();
@@ -183,11 +183,11 @@ CAMLprim value unsn_copy_file(value in_fd, value out_fd, value offs, value len)
 #include <sys/types.h>
 #include <unistd.h>
 
-CAMLprim value unsn_copy_file(value in_fd, value out_fd, value offs, value len)
+CAMLprim value unsn_copy_file(value in_fd, value out_fd, value in_offs, value len)
 {
-  CAMLparam4(in_fd, out_fd, offs, len);
+  CAMLparam4(in_fd, out_fd, in_offs, len);
 #if __FreeBSD_version >= 1300037
-  off_t off_i = Int64_val(offs);
+  off_t off_i = Int64_val(in_offs);
   ssize_t ret;
 
   caml_release_runtime_system();
@@ -209,10 +209,10 @@ CAMLprim value unsn_copy_file(value in_fd, value out_fd, value offs, value len)
 
 #include <sys/sendfile.h>
 
-CAMLprim value unsn_copy_file(value in_fd, value out_fd, value offs, value len)
+CAMLprim value unsn_copy_file(value in_fd, value out_fd, value in_offs, value len)
 {
-  CAMLparam4(in_fd, out_fd, offs, len);
-  off_t off = orig_off = Int64_val(offs);
+  CAMLparam4(in_fd, out_fd, in_offs, len);
+  off_t off = orig_off = Int64_val(in_offs);
   ssize_t ret;
 
   caml_release_runtime_system();
@@ -234,12 +234,12 @@ CAMLprim value unsn_copy_file(value in_fd, value out_fd, value offs, value len)
 #else /* defined(__linux__) || defined(__FreeBSD__) || defined(__sun) */
 
 
-CAMLprim value unsn_copy_file(value in_fd, value out_fd, value offs, value len)
+CAMLprim value unsn_copy_file(value in_fd, value out_fd, value in_offs, value len)
 {
-  CAMLparam4(in_fd, out_fd, offs, len);
+  CAMLparam4(in_fd, out_fd, in_offs, len);
   caml_unix_error(ENOSYS, "copy_file", Nothing);
   CAMLreturn(Val_long(0));
 }
 
 
-#endif /* defined(__linux__) || defined (__sun) */
+#endif /* defined(__linux__) || defined(__FreeBSD__) || defined (__sun) */
