@@ -83,6 +83,14 @@ CAMLprim value unsn_clone_path(value src, value dst)
   CAMLreturn(Val_false);
 }
 
+/* Regarding Windows API: The CopyFile function in Windows API can do file
+ * clones under right conditions. Nevertheless, we can't use that function
+ * since it is not possible to explicitly request cloning (it is possible to
+ * check whether block cloning is supported (see [unsn_copy_file]) but it is
+ * not a guarantee that the CopyFile function will actually result in a
+ * cloning operation) and the function will fall back to a normal copy, which
+ * we do not want in this case (even though performance-wise it would be more
+ * like sendfile). */
 
 #endif /* defined(__APPLE__) */
 
@@ -231,7 +239,162 @@ CAMLprim value unsn_copy_file(value in_fd, value out_fd, value in_offs, value le
 }
 
 
-#else /* defined(__linux__) || defined(__FreeBSD__) || defined(__sun) */
+#elif defined(_WIN32)
+
+
+#ifndef UNICODE
+#define UNICODE
+#endif
+#ifndef _UNICODE
+#define _UNICODE
+#endif
+
+#include <windows.h>
+#include <winioctl.h>
+
+#include <caml/version.h>
+#if OCAML_VERSION_MAJOR < 5
+#define caml_uerror uerror
+#define caml_win32_maperr win32_maperr
+#endif
+
+void unsn_copy_file_error(void)
+{
+  caml_win32_maperr(GetLastError());
+  caml_uerror("copy_file", Nothing);
+}
+
+BOOL unsn_copy_file_supports_cloning(HANDLE h)
+{
+  DWORD flags = 0;
+  return
+    (GetVolumeInformationByHandleW(h, NULL, 0, NULL, NULL, &flags, NULL, 0)
+      && (flags & FILE_SUPPORTS_BLOCK_REFCOUNTING));
+ }
+
+void unsn_copy_file_set_sparse(HANDLE h, BOOL sparse)
+{
+  FILE_SET_SPARSE_BUFFER sp;
+  sp.SetSparse = sparse;
+  if (!DeviceIoControl(h, FSCTL_SET_SPARSE, &sp, sizeof(sp),
+        NULL, 0, NULL, NULL)) {
+    unsn_copy_file_error();
+  }
+}
+
+BOOL unsn_copy_file_get_sparse(HANDLE h)
+{
+  FILE_BASIC_INFO info;
+  if (!GetFileInformationByHandleEx(h, FileBasicInfo, &info, sizeof(info))) {
+    unsn_copy_file_error();
+  }
+  return (info.FileAttributes & FILE_ATTRIBUTE_SPARSE_FILE) != 0;
+}
+
+BOOL unsn_copy_file_api_checked = FALSE;
+BOOL unsn_copy_file_api_available = FALSE;
+
+CAMLprim value unsn_copy_file(value in_fd, value out_fd, value in_offs, value len)
+{
+  CAMLparam4(in_fd, out_fd, in_offs, len);
+
+  if (!unsn_copy_file_api_checked) {
+    unsn_copy_file_api_checked = TRUE;
+    unsn_copy_file_api_available =
+      GetProcAddress(GetModuleHandleW(L"kernel32.dll"),
+                                      "GetVolumeInformationByHandleW") != NULL;
+  }
+  if (!unsn_copy_file_api_available) {
+    caml_unix_error(ENOSYS, "copy_file", Nothing);
+  }
+
+  HANDLE hin = Handle_val(in_fd);
+  HANDLE hout = Handle_val(out_fd);
+
+  if (!unsn_copy_file_supports_cloning(hout)
+      || !unsn_copy_file_supports_cloning(hin)) {
+    caml_unix_error(ENOSYS, "copy_file", Nothing);
+  }
+
+  FSCTL_GET_INTEGRITY_INFORMATION_BUFFER intgrb;
+  if (!DeviceIoControl(hin, FSCTL_GET_INTEGRITY_INFORMATION,
+        NULL, 0, &intgrb, sizeof(intgrb), NULL, NULL)) {
+    unsn_copy_file_error();
+  }
+
+  DUPLICATE_EXTENTS_DATA dupl;
+  dupl.FileHandle = hin;
+  dupl.SourceFileOffset.QuadPart = Int64_val(in_offs);
+  if (!SetFilePointerEx(hout, (LARGE_INTEGER){0}, &dupl.TargetFileOffset,
+        FILE_CURRENT)) {
+    unsn_copy_file_error();
+  }
+
+  /* From MSDN: The source and destination regions must begin and end at
+   * a cluster boundary. */
+  if ((dupl.SourceFileOffset.QuadPart % intgrb.ClusterSizeInBytes != 0)
+      || (dupl.TargetFileOffset.QuadPart % intgrb.ClusterSizeInBytes != 0)) {
+    /* FSCTL_DUPLICATE_EXTENTS_TO_FILE would fail anyway if this didn't hold,
+     * but this way we can bail out earlier. */
+    caml_unix_error(EINVAL, "copy_file", Nothing);
+  }
+  dupl.ByteCount.QuadPart = Long_val(len) + intgrb.ClusterSizeInBytes - (Long_val(len) % intgrb.ClusterSizeInBytes);
+
+  /* From MSDN: If the source file is sparse, the destination file must also be
+   * sparse. */
+  BOOL in_is_sparse = unsn_copy_file_get_sparse(hin);
+  BOOL out_is_sparse = unsn_copy_file_get_sparse(hout);
+  /* Based on the wording in MSDN, it is ok if the destination file is sparse
+   * and the source is not, the opposite is not. */
+  if (in_is_sparse && !out_is_sparse) {
+    unsn_copy_file_set_sparse(hout, TRUE);
+  }
+
+  /* From MSDN: The destination region must not extend past the end of file. */
+  LARGE_INTEGER newTargetLen;
+  newTargetLen.QuadPart = dupl.TargetFileOffset.QuadPart + Long_val(len);
+  FILE_STANDARD_INFO fi;
+  if (!GetFileInformationByHandleEx(hout, FileStandardInfo, &fi, sizeof(fi))) {
+    unsn_copy_file_error();
+  }
+  if (fi.EndOfFile.QuadPart < newTargetLen.QuadPart) {
+    /* We want to avoid allocating on disk when extending the file. Make the
+     * destination file temporarily sparse, if it's not already. */
+    if (!out_is_sparse && !in_is_sparse) {
+      unsn_copy_file_set_sparse(hout, TRUE);
+    }
+    FILE_END_OF_FILE_INFO eofi;
+    eofi.EndOfFile = newTargetLen;
+    if (!SetFileInformationByHandle(hout, FileEndOfFileInfo, &eofi, sizeof(eofi))) {
+      unsn_copy_file_error();
+    }
+    /* The destination file was set to sparse when extending it; revert the
+     * sparse status. */
+    if (!out_is_sparse && !in_is_sparse) {
+      unsn_copy_file_set_sparse(hout, FALSE);
+    }
+  }
+
+  caml_release_runtime_system();
+  BOOL res = DeviceIoControl(hout, FSCTL_DUPLICATE_EXTENTS_TO_FILE,
+                             &dupl, sizeof(dupl), NULL, 0, NULL, NULL);
+  caml_acquire_runtime_system();
+  if (!res) {
+    unsn_copy_file_error();
+  } else {
+    /* FSCTL_DUPLICATE_EXTENTS_TO_FILE does not advance the destination file
+     * offset. */
+    LARGE_INTEGER copied;
+    copied.QuadPart = Long_val(len);
+    if (!SetFilePointerEx(hout, copied, NULL, FILE_CURRENT)) {
+      unsn_copy_file_error();
+    }
+  }
+
+  CAMLreturn(len);
+}
+
+#else /* defined(__linux__) || defined(__FreeBSD__) || defined(__sun) || defined(_WIN32) */
 
 
 CAMLprim value unsn_copy_file(value in_fd, value out_fd, value in_offs, value len)
@@ -242,4 +405,4 @@ CAMLprim value unsn_copy_file(value in_fd, value out_fd, value in_offs, value le
 }
 
 
-#endif /* defined(__linux__) || defined(__FreeBSD__) || defined (__sun) */
+#endif /* defined(__linux__) || defined(__FreeBSD__) || defined (__sun) || defined(_WIN32) */
