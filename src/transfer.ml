@@ -485,10 +485,14 @@ struct
     let copyBlocks n k =
       let offs = Int64.mul n (Int64.of_int blockSize) in
       let length = k * blockSize in
-      let fallback () = copyBlocks' offs length in
       begin match copyFn with
-      | None -> fallback ()
+      | None -> copyBlocks' offs length
       | Some f ->
+          let fallback _ copied =
+            let offs = Int64.add offs (Uutil.Filesize.toInt64 copied)
+            and length = length - (Uutil.Filesize.toInt copied) in
+            copyBlocks' offs length
+          in
           f (Uutil.Filesize.ofInt64 offs) (Uutil.Filesize.ofInt length) ~fallback;
       end;
       progress := !progress + length
