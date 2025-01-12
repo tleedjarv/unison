@@ -488,7 +488,7 @@ struct
       begin match copyFn with
       | None -> copyBlocks' offs length
       | Some f ->
-          let fallback _ copied =
+          let fallback copied =
             let offs = Int64.add offs (Uutil.Filesize.toInt64 copied)
             and length = length - (Uutil.Filesize.toInt copied) in
             copyBlocks' offs length
