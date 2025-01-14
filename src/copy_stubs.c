@@ -23,6 +23,7 @@
 #if OCAML_VERSION_MAJOR < 5
 #define caml_unix_error unix_error
 #define caml_uerror uerror
+#define caml_win32_maperr win32_maperr
 #endif
 
 
@@ -252,12 +253,6 @@ CAMLprim value unsn_copy_file(value in_fd, value out_fd, value in_offs, value le
 
 #include <windows.h>
 #include <winioctl.h>
-
-#include <caml/version.h>
-#if OCAML_VERSION_MAJOR < 5
-#define caml_uerror uerror
-#define caml_win32_maperr win32_maperr
-#endif
 
 #if defined(__MINGW32__)
 
