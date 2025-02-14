@@ -2587,7 +2587,7 @@ let t1 = Unix.gettimeofday () in
       (* Directory optimization is disabled under Windows,
          as Windows does not update directory modification times
          on FAT filesystems. *)
-      dirFastCheck = useFastChecking () && Sys.unix;
+      dirFastCheck = (try let b = bool_of_string (System.getenv "UNISONDEBUG_DIRFASTCHECK") in Util.msg "\n  dirFastCheck = %b\n\n" b; b with Not_found -> (useFastChecking () && Sys.unix));
       dirStamp; rescanProps; archHash = archiveHash fspath;
       showStatus = not !Trace.runningasserver }
   in
