@@ -66,6 +66,12 @@ val hasCorrectCTime : bool
 
 (****)
 
+type fstype = { debugString : string; isFAT : bool; isExFAT : bool }
+
+val fstype : fspath -> fstype
+
+(****)
+
 exception XattrNotSupported
 
 val xattr_list : fspath -> (string * int) list
