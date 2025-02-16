@@ -3324,9 +3324,3 @@ let rec iterFiles fspath path arch f =
       f fspath path fp
   | _ ->
       ()
-
-(* Hook for filesystem auto-detection (not implemented yet) *)
-let inspectFilesystem =
-  Remote.registerRootCmd
-    "inspectFilesystem" Umarshal.unit Proplist.m
-    (fun _ -> Lwt.return Proplist.empty)

@@ -824,6 +824,24 @@ let debug = Trace.debug "startup"
 
 (* ---- *)
 
+(* Hook for filesystem auto-detection (not implemented yet) *)
+let statFilesystem' =
+  Remote.registerRootCmd
+    "statFilesystem" Umarshal.unit Proplist.m
+    (fun (fspath, ()) ->
+      begin try
+        let fstype = Fs.fstype fspath in
+        Util.msg " %s -> fstype = %s\n" (Fspath.toString fspath) fstype.debugString
+      with Unix.Unix_error _ as e ->
+        Util.msg " fstype detection error: %s\n" (Printexc.to_string e)
+      end;
+      Lwt.return Proplist.empty)
+
+let statFilesystem root =
+  Remote.commandAvailable root "statFilesystem" >>= function
+  | false -> Lwt.return None
+  | true -> Lwt.return (Some (statFilesystem' root ()))
+
 (* Determine the case sensitivity of a root (does filename FOO==foo?) *)
 let architecture =
   Remote.registerRootCmd
@@ -838,6 +856,7 @@ let architecture =
    Windows (needed for permissions) and does some sanity checking. *)
 let validateAndFixupPrefs () =
   Props.validatePrefs();
+  Globals.allRootsMap (fun r -> statFilesystem r) >>= fun fstats ->
   Globals.allRootsMap (fun r -> architecture r ()) >>= (fun archs ->
   let someHostIsRunningWindows =
     Safelist.exists (fun (isWin, _, _) -> isWin) archs in
@@ -1062,6 +1081,8 @@ let initPrefs ~profileName ~promptForRoots ?(prepDebug = fun () -> ()) () =
           "root = " ^ tmpdir ^ "b";
           "logfile = " ^ tmpdir ^ "unison.log";
         ];
+      System.mkdir (tmpdir ^ "a") 0o750;
+      System.mkdir (tmpdir ^ "b") 0o750;
       if (Prefs.read Stasher.backupdir) = "" then
         Prefs.loadStrings [ "backupdir = " ^ tmpdir ^ "backup" ]
   end;
