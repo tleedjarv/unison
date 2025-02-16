@@ -135,6 +135,24 @@ let has_stderr ~info:_ = true
 
 (****)
 
+type fstype = { debugString : string; isFAT : bool; isExFAT : bool }
+
+external get_fstype : string -> string = "unison_get_fstype"
+let fstype p =
+  let typestr = get_fstype p in
+  let fstype = { debugString = typestr; isFAT = false; isExFAT = false } in
+  match (*String.uppercase_ascii *)typestr with
+  | "msdos" (* NetBSD, OpenBSD, macOS *)
+  | "msdosfs" (* FreeBSD *)
+  | "pcfs" (* OmniOS/illumos, Solaris *)
+  | "FAT" | "FAT12" | "FAT16" | "FAT32" ->
+      { fstype with isFAT = true; isExFAT = false }
+  | "exFAT" | "exfat" -> (* Not available on FreeBSD (reports as fusefs) or any other BSD/Solaris where exFAT is mounted by FUSE; but should work on macOS *)
+      { fstype with isFAT = true; isExFAT = true }
+  | _ -> fstype
+
+(****)
+
 exception XattrNotSupported
 let _ = Callback.register_exception "XattrNotSupported" XattrNotSupported
 

@@ -74,6 +74,12 @@ let copy_file = System.copy_file
 
 (****)
 
+type fstype = System.fstype =
+  { debugString : string; isFAT : bool; isExFAT : bool }
+let fstype f = System.fstype (path f)
+
+(****)
+
 exception XattrNotSupported = System.XattrNotSupported
 
 let xattr_list f = System.xattr_list (path f)
