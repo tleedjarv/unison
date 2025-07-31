@@ -17,6 +17,7 @@ module type TOOLS = sig
   val get_command : string -> string option
   val is_empty : string -> bool
   val not_empty : string -> bool
+  val has_substring : string -> string -> bool
   val exists : string -> string -> bool
   val info : string -> unit
   val error : string -> 'a
@@ -257,9 +258,9 @@ let () = "WINDRES" <--
 
 let () =
   if is_empty inputs.$("_NMAKE_VER") then begin
-    if is_empty inputs.$("MAKE") || not_empty (
-          shell ~err_null:true ("printf '_cf_test: FRC ; @echo $^\nFRC: ;' | " ^
-            inputs.$("MAKE") ^ " -f -")) then
+    if is_empty inputs.$("MAKE") || has_substring "FRC true" (
+        shell_input "_cf_test: FRC ; @echo $^ true\nFRC: ;"
+          (inputs.$("MAKE") ^ " -f -")) then
       "ALL__SRC" <-- "$^"  (* GNU and POSIX make, new versions of BSD make *)
     else
       "ALL__SRC" <-- "$>"  (* Older versions of BSD make *)
@@ -522,6 +523,16 @@ let is_empty s =
   String.length (String.trim s) = 0
 
 let not_empty s = not (is_empty s)
+
+let has_substring needle haystack =
+  let l1 = String.length needle in
+  let l2 = String.length haystack in
+  let max_i = l2 - l1 in
+  let rec loop i =
+    if i > max_i then false
+    else if needle = String.sub haystack i l1 then true
+    else loop (i + 1)
+  in loop 0
 
 end
 
