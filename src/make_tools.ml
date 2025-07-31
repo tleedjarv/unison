@@ -551,7 +551,7 @@ let target_local_vars () =
     not_empty
       (let s = shell_input ~exit_status ("TEST_VAL = test\n\
         _local_var_test: LOCAL_VAR_TEST = $(TEST_VAL)\n\
-        _local_var_test: ;")
+        _local_var_test: ; @echo $(LOCAL_VAR_TEST) ok")
         (inputs.$("MAKE") ^ " -f -") in Printf.eprintf "\nOutput = |%s|\nExit status: %s\n" s (match !exit_status with Unix.WEXITED e -> "exit: " ^ (string_of_int e) | _ -> "signal or stop"); s)
       && !exit_status = Unix.WEXITED 0)
   in
@@ -559,11 +559,12 @@ let target_local_vars () =
     is_empty inputs.$("_NMAKE_VER") && (
       is_empty inputs.$("MAKE") ||
       (let exit_status = ref (Unix.WEXITED (-1)) in
-      shell_input ~exit_status
-        "TEST_VAL = test\n\
-         _local_var_test: LOCAL_VAR_TEST = $(TEST_VAL)\n\
-         _local_var_test: ;"
-        (inputs.$("MAKE") ^ " -f -") |> ignore;
+      has_substring "test ok" (
+        shell_input ~exit_status
+          "TEST_VAL = test\n\
+           _local_var_test: LOCAL_VAR_TEST = $(TEST_VAL)\n\
+           _local_var_test: ; @echo $(LOCAL_VAR_TEST) ok"
+          (inputs.$("MAKE") ^ " -f -")) &&
       !exit_status = Unix.WEXITED 0)
     )
   in
