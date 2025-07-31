@@ -525,6 +525,7 @@ let is_empty s =
 let not_empty s = not (is_empty s)
 
 let has_substring needle haystack =
+  Printf.eprintf "DEBUG: haystack = |%s|\n%!" haystack;
   let l1 = String.length needle in
   let l2 = String.length haystack in
   let max_i = l2 - l1 in
@@ -541,6 +542,19 @@ let target_local_vars () =
   let open Tools in
   (* NMAKE and OpenBSD don't support target-specific local variables *)
   (* The same applies for make in NetBSD < 10 and FreeBSD < 13 *)
+  let _dbg =
+    Printf.eprintf "is_empty _NMAKE_VER = %b\n" (is_empty inputs.$("_NMAKE_VER"));
+    Printf.eprintf "is_empty MAKE = %b\n" (is_empty inputs.$("MAKE"));
+    is_empty inputs.$("_NMAKE_VER") &&
+    (is_empty inputs.$("MAKE") ||
+    let exit_status = ref (Unix.WEXITED (-1)) in
+    not_empty
+      (let s = shell_input ~exit_status ("TEST_VAL = test\n\
+        _local_var_test: LOCAL_VAR_TEST = $(TEST_VAL)\n\
+        _local_var_test: ;")
+        (inputs.$("MAKE") ^ " -f -") in Printf.eprintf "\nOutput = |%s|\nExit status: %s\n" s (match !exit_status with Unix.WEXITED e -> "exit: " ^ (string_of_int e) | _ -> "signal or stop"); s)
+      && !exit_status = Unix.WEXITED 0)
+  in
   let make_supports_local_vars =
     is_empty inputs.$("_NMAKE_VER") && (
       is_empty inputs.$("MAKE") ||
@@ -553,6 +567,7 @@ let target_local_vars () =
       !exit_status = Unix.WEXITED 0)
     )
   in
+  Printf.eprintf "make_supports_local_vars = %b\n" make_supports_local_vars;
   if make_supports_local_vars then begin
     let is_old_gmake =
       not_empty inputs.$("MAKE") &&
