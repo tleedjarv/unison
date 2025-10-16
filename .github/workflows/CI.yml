@@ -111,7 +111,7 @@ jobs:
         outputs PKG_VER PKG_BASENAME PKG_DIR PKG_NAME PKG_suffix
         COMPRESS_CMD='tar czf'; case '${{ matrix.job.os }}' in windows-*) COMPRESS_CMD='7z -y a' ;; esac;
         outputs COMPRESS_CMD
-        case '${{ matrix.job.ocaml-version }}' in *msvc*) echo "_MAKE=nmake" >> $GITHUB_ENV ;; *) echo "_MAKE=make" >> $GITHUB_ENV ;; esac
+        case '${{ matrix.job.ocaml-version }}' in *msvc*) echo "_MAKE=nmake" >> $GITHUB_ENV ;; *) echo "_MAKE=make -j 8" >> $GITHUB_ENV ;; esac
 
     - name: Create/configure any needed build/workspace
       shell: bash
@@ -575,7 +575,8 @@ jobs:
       name: "macOS: Build and package Unison.app"
       id: macapp
       run: |
-        opam exec -- make macui
+        opam exec -- make clean
+        opam exec -- make -j 8 macui
 
         # package
         APP_NAME=Unison-${{ steps.vars.outputs.PKG_VER }}${{ matrix.job.fnsuffix }}.app.tar.gz
@@ -1041,7 +1042,7 @@ jobs:
         ocaml-compiler: "${{ matrix.job.ocaml-compiler }}"
         opam-pin: false
 
-    - run: opam exec -- make tui NATIVE=false
+    - run: opam exec -- make -j 8 tui fsmonitor NATIVE=false
 
     - run: opam exec -- make test
 
@@ -1079,7 +1080,7 @@ jobs:
       env:
         LDFLAGS: ${{ matrix.job.static }}
       run: |
-        opam exec -- make
+        opam exec -- make -j 8
         mkdir -p pkg/bin
         cp src/unison pkg/bin/
         cp src/unison-fsmonitor pkg/bin/
