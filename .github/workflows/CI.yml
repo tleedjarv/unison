@@ -143,55 +143,6 @@ jobs:
           rm src/unison src/unison-fsmonitor
           make NATIVE=false
 
-  dragonflybsd:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: DragonflyBSD
-      uses: vmactions/dragonflybsd-vm@v1
-      with:
-        usesh: true
-        copyback: false
-        prepare: |
-          pkg install -y wget gmake libinotify pkgconf
-
-        run: |
-          ## Build OCaml compiler
-          wget https://github.com/ocaml/ocaml/archive/refs/tags/5.4.0.tar.gz
-          tar zxf 5.4.0.tar.gz || true
-          cd ocaml-5.4.0
-          ./configure
-          gmake
-          gmake install
-          cd ..
-          rm -rf ocaml-5.4.0
-
-          ## Build unison
-          make
-
-          ## Run unison tests
-          # Built-in tests
-          make test
-          echo TEST | src/unison-fsmonitor | grep 'ERROR unknown'
-          # RPC tests over local socket
-          mkdir localsocket
-          chmod 700 localsocket
-          # Separate backup dir must be set for server instance so that the central
-          # backup location of both instances doesn't overlap
-          #export UNISONBACKUPDIR=./src/testbak4
-          #./src/unison -socket ./localsocket/test.sock &
-          #unset UNISONBACKUPDIR
-          #sleep 1 # Wait for the server to be fully started
-          #test -S ./localsocket/test.sock
-          #export UNISONBACKUPDIR=./src/testbak3
-          #./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
-
-          ## Build bytecode
-          rm src/unison src/unison-fsmonitor
-          make NATIVE=false
-
   omnios:
     runs-on: ubuntu-latest
 
