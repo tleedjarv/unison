@@ -36,7 +36,7 @@ jobs:
           ## Run unison tests
           # Built-in tests
           make test
-          echo TEST | src/unison-fsmonitor
+          echo TEST | src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
           chmod 700 localsocket
@@ -82,7 +82,7 @@ jobs:
           ## Run unison tests
           # Built-in tests
           make test
-          echo TEST | src/unison-fsmonitor
+          echo TEST | LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/inotify src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
           chmod 700 localsocket
@@ -128,7 +128,7 @@ jobs:
           ## Run unison tests
           # Built-in tests
           make test
-          echo TEST | src/unison-fsmonitor
+          echo TEST | LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/pkg/lib src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
           chmod 700 localsocket
@@ -174,7 +174,7 @@ jobs:
           ## Run unison tests
           # Built-in tests
           make test
-          echo TEST | src/unison-fsmonitor
+          echo TEST | src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
           chmod 700 localsocket
@@ -223,7 +223,7 @@ jobs:
           ## Run unison tests
           # Built-in tests
           make test
-          echo TEST | src/unison-fsmonitor
+          echo TEST | src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
           chmod 700 localsocket
@@ -270,7 +270,7 @@ jobs:
           ## Run unison tests
           # Built-in tests
           make test
-          echo TEST | src/unison-fsmonitor
+          echo TEST | src/unison-fsmonitor | grep 'ERROR unknown'
           # RPC tests over local socket
           mkdir localsocket
           chmod 700 localsocket
