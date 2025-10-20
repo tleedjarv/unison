@@ -97,7 +97,14 @@ let build_macGUI =
        that XCode is not installed and any invocation of xcodebuild results
        in a non-0 exit code. *)
     if Sys.command "xcodebuild -version > /dev/null" = 0 then
-      true
+      match ocaml_conf_var "architecture" with
+      | "aarch64" | "arm64" | "amd64" | "x86_64" -> true
+      | _ -> begin
+          (* Build automatically on known-good archs only. *)
+          info "Not building macOS native GUI automatically. \
+            Execute 'make macui' to build the macOS native GUI.";
+          false
+        end
     else begin
       info "Not building macOS native GUI because XCode is not installed.";
       false
