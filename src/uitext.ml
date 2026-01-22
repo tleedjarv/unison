@@ -1651,6 +1651,13 @@ let rec start interface =
   if interface <> Uicommon.Text then
     Util.msg "This Unison binary only provides the text GUI...\n";
   begin try
+    let _ = Util.msg (f_ "About") in (* TODO: format translation is broken in gettext-ocaml < 0.5.0 *)
+    let _ = Util.msg "\n%s\n" (s_ "About") in
+    let _ = Util.msg "%s\n" (s_ "Action") in
+    let _ = Util.msg ((fn_ "%d error" "%d errors" 1) ^^ "\n") 1 in
+    let _ = Util.msg ((fn_ "%d error" "%d errors" 2) ^^ "\n") 2 in
+    let _ = Util.msg "%s\n" (sn_ "1 error" "2 errors" 1) in
+    let _ = Util.msg "%s\n" (sn_ "1 error" "2 errors" 2) in
     Sys.catch_break true;
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();

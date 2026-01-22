@@ -2662,6 +2662,13 @@ let getProfile quit =
   al#set_left_padding 12;
 
   let lvb = GPack.vbox ~spacing:6 ~packing:(al#add) () in
+  ignore (GMisc.label ~text:(Printf.sprintf (f_ "About")) ~packing:(lvb#pack ~expand:false) ()); (* TODO: format translation is broken in gettext-ocaml < 0.5.0 *)
+  ignore (GMisc.label ~text:(s_ "About") ~packing:(lvb#pack ~expand:false) ());
+  ignore (GMisc.label ~text:(s_ "Action") ~packing:(lvb#pack ~expand:false) ());
+  ignore (GMisc.label ~text:(Printf.sprintf (fn_ "%d error" "%d errors" 1) 1) ~packing:(lvb#pack ~expand:false) ());
+  ignore (GMisc.label ~text:(Printf.sprintf (fn_ "%d error" "%d errors" 2) 2) ~packing:(lvb#pack ~expand:false) ());
+  ignore (GMisc.label ~text:(sn_ "1 error" "2 errors" 1) ~packing:(lvb#pack ~expand:false) ());
+  ignore (GMisc.label ~text:(sn_ "1 error" "2 errors" 2) ~packing:(lvb#pack ~expand:false) ());
   let selectLabel =
     GMisc.label
       ~text:"Select a _profile:" ~use_underline:true
