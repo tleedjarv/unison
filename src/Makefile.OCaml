@@ -36,8 +36,8 @@ macuimaybe:
 ####################################################################
 ### Default parameters
 
-INCLFLAGS = -I lwt -I ubase -I system -I system/$(SYSTEM) -I lwt/$(SYSTEM)
-DEP_INCLFLAGS = -I lwt -I ubase -I system \
+INCLFLAGS = -I lwt -I ubase -I system -I system/$(SYSTEM) -I lwt/$(SYSTEM) -I ugettext
+DEP_INCLFLAGS = -I lwt -I ubase -I system -I ugettext \
                 -I fsmonitor -I fsmonitor/inotify -I fsmonitor/solaris -I fsmonitor/windows
 
 ubase/projectInfo.ml: Makefile.ProjectInfo
@@ -293,6 +293,7 @@ clean::
 	-(cd lwt && $(RM_FILES))
 	-(cd lwt/generic && $(RM_FILES))
 	-(cd lwt/win && $(RM_FILES))
+	-(cd ugettext && $(RM_FILES))
 
 .PHONY: paths
 paths:
