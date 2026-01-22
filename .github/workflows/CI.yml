@@ -494,6 +494,8 @@ jobs:
 
         # [2026-04] Use upstream devel code because 0.5.0 in opam repository is broken.
         # Fix a bug when compiling with OCaml >= 5.4
+        # Fix a bug that allows PO files only specified in the current dir (there is
+        # a workaround in make_tools so the patch here is not strictly needed).
         git clone https://github.com/gildor478/ocaml-gettext.git
         cd ocaml-gettext
         patch -Nu -p 1 <<"EOF"
@@ -522,6 +524,20 @@ jobs:
                | _ -> is_like lid functions )
          
          let visit_expr (iterator : Ast_iterator.iterator) expr =
+        --- a/src/bin/ocaml-gettext/OCamlGettext.ml
+        +++ b/src/bin/ocaml-gettext/OCamlGettext.ml
+        @@ -146,9 +146,9 @@ let guess_language_textdomain (language_option, textdomain_option) lst =
+           | Some _, Some _, [] -> []
+           | Some _, Some _, _ -> raise InstallUninstallTooManyFilename
+           | Some language, None, lst ->
+        -      List.map (fun fl_mo -> (language, chop_extension fl_mo, fl_mo)) lst
+        +      List.map (fun fl_mo -> (language, chop_extension (basename fl_mo), fl_mo)) lst
+           | None, Some textdomain, lst ->
+        -      List.map (fun fl_mo -> (chop_extension fl_mo, textdomain, fl_mo)) lst
+        +      List.map (fun fl_mo -> (chop_extension (basename fl_mo), textdomain, fl_mo)) lst
+           | None, None, lst ->
+               List.map
+                 (fun _fl_mo ->
         EOF
         # [2026-04] The changes must be committed because opam --working-dir
         # is broken on macOS (under some circumstances(?) (not clear what))
@@ -531,10 +547,23 @@ jobs:
         opam pin --no-action add gettext .
         cd ..
 
+        # [2026-04] Add mingw depext dependencies for Windows mingw builds
         # Patch to support OCaml >= 4.08
         opam source gettext-stub
         cd gettext-stub*
         patch -Nu -p 1 <<"EOF"
+        --- a/gettext-stub.opam
+        +++ b/gettext-stub.opam
+        @@ -36,7 +36,8 @@ depexts: [
+           ["gettext"] {os = "macos" & os-distribution = "homebrew"}
+           ["gettext"] {os = "macos" & os-distribution = "macports"}
+           ["gettext-devel"] {os = "win32" & os-distribution = "cygwinports"}
+        -  ["gettext-devel"] {os = "win32" & os-distribution = "cygwin"}
+        +  ["mingw64-x86_64-gettext"] {os = "win32" & os-distribution != "cygwinports"}
+        +  ["mingw64-i686-gettext"] {os = "win32" & os-distribution != "cygwinports"}
+           ["gettext-dev"] {os-distribution = "alpine"}
+           ["libc6-dev"] {os-family = "debian"}
+         ]
         --- a/src/tools/discover-stub/discover.ml
         +++ b/src/tools/discover-stub/discover.ml
         @@ -11,24 +11,25 @@ int main() {
@@ -593,6 +622,7 @@ jobs:
         opam pin --no-action add gettext-stub .
         cd ..
 
+        # [2026-04] Fix a bug with FileExists logic (is triggered on macOS runners).
         opam source fileutils
         cd fileutils*
         patch -Nu -p 1 <<"EOF"
@@ -607,6 +637,15 @@ jobs:
            "odoc" {with-doc}
          ]
          build: [
+        --- a/src/lib/fileutils/FileUtilSTAT.ml
+        +++ b/src/lib/fileutils/FileUtilSTAT.ml
+        @@ -56,5 +56,5 @@
+               device            = ustat.Unix.LargeFile.st_dev;
+               inode             = ustat.Unix.LargeFile.st_ino;
+             }
+        -  with Unix.Unix_error(Unix.ENOENT, _, _) ->
+        +  with Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
+             raise (FileDoesntExist fln)
         EOF
         opam pin --no-action add fileutils .
         cd ..
@@ -1172,6 +1211,7 @@ jobs:
         opam pin --no-action add gettext-stub .
         cd ..
 
+        # [2026-04] Fix a bug with FileExists logic (is triggered on macOS runners).
         # Patch unnecessarily strict compiler version constraint.
         opam source fileutils
         cd fileutils*
@@ -1187,6 +1227,16 @@ jobs:
            "odoc" {with-doc}
          ]
          build: [
+        --- a/src/lib/fileutils/FileUtilSTAT.ml
+        +++ b/src/lib/fileutils/FileUtilSTAT.ml
+        @@ -56,5 +56,5 @@
+               device            = ustat.Unix.LargeFile.st_dev;
+               inode             = ustat.Unix.LargeFile.st_ino;
+             }
+        -  with Unix.Unix_error(Unix.ENOENT, _, _) ->
+        +  with Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
+             raise (FileDoesntExist fln)
+        EOF
         opam pin --no-action add fileutils .
 
     - run: opam install gettext
