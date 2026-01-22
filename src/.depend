@@ -1290,6 +1290,14 @@ ubase/util.cmx : \
     ubase/projectInfo.cmx \
     ubase/util.cmi
 ubase/util.cmi :
+ugettext/ugettext_dummy.cmo : \
+    ugettext/ugettext_dummy.cmi
+ugettext/ugettext_dummy.cmx : \
+    ugettext/ugettext_dummy.cmi
+ugettext/ugettext_dummy.cmi : \
+    ugettext/ugettext_intf.cmo
+ugettext/ugettext_intf.cmo :
+ugettext/ugettext_intf.cmx :
 ui.cmi :
 uicommon.cmo : \
     xferhint.cmi \
