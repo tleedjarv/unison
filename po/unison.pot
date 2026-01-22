@@ -18,3 +18,26 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
+#: ../src/uitext.ml:1658 ../src/uitext.ml:1657 ../src/uigtk3.ml:2669
+#. ../src/uigtk3.ml:2668
+msgid "%d error"
+msgid_plural "%d errors"
+msgstr[0] ""
+msgstr[1] ""
+
+#: ../src/uitext.ml:1660 ../src/uitext.ml:1659 ../src/uigtk3.ml:2671
+#. ../src/uigtk3.ml:2670
+msgid "1 error"
+msgid_plural "2 errors"
+msgstr[0] ""
+msgstr[1] ""
+
+#: ../src/uitext.ml:1655 ../src/uitext.ml:1654 ../src/uigtk3.ml:2666
+#. ../src/uigtk3.ml:2665
+msgid "About"
+msgstr ""
+
+#: ../src/uitext.ml:1656 ../src/uigtk3.ml:2667
+msgid "Action"
+msgstr ""
+
