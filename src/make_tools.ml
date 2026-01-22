@@ -213,11 +213,11 @@ let () =
     "CAMLOBJS_GUI" <-- "$(OCAMLOBJS_GUI:.cmo=.cmx)";
     "CAMLOBJS_FSM" <-- "$(FSMOCAMLOBJS:.cmo=.cmx)";
     "CAMLOBJS_MAC" <-- "$(OCAMLOBJS_MAC:.cmo=.cmx)";
-    "CAMLLIBS" <-- "$(OCAMLLIBS:.cma=.cmxa)";
+    "CAMLLIBS" <-- "$(OCAMLLIBS:.cma=.cmxa) $(OCAMLLIBS_GETTEXT:.cma=.cmxa)";
     "CAMLLIBS_TUI" <-- "$(OCAMLLIBS_TUI:.cma=.cmxa)";
     "CAMLLIBS_GUI" <-- "$(OCAMLLIBS_GUI:.cma=.cmxa)";
     "CAMLLIBS_MAC" <-- "$(OCAMLLIBS_MAC:.cma=.cmxa)";
-    "CAMLLIBS_FSM" <-- "$(FSMOCAMLLIBS:.cma=.cmxa)";
+    "CAMLLIBS_FSM" <-- "$(FSMOCAMLLIBS:.cma=.cmxa) $(OCAMLLIBS_GETTEXT:.cma=.cmxa)";
   end else begin
     (* Set up for bytecode compilation *)
     "CAMLC" <-- ocamlc;
@@ -235,11 +235,11 @@ let () =
     "CAMLOBJS_GUI" <-- "$(OCAMLOBJS_GUI)";
     "CAMLOBJS_MAC" <-- "$(OCAMLOBJS_MAC)";
     "CAMLOBJS_FSM" <-- "$(FSMOCAMLOBJS)";
-    "CAMLLIBS" <-- "$(OCAMLLIBS)";
+    "CAMLLIBS" <-- "$(OCAMLLIBS) $(OCAMLLIBS_GETTEXT)";
     "CAMLLIBS_TUI" <-- "$(OCAMLLIBS_TUI)";
     "CAMLLIBS_GUI" <-- "$(OCAMLLIBS_GUI)";
     "CAMLLIBS_MAC" <-- "$(OCAMLLIBS_MAC)";
-    "CAMLLIBS_FSM" <-- "$(FSMOCAMLLIBS)";
+    "CAMLLIBS_FSM" <-- "$(FSMOCAMLLIBS) $(OCAMLLIBS_GETTEXT)";
   end
 
 (* Compiler compatibility *)
@@ -291,6 +291,128 @@ let () =
     "ALL__SRC" <-- "$(**)" (* NMAKE; enclose in brackets for safety if not run by NMAKE *)
 
 let () = "rule_sep" <-- if not_empty inputs.$("ASSUME_DMAKE") then ":=" else ":"
+
+(*********************************************************************
+*** I18n ***)
+
+let link_gettext =
+  match ($)"WITH_GETTEXT" |> String.lowercase_ascii with
+  | "true" | "1" -> `OCaml
+  | "sys" -> `Sys
+  | _ -> `None
+
+let double_escape_dquotes s =
+  let buf = Buffer.create (String.length s + 4) in
+  String.iteri (fun i c ->
+    if c = '"' then begin
+      if (i = 0 || s.[i - 1] <> '\\') then
+        Buffer.add_string buf {|\\\"|}
+      else
+        Buffer.add_string buf {|\\\\\\"|}
+    end else
+      Buffer.add_char buf c) s;
+  Buffer.contents buf
+
+let () =
+  if link_gettext = `OCaml || link_gettext = `Sys then begin
+    begin match ocamlfind with
+    | Some cmd ->
+        (* The weird quoting is required for Windows, but harmless in sh *)
+        if link_gettext = `OCaml then begin
+          "CAMLINCLS_GETTEXT" <-+=
+            shell (cmd ^ " query -format \"-I \"\"%d\"\"\" -separator \" \" -recursive gettext.extension");
+          "OCAMLLIBS_GETTEXT" <-+=
+            shell (cmd ^ " query -format \"\"\"%a\"\"\" -separator \" \" -predicates "
+              ^ (if native then "native" else "byte") ^ " fileutils")
+        end;
+        "OCAMLLIBS_GETTEXT" <-+=
+          shell (cmd ^ " query -format \"\"\"%a\"\"\" -separator \" \" -predicates "
+            ^ (if native then "native" else "byte") ^ " gettext.base gettext.extension");
+
+        if link_gettext = `Sys then begin
+          "CAMLINCLS_GETTEXT" <-+=
+            shell (cmd ^ " query -format \"-I \"\"%d\"\"\" -separator \" \" -recursive gettext-stub");
+          "OCAMLLIBS_GETTEXT" <-+=
+            shell (cmd ^ " query -format \"\"\"%a\"\"\" -separator \" \" -predicates "
+              ^ (if native then "native" else "byte") ^ " gettext-stub");
+
+          if ocaml_conf_var "ccomp_type" = "msvc" then begin
+            (* [2026-04] This is NOT needed after upstream ocaml-gettext-stub
+               is patched for proper MSVC builds. Keep it just in case for now,
+               as it is still possible (if you're really motivated) to build
+               ocaml-gettext-stub without said patch. *)
+            "CLIBS" <-+= "-cclib intl.lib";
+          end;
+
+          if build_macGUI then
+            let ldflags_gettext =
+              String.concat " " [
+                inputs.$("LDFLAGS_GETTEXT");
+                shell (cmd ^ " query -format \"-L'%d'\" -separator \" -L\" gettext-stub");
+                "-lgettextStub_stubs";
+              ]
+              |> double_escape_dquotes
+            in
+            "XCODEFLAGS" <-+= "LDFLAGS_GETTEXT=\\\"" ^ ldflags_gettext ^ "\\\""
+        end
+    | None ->
+        if link_gettext = `OCaml then begin
+          "CAMLINCLS_GETTEXT" <-+= "-I +fileutils";
+          "OCAMLLIBS_GETTEXT" <-+= "fileutils.cma"
+        end;
+        "CAMLINCLS_GETTEXT" <-+= "-I +gettext -I +gettext/base -I +gettext/extension";
+        "OCAMLLIBS_GETTEXT" <-+= "gettextBase.cma gettextExtension.cma";
+
+        if link_gettext = `Sys then begin
+          "CAMLINCLS_GETTEXT" <-+= "-I +gettext-stub";
+          "OCAMLLIBS_GETTEXT" <-+= "gettextStub.cma";
+
+          if ocaml_conf_var "ccomp_type" = "msvc" then begin
+            (* [2026-04] This is NOT needed after upstream ocaml-gettext-stub
+               is patched for proper MSVC builds. Keep it just in case for now,
+               as it is still possible (if you're really motivated) to build
+               ocaml-gettext-stub without said patch. *)
+            "CLIBS" <-+= "-cclib intl.lib";
+          end;
+
+          if build_macGUI then
+            let ldflags_gettext =
+              String.concat " " [
+                inputs.$("LDFLAGS_GETTEXT");
+                "-L" ^ (Filename.quote (($)"OCAMLLIBDIR" ^ "/gettext-stub"));
+                "-lgettextStub_stubs";
+              ]
+              |> double_escape_dquotes
+            in
+            "XCODEFLAGS" <-+= "LDFLAGS_GETTEXT=\\\"" ^ ldflags_gettext ^ "\\\""
+        end
+    end;
+    "CAMLLDFLAGS" <-+= ($)"CAMLINCLS_GETTEXT";
+  end;
+  let sffx =
+    match link_gettext with
+    | `Sys -> "sys"
+    | `OCaml -> "ocaml"
+    | _ -> "dummy"
+  in
+  let name = "ugettext/ugettext_" ^ sffx in
+  "CAMLFLAGS" <-+= "-open Ugettext_" ^ sffx;
+  "OPENED_GLOBAL_OBJS" <-+= name ^ "." ^ (if native then "cmx" else "cmo");
+  [
+    "ugettext/ugettext_intf";
+    "ugettext/ugettext_sys";
+    "ugettext/ugettext_ocaml";
+    "ugettext/ugettext_dummy";
+  ]
+  |> List.iter (fun name ->
+      outp (Printf.sprintf
+        "%s.cmi: %s.mli\n\
+        \t$(OCAMLC) $(CAMLINCLS_GETTEXT) -I ugettext -c %s.mli\n\
+        %s.cmo: %s.ml\n\
+        \t$(OCAMLC) $(CAMLINCLS_GETTEXT) -I ugettext -c %s.ml\n\
+        %s.cmx: %s.ml\n\
+        \t$(OCAMLOPT) $(CAMLINCLS_GETTEXT) -I ugettext -c %s.ml"
+        name name name name name name name name name))
 
 (*********************************************************************
 *** User Interface setup ***)
