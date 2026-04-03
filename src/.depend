@@ -1298,6 +1298,12 @@ ugettext/ugettext_dummy.cmi : \
     ugettext/ugettext_intf.cmo
 ugettext/ugettext_intf.cmo :
 ugettext/ugettext_intf.cmx :
+ugettext/ugettext_ocaml.cmo : \
+    ugettext/ugettext_ocaml.cmi
+ugettext/ugettext_ocaml.cmx : \
+    ugettext/ugettext_ocaml.cmi
+ugettext/ugettext_ocaml.cmi : \
+    ugettext/ugettext_intf.cmo
 ugettext/ugettext_sys.cmo : \
     ugettext/ugettext_sys.cmi
 ugettext/ugettext_sys.cmx : \
