@@ -11,11 +11,13 @@
    (= %{system} "linux_eabihf")
    (= %{system} "linux_eabi")))
  (modules :standard \ watcher)
- (flags :standard -w -3-27-67)
+ (flags :standard
+        -open Ugettext_impl
+        -w -3-27-67)
  (foreign_stubs
   (language c)
   (names inotify_stubs))
- (libraries unix lwt_lib))
+ (libraries ugettext unix lwt_lib))
 
 (executable
  (name watcher)
@@ -29,5 +31,7 @@
    (= %{system} "linux_eabihf")
    (= %{system} "linux_eabi")))
  (modules watcher)
- (flags :standard -w -27-32)
+ (flags :standard
+        -open Ugettext_impl
+        -w -27-32)
  (libraries fswatcher_linux))

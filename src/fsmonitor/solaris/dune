@@ -5,11 +5,13 @@
  (wrapped false)
  (enabled_if (= %{system} "solaris"))
  (modules :standard \ watcher)
- (flags :standard -w -3-27-39)
+ (flags :standard
+        -open Ugettext_impl
+        -w -3-27-39)
  (foreign_stubs
   (language c)
   (names fen_stubs))
- (libraries unix lwt_lib))
+ (libraries ugettext unix lwt_lib))
 
 (executable
  (name watcher)
@@ -17,6 +19,8 @@
  (package unison) ; Dummy: we don't use packages
  (enabled_if (= %{system} "solaris"))
  (modules watcher)
- (flags :standard -w -27)
+ (flags :standard
+        -open Ugettext_impl
+        -w -27)
  (libraries fswatcher_solaris))
 
