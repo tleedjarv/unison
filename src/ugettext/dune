@@ -1,0 +1,45 @@
+(include_subdirs no)
+
+(library
+ (name ugettext)
+ (wrapped false)
+ (modules ugettext_intf ugettext_impl)
+ (libraries ugettext_backend)
+)
+
+
+(rule
+ (action (progn
+  (copy# ugettext_dummy.mli ugettext_impl.mli)
+  (copy# ugettext_dummy.ml  ugettext_impl.ml)))
+ (enabled_if (and (<> 1 %{env:WITH_GETTEXT=false}) (<> true %{env:WITH_GETTEXT=false}) (<> sys %{env:WITH_GETTEXT=false}))))
+
+(rule
+ (action (progn
+  (copy# ugettext_ocaml.mli ugettext_impl.mli)
+  (copy# ugettext_ocaml.ml  ugettext_impl.ml)))
+ (enabled_if (or (= 1 %{env:WITH_GETTEXT=false}) (= true %{env:WITH_GETTEXT=false}))))
+
+(rule
+ (action (progn
+  (copy# ugettext_sys.mli ugettext_impl.mli)
+  (copy# ugettext_sys.ml  ugettext_impl.ml)))
+ (enabled_if (= sys %{env:WITH_GETTEXT=false})))
+
+
+(library
+ (name ugettext_backend)
+ (modules)
+ (enabled_if (and (<> 1 %{env:WITH_GETTEXT=false}) (<> true %{env:WITH_GETTEXT=false}) (<> sys %{env:WITH_GETTEXT=false}))))
+
+(library
+ (name ugettext_backend)
+ (modules)
+ (libraries gettext.base gettext.extension)
+ (enabled_if (or (= 1 %{env:WITH_GETTEXT=false}) (= true %{env:WITH_GETTEXT=false}))))
+
+(library
+ (name ugettext_backend)
+ (modules)
+ (libraries gettext.base gettext.extension gettext-stub)
+ (enabled_if (= sys %{env:WITH_GETTEXT=false})))

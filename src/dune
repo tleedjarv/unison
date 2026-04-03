@@ -10,6 +10,7 @@
  (modules_without_implementation ui)
  (flags :standard
         -open Compat_digest
+        -open Ugettext_impl
         -w -3-6-9-10-26-27-32-34-35-38-39-50-52-67-69
         -warn-error -3-6-9-10-26-27-32-34-35-39-50-52-67-69
         -no-strict-sequence)
@@ -17,7 +18,7 @@
   (language c)
   (names bytearray_stubs osxsupport pty hash_compat props_xattr props_acl copy_stubs))
  (c_library_flags -lutil)
- (libraries compat str unix lwt_lib bigarray))
+ (libraries compat ugettext str unix lwt_lib bigarray))
 
 (include_subdirs unqualified)
 
@@ -32,6 +33,8 @@
  (name linkgtk3)
  (public_name unison-gui)
  (package unison-gui) ; Dummy: we don't use packages
- (flags :standard -w -3-6-9-27-32-52-69)
+ (flags :standard
+        -open Ugettext_impl
+        -w -3-6-9-27-32-52-69)
  (modules linkgtk3 uigtk3 pixmaps)
  (libraries threads unison_lib lablgtk3))
