@@ -268,6 +268,16 @@ docfiles: manpagefile
 	cd ../doc && $(MAKE) all
 
 ####################################################################
+### Translations
+
+.PHONY: translations
+translations:
+	cd .. && ocaml src/make_tools.ml build_mo
+
+clean::
+	cd .. && $(RM_R) share
+
+####################################################################
 ### Misc
 
 RM_FILES = $(RM) *.cmi *.cmo *.cmx *.cma *.cmxa *.o *.obj *.lib *.exp *~ .*~ *.bak *.tmp

@@ -478,6 +478,7 @@ let () = if build_fsmonitor then outp "fsmonitor: fsmonitorexecutable"
 
 
 let () = "RM" <-- if is_empty inputs.$("_NMAKE_VER") then "rm -f" else "del /f"
+let () = "RM_R" <-- if is_empty inputs.$("_NMAKE_VER") then "rm -Rf" else "del /f"
 
 
 (*** Output configuration ***)
@@ -656,6 +657,16 @@ let get_command name = search_in_path_opt name
 let exists dir name =
   Sys.file_exists (Filename.concat dir name)
 
+let rec mkdir ?(p = false) dir =
+  if not (Sys.file_exists dir) then begin
+    let parent = Filename.dirname dir in
+    if p && not (Sys.file_exists parent) then begin mkdir ~p parent end;
+    print_string "mkdir ";
+    print_endline dir;
+    try Unix.mkdir dir 0o755 with
+    | Unix.Unix_error(EEXIST, _, _) -> ()
+  end
+
 let rm =
   let rm' n =
     if String.length n > 0 && n.[0] <> '-' && n.[0] <> '/' && n.[0] <> '\\'
@@ -725,6 +736,59 @@ let project_info () =
   {|let myName = "|} ^ ($)"NAME" ^ {|"|} |> print_endline;
   {|let myVersion = "|} ^ ($)"VERSION" ^ {|"|} |> print_endline;
   {|let myMajorVersion = "|} ^ ($)"MAJORVERSION" ^ {|"|} |> print_endline
+
+
+let build_mo () =
+  let open Tools in
+  let link_gettext =
+    match ($)"WITH_GETTEXT" |> String.lowercase_ascii with
+    | "true" | "1" | "sys" -> true
+    | _ -> false
+  in
+  if not link_gettext then
+    info "Not building translations.\n\
+      Set WITH_GETTEXT to 'true' (or to 'sys') to build translations."
+  else
+    let make_all_mo localedir =
+      let ocaml_gettext = get_command "ocaml-gettext" in
+      let msgfmt = get_command "msgfmt" in
+      if ocaml_gettext = None && msgfmt = None then
+        error "Unable to build translations: neither ocaml-gettext nor msgfmt found.";
+
+      let make_mo fn =
+        let fn_mo = (Filename.remove_extension fn) ^ ".mo" in
+        match ocaml_gettext, msgfmt with
+        | Some cmd, _ ->
+            exec [cmd; "--action"; "compile"; fn];
+            exec [cmd; "--action"; "install"; "--install-textdomain"; "unison";
+              "--install-destdir"; localedir; fn_mo]
+        | None, Some cmd ->
+            let lang = Filename.remove_extension (Filename.basename fn) in
+            let dir = Filename.concat (Filename.concat localedir lang) "LC_MESSAGES" in
+            (* msgfmt does not create the destination dir tree *)
+            mkdir ~p:true dir;
+            exec [cmd; "-o"; Filename.concat dir fn_mo; fn]
+        | None, None -> ()
+      in
+      List.iter make_mo
+        (if ($)"LINGUAS" = "" then
+          (* The po/LINGUAS file is not considered here. Not sure if should... *)
+          Sys.readdir "."
+          |> Array.fold_left (fun l_po n ->
+              if Filename.extension n = ".po" then n :: l_po else l_po) []
+         else
+           String.split_on_char ' ' (($)"LINGUAS")
+           |> List.filter_map (function
+             | "" -> None
+             | ll -> let fn = ll ^ ".po" in
+                     if Sys.file_exists fn then Some fn else None))
+    in
+    let wd = Sys.getcwd () in
+    Fun.protect ~finally:(fun () -> Sys.chdir wd) (fun () ->
+      (* ocaml-gettext as of 2026-04 has a bug which means that it must be
+         run in the same dir as where the to-be-installed MO files are. *)
+      Sys.chdir (Filename.concat wd "po");
+      make_all_mo "../share/locale")
 
 
 let install () =
@@ -819,6 +883,7 @@ let () =
     | "conf2" -> target_local_vars ()
     | "projectinfo" -> project_info ()
     | "install" -> install ()
+    | "build_mo" -> build_mo ()
     | "run" -> run (Array.sub Sys.argv 2 (Array.length Sys.argv - 2))
     | "rm" -> Tools.rm (Array.sub Sys.argv 2 (Array.length Sys.argv - 2))
     | s -> Tools.error ("Invalid sub-commmand '" ^ s ^ "'")

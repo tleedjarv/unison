@@ -2,6 +2,7 @@
 *.a
 *.al
 *.aux
+*.bak
 *.cm[aiox]
 *.exe
 *.la
@@ -9,6 +10,7 @@
 *.libs
 *.lo
 *.log
+*.mo
 *.mode1v3
 *.o
 *.pbxuser
@@ -25,6 +27,7 @@
 *~
 .*.swp
 .DS_store
+/share/
 /src/INSTALLATION
 /src/mkProjectInfo
 /src/u-b.o.startup.s
