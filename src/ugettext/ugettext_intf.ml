@@ -9,6 +9,8 @@
    over the interface exposed for Unison. *)
 module type S = sig
 
+  val gettext_argspecs : (Arg.key * Arg.spec * Arg.doc) list
+
   val s_ : string -> string
 
   val f_ :

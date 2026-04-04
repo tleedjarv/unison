@@ -540,6 +540,19 @@ let argspecs hook =
        else l)
     !prefs []
 
+let gettext_argspec = function
+  | Arg.Bool f -> Uarg.Bool f
+  | Arg.Int f -> Uarg.Int f
+  | Arg.String f -> Uarg.String f
+  | Arg.Symbol (l, f) -> Uarg.String (fun s -> f s)
+  | Arg.Unit f -> Uarg.Unit f
+  (* Ignore the rest *)
+  | Arg.Tuple l -> Uarg.Unit (fun () -> ())
+  | _ -> Uarg.Unit (fun () -> ())
+
+let gettext_args =
+  Safelist.map (fun (k, s, d) -> (k, gettext_argspec s, "")) gettext_argspecs
+
 let title = function
   | `Advanced `Sync -> "Fine-tune sync"
   | `Advanced `General -> "Other"
@@ -625,6 +638,8 @@ let processCmdLine usage hook =
     with
       Not_found -> defaultanonfun
   in
+  (* Only parse gettext args, do not display them *)
+  let argspecs = argspecs @ gettext_args in
   try
     Uarg.parse argspecs anonfun (oneLineDocs usage)
   with IllegalValue str ->
