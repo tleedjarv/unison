@@ -11,7 +11,7 @@
    (= %{system} "linux_eabihf")
    (= %{system} "linux_eabi")))
  (modules :standard \ watcher)
- (flags :standard -w -3-27)
+ (flags :standard -w -3-27-67)
  (foreign_stubs
   (language c)
   (names inotify_stubs))
@@ -29,5 +29,5 @@
    (= %{system} "linux_eabihf")
    (= %{system} "linux_eabi")))
  (modules watcher)
- (flags :standard -w -27)
+ (flags :standard -w -27-32)
  (libraries fswatcher_linux))
