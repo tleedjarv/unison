@@ -63,3 +63,5 @@ module UgettextUTF8 = struct
 end
 
 include Gettext.Program (Ugettext_Config) (UgettextUTF8.Map)
+
+let gettext_argspecs = fst init

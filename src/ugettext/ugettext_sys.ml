@@ -58,3 +58,5 @@ module Ugettext_Config = struct
 end
 
 include Gettext.Program (Ugettext_Config) (GettextStub.Native)
+
+let gettext_argspecs = fst init
