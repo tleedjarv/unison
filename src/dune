@@ -10,8 +10,8 @@
  (modules_without_implementation ui)
  (flags :standard
         -open Compat_digest
-        -w -3-6-9-10-26-27-32-34-35-38-39-50-52
-        -warn-error -3-6-9-10-26-27-32-34-35-39-50-52
+        -w -3-6-9-10-26-27-32-34-35-38-39-50-52-67-69
+        -warn-error -3-6-9-10-26-27-32-34-35-39-50-52-67-69
         -no-strict-sequence)
  (foreign_stubs
   (language c)
@@ -32,6 +32,6 @@
  (name linkgtk3)
  (public_name unison-gui)
  (package unison-gui) ; Dummy: we don't use packages
- (flags :standard -w -3-6-9-27-32-52)
+ (flags :standard -w -3-6-9-27-32-52-69)
  (modules linkgtk3 uigtk3 pixmaps)
  (libraries threads unison_lib lablgtk3))
