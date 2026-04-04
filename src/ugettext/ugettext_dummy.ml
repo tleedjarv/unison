@@ -1,3 +1,5 @@
+let () = print_string "\n\tLinked with DUMMY gettext\n\n"
+
 (* Unison file synchronizer: src/ugettext/ugettext_dummy.ml *)
 
 (* No-op implementation for when gettext is not available

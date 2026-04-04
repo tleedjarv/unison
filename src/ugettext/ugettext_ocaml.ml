@@ -1,3 +1,5 @@
+let () = print_string "\n\tLinked with OCaml PURE gettext\n\n"
+
 (* Unison file synchronizer: src/ugettext/ugettext_ocaml.ml *)
 (* Copyright 2026, Tõivo Leedjärv
 

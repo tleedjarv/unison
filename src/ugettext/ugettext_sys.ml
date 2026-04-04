@@ -1,3 +1,5 @@
+let () = print_string "\n\tLinked with SYS gettext\n\n"
+
 (* Unison file synchronizer: src/ugettext/ugettext_sys.ml *)
 (* Copyright 2026, Tõivo Leedjärv
 
