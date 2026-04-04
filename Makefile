@@ -15,7 +15,7 @@ default: all
 .NOTPARALLEL:
 
 .PHONY: all
-all: src manpage
+all: src manpage translations
 
 .PHONY: src
 src: FRC
@@ -23,8 +23,8 @@ src: FRC
 FRC: ;
 # Not all make seem to work without FRC, even with .PHONY
 
-.PHONY: tui gui macui fsmonitor manpage docs clean depend
-tui gui macui fsmonitor manpage docs clean depend:
+.PHONY: tui gui macui fsmonitor manpage docs translations clean depend
+tui gui macui fsmonitor manpage docs translations clean depend:
 	cd src && $(MAKE) $@
 
 .PHONY: test
