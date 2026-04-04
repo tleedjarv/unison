@@ -830,6 +830,7 @@ let install () =
   let mandir = "MANDIR" <--? datarootdir ^ "/man" in
   let man1dir = "MAN1DIR" <--? mandir ^ "/man1" in
   let manext = "MANEXT" <--? ".1" in
+  let localedir = "LOCALEDIR" <--? datarootdir ^ "/locale" in
   let desktopdir = "DESKTOPDIR" <--? datarootdir ^ "/applications" in
   let iconthemedir = "ICONTHEMEDIR" <--? datarootdir ^ "/icons/hicolor" in
 
@@ -862,6 +863,21 @@ let install () =
     print_endline ("!!! The GUI for macOS has been built but will NOT be \
       installed automatically. You can find the built GUI package at " ^
       (Filename.concat (Sys.getcwd ()) "src/uimac/build/Default/Unison.app"))
+  end;
+  if exists "share" "locale" then begin
+    exec [install; "-d"; destdir ^ localedir];
+    let install_locale l =
+      if exists "share/locale" l then begin
+        exec [install; "-d"; destdir ^ localedir ^ "/" ^ l ^ "/LC_MESSAGES"];
+        exec [install_data; "share/locale/" ^ l ^ "/LC_MESSAGES/unison.mo"; destdir ^ localedir ^ "/" ^ l ^ "/LC_MESSAGES/unison.mo"]
+      end
+    in
+    Array.iter install_locale
+      (if ($)"LINGUAS" = "" then Sys.readdir "share/locale"
+       else
+         String.split_on_char ' ' (($)"LINGUAS")
+         |> List.filter_map (function "" -> None | l -> Some l)
+         |> Array.of_list)
   end
 
 
