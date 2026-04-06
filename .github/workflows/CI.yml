@@ -31,6 +31,14 @@ jobs:
           rm -rf ocaml-5.4.1
 
           ## Build unison
+          WITH_GETTEXT=true make || true
+          make clean
+          WITH_GETTEXT=sys make || true
+          make clean
+          WITH_GETTEXT=true make -j 16 || true
+          make clean
+          make -j 16
+          make clean
           make
 
           ## Run unison tests
@@ -77,6 +85,14 @@ jobs:
           rm -rf ocaml-5.4.1
 
           ## Build unison
+          WITH_GETTEXT=true make || true
+          make clean
+          WITH_GETTEXT=sys make || true
+          make clean
+          WITH_GETTEXT=true make -j 16 || true
+          make clean
+          make -j 16
+          make clean
           make
 
           ## Run unison tests
@@ -123,6 +139,14 @@ jobs:
           rm -rf ocaml-5.4.1
 
           ## Build unison
+          WITH_GETTEXT=true make || true
+          make clean
+          WITH_GETTEXT=sys make || true
+          make clean
+          WITH_GETTEXT=true make -j 16 || true
+          make clean
+          make -j 16
+          make clean
           make
 
           ## Run unison tests
@@ -169,6 +193,14 @@ jobs:
           rm -rf ocaml-5.4.1
 
           ## Build unison
+          WITH_GETTEXT=true make || true
+          make clean
+          WITH_GETTEXT=sys make || true
+          make clean
+          WITH_GETTEXT=true make -j 16 || true
+          make clean
+          make -j 16
+          make clean
           make
 
           ## Run unison tests
@@ -216,6 +248,14 @@ jobs:
           rm -rf ocaml-5.4.1
 
           ## Build unison
+          WITH_GETTEXT=true make || true
+          make clean
+          WITH_GETTEXT=sys make || true
+          make clean
+          WITH_GETTEXT=true make -j 16 || true
+          make clean
+          make -j 16
+          make clean
           make
 
           ## Run unison tests
