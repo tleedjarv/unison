@@ -41,6 +41,10 @@ with those systems, and not in the unison issue tracker.)
 - make (any of GNU, BSD, Solaris variants works)
 - Basic POSIX tools (e.g., echo, install, rm, sh, sed, touch)
 
+##### Optional, for building multi-lingual UI (native language support)
+
+- ocaml-gettext (opam package gettext or gettext-stub)
+
 ##### Optional, for the GUI only
 
 - lablgtk3 and its prerequisites (GTK 3 and its dependencies)
@@ -260,3 +264,12 @@ There are some additional options that control the build process:
     `-static` or `-Wl,-static` for gcc (should also work for clang);
     `-link -static` for gcc in Windows (MinGW, Cygwin, MSYS2) ("-link" is
     required due to flexlink being used in the toolchain).
+- WITH_GETTEXT: To build with native language support (multi-lingual UI),
+  set `WITH_GETTEXT=true` in the environment or as argument to `make`. The
+  built executable will not have any additional external dependencies but
+  the output is restricted to UTF-8 (also ASCII works as a valid subset).
+  To use the system library for gettext (usually libc or libintl), set
+  `WITH_GETTEXT=sys` instead. When building native macOS GUI and using
+  libintl, you may need to additionally set `LDFLAGS_GETTEXT` (for example,
+  `-Lpath/to/your/lib/dir -lintl`) if libintl is not available in standard
+  locations.
