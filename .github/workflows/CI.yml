@@ -586,6 +586,17 @@ jobs:
         cp CONTRIBUTING.md "${PKG_DIR}"/
         cp NEWS.md "${PKG_DIR}"/
 
+    - name: Package locale
+      if: matrix.job.gettext
+      env:
+        WITH_GETTEXT: ${{ matrix.job.gettext }}
+      shell: bash
+      run: |
+        PKG_DIR='${{ steps.vars.outputs.PKG_DIR }}'
+        mkdir "${PKG_DIR}"/share
+        opam exec -- make translations
+        cp -R share/locale "${PKG_DIR}"/share/
+
     - if: ${{ runner.os == 'Windows' && contains(matrix.job.win-comp, 'mingw') }}
       name: "Windows: Package gtk"
       shell: bash
@@ -620,7 +631,7 @@ jobs:
         cat "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original | sed -E 's#([^"]*)(lib/gdk-pixbuf-2.0/2.10.0/loaders/[^"]*[.]dll)#../\2#' > "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
         rm "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
         # required icons
-        mkdir "${PKG_DIR}"/share
+        mkdir -p "${PKG_DIR}"/share
         cp -rL /usr/share/icons "${PKG_DIR}"/share
         # compile glib settings schema
         mkdir -p "${PKG_DIR}"/share/glib-2.0
@@ -629,6 +640,9 @@ jobs:
         # add gtk configuration
         mkdir -p "${PKG_DIR}"/etc/gtk-3.0
         printf "[Settings]\ngtk-button-images=true\ngtk-font-name=Segoe UI 9\n" > "${PKG_DIR}"/etc/gtk-3.0/settings.ini
+        # gtk translations
+        mkdir -p "${PKG_DIR}"/share/locale
+        cp -r /usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/share/locale "${PKG_DIR}"/share
 
     - if: ${{ runner.os == 'Windows' && contains(matrix.job.win-comp, 'msvc') }}
       name: "Windows: Package gtk"
@@ -649,6 +663,9 @@ jobs:
         # add gtk configuration
         mkdir -p "etc\gtk-3.0"
         "[Settings]`ngtk-button-images=true`n" > "etc\gtk-3.0\settings.ini"
+        # gtk translations
+        New-Item -ItemType Directory -Force "share\locale"
+        Copy-Item -Destination "share\locale" "C:\gtk\share\locale\*" -Recurse -Force
 
     - name: Package
       shell: bash
@@ -1087,6 +1104,15 @@ jobs:
         cp INSTALL.md pkg/
         cp CONTRIBUTING.md pkg/
         cp NEWS.md pkg/
+
+    - name: Package locale
+      if: matrix.job.gettext
+      env:
+        WITH_GETTEXT: ${{ matrix.job.gettext }}
+      run: |
+        opam exec -- make translations
+        mkdir pkg/share
+        mv share/locale pkg/share
 
     - name: Package
       if: matrix.job.publish
