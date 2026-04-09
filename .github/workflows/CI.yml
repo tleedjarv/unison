@@ -806,6 +806,13 @@ jobs:
         opam exec -- make translations
         cp -R share/locale "${PKG_DIR}"/share/
 
+    - name: Verify translation
+      env:
+        LANGUAGE: it
+      shell: bash
+      run: |
+        '${{ steps.vars.outputs.PKG_DIR }}'/bin/unison || true
+
     - if: ${{ runner.os == 'Windows' && contains(matrix.job.win-comp, 'mingw') }}
       name: "Windows: Package gtk"
       shell: bash
@@ -1282,6 +1289,14 @@ jobs:
       env:
         WITH_GETTEXT: ${{ matrix.job.gettext }}
 
+    - name: Verify translation
+      run: |
+        opam exec -- make translations
+        src/unison || true
+      env:
+        WITH_GETTEXT: ${{ matrix.job.gettext }}
+        LANGUAGE: it
+
 #    - run: opam exec -- make test
 
   bytecode_build:
@@ -1329,6 +1344,13 @@ jobs:
 
     - run: opam exec -- make test
 
+    - name: Verify translation
+      run: |
+        opam exec -- make translations
+        src/unison || true
+      env:
+        WITH_GETTEXT: ${{ matrix.job.gettext }}
+        LANGUAGE: it
 
   build_compat:
     if: ${{ !cancelled() }}    # Don't fail if 'docs' failed
@@ -1572,6 +1594,11 @@ jobs:
         opam exec -- make translations
         mkdir pkg/share
         mv share/locale pkg/share
+
+    - name: Verify translation
+      env:
+        LANGUAGE: it
+      run: pkg/bin/unison || true
 
     - name: Package
       if: matrix.job.publish

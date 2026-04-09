@@ -1,0 +1,37 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: unison\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-03 21:21+0000\n"
+"PO-Revision-Date: 2026-04-03 21:21+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: ../src/uigtk3.ml:2669 ../src/uigtk3.ml:2668 ../src/uitext.ml:1658
+#. ../src/uitext.ml:1657
+msgid "%d error"
+msgid_plural "%d errors"
+msgstr[0] "%d errore"
+msgstr[1] "%d errori"
+
+#: ../src/uigtk3.ml:2671 ../src/uigtk3.ml:2670 ../src/uitext.ml:1660
+#. ../src/uitext.ml:1659
+msgid "1 error"
+msgid_plural "2 errors"
+msgstr[0] "1 errore"
+msgstr[1] "2 errori"
+
+#: ../src/uigtk3.ml:2666 ../src/uigtk3.ml:2665 ../src/uitext.ml:1655
+#. ../src/uitext.ml:1654
+msgid "About"
+msgstr "Informazioni"
+
+#: ../src/uigtk3.ml:2667 ../src/uitext.ml:1656
+msgid "Action"
+msgstr "Azione"
+
