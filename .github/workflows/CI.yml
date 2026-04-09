@@ -8,6 +8,14 @@ jobs:
   docs:
     runs-on: ubuntu-24.04
 
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { gettext: false }
+          - { gettext: true }
+          - { gettext: sys }
+
     steps:
     - run: sudo apt-get update
 
@@ -21,9 +29,18 @@ jobs:
 
     - run: sudo apt-get install hevea lynx texlive-latex-base
 
+    - run: opam install ocamlfind gettext
+      if: matrix.job.gettext
+
+    - run: opam install gettext-stub
+      if: matrix.job.gettext == 'sys'
+
     - run: opam exec -- make -j 2 docs
+      env:
+        WITH_GETTEXT: ${{ matrix.job.gettext }}
 
     - name: Store user manual for the build jobs
+      if: ${{ !matrix.job.gettext }}
       uses: actions/upload-artifact@v6
       with:
         name: unison-docs
@@ -50,16 +67,36 @@ jobs:
         # non-deprecated version for each arch, for published
         # packages.
         job:
-        - { os: macos-15      , ocaml-version: 5.4.x }
-        - { os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
-        - { os: macos-15-intel, ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86-64 }
-        - { os: ubuntu-24.04  , ocaml-version: 5.4.x }
-        - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
-        - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.3+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-22.04-i386 }
-        - { os: windows-2022  , ocaml-version: "ocaml.4.14.3"            , win-comp: mingw, publish: true        , fnsuffix: -windows-x86_64 }
-        - { os: windows-2022  , ocaml-version: "ocaml.4.14.3,arch-x86_32", win-comp: mingw, publish: true        , fnsuffix: -windows-i386 }
-        - { os: windows-2022  , ocaml-version: "ocaml.4.14.3"            , win-comp: msvc }
-        - { os: windows-2022  , ocaml-version: "ocaml.4.14.3,arch-x86_32", win-comp: msvc }
+        - { gettext: false, os: macos-15      , ocaml-version: 5.4.x }
+        - { gettext: false, os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
+        - { gettext: false, os: macos-15-intel, ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86-64 }
+        - { gettext: false, os: ubuntu-24.04  , ocaml-version: 5.4.x }
+        - { gettext: false, os: ubuntu-22.04  , ocaml-version: 4.14.x }
+        - { gettext: false, os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.3+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-22.04-i386 }
+        - { gettext: false, os: windows-2022  , ocaml-version: "ocaml.4.14.3"            , win-comp: mingw, publish: true        , fnsuffix: -windows-x86_64 }
+        - { gettext: false, os: windows-2022  , ocaml-version: "ocaml.4.14.3,arch-x86_32", win-comp: mingw, publish: true        , fnsuffix: -windows-i386 }
+        - { gettext: false, os: windows-2022  , ocaml-version: "ocaml.4.14.3"            , win-comp: msvc }
+        - { gettext: false, os: windows-2022  , ocaml-version: "ocaml.4.14.3,arch-x86_32", win-comp: msvc }
+        - { gettext: true , os: macos-15      , ocaml-version: 5.4.x }
+        - { gettext: true , os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -go-macos-arm64 }
+        - { gettext: true , os: macos-15-intel, ocaml-version: 4.14.x           , publish: true  , fnsuffix: -go-macos-x86-64 }
+        - { gettext: true , os: ubuntu-24.04  , ocaml-version: 5.4.x }
+        - { gettext: true , os: ubuntu-22.04  , ocaml-version: 4.14.x }
+        - { gettext: true , os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.3+options,ocaml-option-32bit", publish: true, fnsuffix: -go-ubuntu-22.04-i386 }
+        - { gettext: true , os: windows-2022  , ocaml-version: "ocaml.4.14.3"            , win-comp: mingw, publish: true        , fnsuffix: -go-windows-x86_64 }
+        - { gettext: true , os: windows-2022  , ocaml-version: "ocaml.4.14.3,arch-x86_32", win-comp: mingw, publish: true        , fnsuffix: -go-windows-i386 }
+        - { gettext: true , os: windows-2022  , ocaml-version: "ocaml.4.14.3"            , win-comp: msvc , publish: true        , fnsuffix: -go-msvc-x86_64 }
+        - { gettext: true , os: windows-2022  , ocaml-version: "ocaml.4.14.3,arch-x86_32", win-comp: msvc }
+        - { gettext: sys  , os: macos-15      , ocaml-version: 5.4.x }
+        - { gettext: sys  , os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -gs-macos-arm64 }
+        - { gettext: sys  , os: macos-15-intel, ocaml-version: 4.14.x           , publish: true  , fnsuffix: -gs-macos-x86-64 }
+        - { gettext: sys  , os: ubuntu-24.04  , ocaml-version: 5.4.x }
+        - { gettext: sys  , os: ubuntu-22.04  , ocaml-version: 4.14.x }
+        - { gettext: sys  , os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.3+options,ocaml-option-32bit", publish: true, fnsuffix: -gs-ubuntu-22.04-i386 }
+        - { gettext: sys  , os: windows-2022  , ocaml-version: "ocaml.4.14.3"            , win-comp: mingw, publish: true        , fnsuffix: -gs-windows-x86_64 }
+        - { gettext: sys  , os: windows-2022  , ocaml-version: "ocaml.4.14.3,arch-x86_32", win-comp: mingw, publish: true        , fnsuffix: -gs-windows-i386 }
+        - { gettext: sys  , os: windows-2022  , ocaml-version: "ocaml.4.14.3"            , win-comp: msvc , publish: true        , fnsuffix: -gs-msvc-x86_64 }
+        - { gettext: sys  , os: windows-2022  , ocaml-version: "ocaml.4.14.3,arch-x86_32", win-comp: msvc }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -437,12 +474,25 @@ jobs:
         '@ | patch -Nu -p 1
         opam pin --no-action add conf-pkg-config .
 
+    - name: Install gettext
+      if: matrix.job.gettext
+      run: opam install ocamlfind gettext
+
+    - name: Install gettext-stub
+      if: matrix.job.gettext == 'sys'
+      run: opam install gettext-stub
+
+    - name: Add brew gettext to library path
+      if: matrix.job.gettext == 'sys' && runner.os == 'macOS'
+      run: echo LDFLAGS_GETTEXT=-L\"$(brew --prefix)/lib\" -lintl >> $GITHUB_ENV
+
     - run: |
         opam exec -- ${{ env._MAKE }} tui fsmonitor
         # stage
         cp "src/unison${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin" || echo unison${{ steps.vars.outputs.EXE_suffix }} not built
         cp "src/unison-fsmonitor${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin" || echo unison-fsmonitor${{ steps.vars.outputs.EXE_suffix }} not built
       env:
+        WITH_GETTEXT: ${{ matrix.job.gettext }}
         LDFLAGS: ${{ matrix.job.static }}
 
     - run: opam exec -- ${{ env._MAKE }} test
@@ -492,6 +542,8 @@ jobs:
         opam exec -- ${{ env._MAKE }} gui
         # stage
         cp "src/unison-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/"
+      env:
+        WITH_GETTEXT: ${{ matrix.job.gettext }}
 
     - name: "Build WinOS text+gui hybrid"
       if: ${{ runner.os == 'Windows' && !matrix.job.static && !contains(matrix.job.win-comp, 'msvc') }} ## WinOS, non-static (unable to build static gtk/gui)
@@ -503,6 +555,8 @@ jobs:
         # * re-create (with hybrid text+gui UI)
         opam exec -- make gui UI_WINOS=hybrid
         cp "src/unison-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/unison-text+gui${{ steps.vars.outputs.EXE_suffix }}"
+      env:
+        WITH_GETTEXT: ${{ matrix.job.gettext }}
 
     - uses: actions/upload-artifact@v6
       if: false ## disable by default; only useful for debugging GHA
@@ -619,7 +673,7 @@ jobs:
       name: "macOS: Build and package Unison.app"
       id: macapp
       run: |
-        opam exec -- make macui
+        opam exec -- make macui WITH_GETTEXT=${{ matrix.job.gettext }}
 
         # package
         APP_NAME=Unison-${{ steps.vars.outputs.PKG_VER }}${{ matrix.job.fnsuffix }}.app.tar.gz
@@ -852,8 +906,12 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: ubuntu-24.04   , ocaml-compiler: 4.12.x }
-        - { os: macos-14       , ocaml-compiler: 4.14.x }
+        - { gettext: false, os: ubuntu-24.04   , ocaml-compiler: 4.12.x }
+        - { gettext: false, os: macos-14       , ocaml-compiler: 4.14.x }
+        - { gettext: true , os: ubuntu-24.04   , ocaml-compiler: 4.12.x }
+        - { gettext: true , os: macos-14       , ocaml-compiler: 4.14.x }
+        - { gettext: sys  , os: ubuntu-24.04   , ocaml-compiler: 4.12.x }
+        - { gettext: sys  , os: macos-14       , ocaml-compiler: 4.14.x }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -871,7 +929,15 @@ jobs:
 
     - run: opam install . --deps-only
 
+    - run: opam install gettext
+      if: matrix.job.gettext
+
+    - run: opam install gettext-stub
+      if: matrix.job.gettext == 'sys'
+
     - run: opam exec -- dune build && cp -L ./_build/install/default/bin/unison* ./src/
+      env:
+        WITH_GETTEXT: ${{ matrix.job.gettext }}
 
 #    - run: opam exec -- make test
 
@@ -880,7 +946,9 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: ubuntu-24.04   , ocaml-compiler: 4.14.x }
+        - { gettext: false, os: ubuntu-24.04   , ocaml-compiler: 4.14.x }
+        - { gettext: true , os: ubuntu-24.04   , ocaml-compiler: 4.14.x }
+        - { gettext: sys  , os: ubuntu-24.04   , ocaml-compiler: 4.14.x }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -897,7 +965,13 @@ jobs:
         ocaml-compiler: "${{ matrix.job.ocaml-compiler }}"
         opam-pin: false
 
-    - run: opam exec -- make tui NATIVE=false
+    - run: opam install ocamlfind gettext
+      if: matrix.job.gettext
+
+    - run: opam install gettext-stub
+      if: matrix.job.gettext == 'sys'
+
+    - run: opam exec -- make tui NATIVE=false WITH_GETTEXT=${{ matrix.job.gettext }}
 
     - run: opam exec -- make test
 
@@ -910,10 +984,18 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { ocaml-version: 4.14.x, publish: true, fnsuffix: -ubuntu-22.04-x86_64 }
-        - { ocaml-version: "ocaml-variants.4.14.3+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -ubuntu-22.04-x86_64-static, static: -static }
-        - { ocaml-version: 4.12.x }
-        - { ocaml-version: 4.08.x }
+        - { gettext: false, ocaml-version: 4.14.x, publish: true, fnsuffix: -ubuntu-22.04-x86_64 }
+        - { gettext: false, ocaml-version: "ocaml-variants.4.14.3+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -ubuntu-22.04-x86_64-static, static: -static }
+        - { gettext: false, ocaml-version: 4.12.x }
+        - { gettext: false, ocaml-version: 4.08.x }
+        - { gettext: true , ocaml-version: 4.14.x, publish: true, fnsuffix: -go-ubuntu-22.04-x86_64 }
+        - { gettext: true , ocaml-version: "ocaml-variants.4.14.3+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -go-ubuntu-22.04-x86_64-static, static: -static }
+        - { gettext: true , ocaml-version: 4.12.x }
+        - { gettext: true , ocaml-version: 4.08.x }
+        - { gettext: sys  , ocaml-version: 4.14.x, publish: true, fnsuffix: -gs-ubuntu-22.04-x86_64 }
+        - { gettext: sys  , ocaml-version: "ocaml-variants.4.14.3+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -gs-ubuntu-22.04-x86_64-static, static: -static }
+        - { gettext: sys  , ocaml-version: 4.12.x }
+        - { gettext: sys  , ocaml-version: 4.08.x }
 
     runs-on: ubuntu-22.04
 
@@ -930,9 +1012,18 @@ jobs:
         opam-disable-sandboxing: true
         opam-pin: false
 
+    - name: Install gettext
+      if: matrix.job.gettext
+      run: opam install ocamlfind gettext
+
+    - name: Install gettext-stub
+      if: matrix.job.gettext == 'sys'
+      run: opam install gettext-stub
+
     - name: Build text UI
       env:
         LDFLAGS: ${{ matrix.job.static }}
+        WITH_GETTEXT: ${{ matrix.job.gettext }}
       run: |
         opam exec -- make
         mkdir -p pkg/bin
@@ -955,6 +1046,8 @@ jobs:
 
     - name: Build GUI
       if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
+      env:
+        WITH_GETTEXT: ${{ matrix.job.gettext }}
       run: |
         opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
         opam exec -- make gui
