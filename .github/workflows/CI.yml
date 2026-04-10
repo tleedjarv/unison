@@ -29,6 +29,17 @@ jobs:
 
     - run: sudo apt-get install hevea lynx texlive-latex-base
 
+    - name: Patch gettext
+      if: matrix.job.gettext
+      run: |
+        mkdir _opampkgs
+        cd _opampkgs
+
+        # [2026-04] Use upstream devel code because 0.5.0 in opam repository is broken.
+        git clone https://github.com/gildor478/ocaml-gettext.git
+        cd ocaml-gettext
+        opam pin --no-action add gettext .
+
     - run: opam install ocamlfind gettext
       if: matrix.job.gettext
 
@@ -473,6 +484,18 @@ jobs:
          ]
         '@ | patch -Nu -p 1
         opam pin --no-action add conf-pkg-config .
+
+    - name: Patch gettext
+      shell: bash
+      if: matrix.job.gettext
+      run: |
+        mkdir _opampkgs2
+        cd _opampkgs2
+
+        # [2026-04] Use upstream devel code because 0.5.0 in opam repository is broken.
+        git clone https://github.com/gildor478/ocaml-gettext.git
+        cd ocaml-gettext
+        opam pin --no-action add gettext .
 
     - name: Install gettext
       if: matrix.job.gettext
@@ -946,6 +969,17 @@ jobs:
 
     - run: opam install . --deps-only
 
+    - name: Patch gettext
+      if: matrix.job.gettext
+      run: |
+        mkdir _opampkgs
+        cd _opampkgs
+
+        # [2026-04] Use upstream devel code because 0.5.0 in opam repository is broken.
+        git clone https://github.com/gildor478/ocaml-gettext.git
+        cd ocaml-gettext
+        opam pin --no-action --working-dir add gettext .
+
     - run: opam install gettext
       if: matrix.job.gettext
 
@@ -981,6 +1015,17 @@ jobs:
       with:
         ocaml-compiler: "${{ matrix.job.ocaml-compiler }}"
         opam-pin: false
+
+    - name: Patch gettext
+      if: matrix.job.gettext
+      run: |
+        mkdir _opampkgs
+        cd _opampkgs
+
+        # [2026-04] Use upstream devel code because 0.5.0 in opam repository is broken.
+        git clone https://github.com/gildor478/ocaml-gettext.git
+        cd ocaml-gettext
+        opam pin --no-action add gettext .
 
     - run: opam install ocamlfind gettext
       if: matrix.job.gettext
@@ -1028,6 +1073,17 @@ jobs:
         ocaml-compiler: ${{ matrix.job.ocaml-version }}
         opam-disable-sandboxing: true
         opam-pin: false
+
+    - name: Patch gettext
+      if: matrix.job.gettext
+      run: |
+        mkdir _opampkgs
+        cd _opampkgs
+
+        # [2026-04] Use upstream devel code because 0.5.0 in opam repository is broken.
+        git clone https://github.com/gildor478/ocaml-gettext.git
+        cd ocaml-gettext
+        opam pin --no-action --working-dir add gettext .
 
     - name: Install gettext
       if: matrix.job.gettext
