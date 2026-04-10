@@ -493,9 +493,123 @@ jobs:
         cd _opampkgs2
 
         # [2026-04] Use upstream devel code because 0.5.0 in opam repository is broken.
+        # Fix a bug when compiling with OCaml >= 5.4
         git clone https://github.com/gildor478/ocaml-gettext.git
         cd ocaml-gettext
+        patch -Nu -p 1 <<"EOF"
+        --- a/gettext.opam
+        +++ b/gettext.opam
+        @@ -19,7 +19,7 @@ doc: "https://gildor478.github.io/ocaml-gettext/"
+         bug-reports: "https://github.com/gildor478/ocaml-gettext/issues"
+         depends: [
+           "dune" {>= "3.17"}
+        -  "ocaml" {>= "4.14.0"}
+        +  "ocaml" {>= "4.08.0"}
+           "cppo" {>= "1.8.0" & build}
+           "seq" {>= "base" & with-test}
+           "ounit2" {>= "2.2.7" & with-test}
+        --- a/src/bin/ocaml-xgettext/xgettext.ml
+        +++ b/src/bin/ocaml-xgettext/xgettext.ml
+        @@ -112,7 +112,11 @@ let rec is_like lid = function
+           | [] -> false
+           | func :: functions -> (
+               match lid with
+        +#if OCAML_VERSION >= (5, 4, 0)
+        +      | (Lident f | Ldot (_, {txt = f; _})) when f = func -> true
+        +#else
+               | (Lident f | Ldot (_, f)) when f = func -> true
+        +#endif
+               | _ -> is_like lid functions )
+         
+         let visit_expr (iterator : Ast_iterator.iterator) expr =
+        EOF
+        # [2026-04] The changes must be committed because opam --working-dir
+        # is broken on macOS (under some circumstances(?) (not clear what))
+        git config user.email "runner@example.com"
+        git config user.name runner
+        git commit -a -m patch
         opam pin --no-action add gettext .
+        cd ..
+
+        # Patch to support OCaml >= 4.08
+        opam source gettext-stub
+        cd gettext-stub*
+        patch -Nu -p 1 <<"EOF"
+        --- a/src/tools/discover-stub/discover.ml
+        +++ b/src/tools/discover-stub/discover.ml
+        @@ -11,24 +11,25 @@ int main() {
+         |}
+         
+         let () =
+        -  let brew_prefix =
+        -    let default_path = "/usr/local" in
+        -    let path =
+        -      try
+        -        let brew_exec = FileUtil.which "brew" in
+        -        let i = Unix.open_process_in (brew_exec ^ " --prefix") in
+        -        let s =
+        -          match String.trim (In_channel.input_all i) with
+        -          | "" -> default_path
+        -          | s -> s
+        -        in
+        -        In_channel.close i;
+        -        s
+        -      with Not_found -> default_path
+        -    in
+        -    Filename.concat (Filename.concat path "opt") "gettext"
+        -  in
+           C.main ~name:"gettext" (fun c ->
+        +      let brew_prefix =
+        +        let default_path =
+        +          if Sys.file_exists "/opt/homebrew" then "/opt/homebrew"
+        +          else "/usr/local" in
+        +        try
+        +          let brew_exec =
+        +            match C.Process.run c "command" ["-v"; "brew"] with
+        +            | { exit_code = 0; stdout; _ } -> String.trim stdout
+        +            | _ -> raise Not_found
+        +          in
+        +          match C.Process.run c brew_exec ["--prefix"] with
+        +          | { exit_code = 0; stdout; _ } -> String.trim stdout
+        +          | _ -> raise Not_found
+        +        with Not_found -> default_path
+        +      in
+        +      let gettext_keg_prefix =
+        +        Filename.concat (Filename.concat brew_prefix "opt") "gettext"
+        +      in
+               let is_working (c_flags, link_flags) =
+                 C.c_test c gettext_code ~link_flags ~c_flags
+               in
+        @@ -46,6 +47,8 @@ let () =
+                        *)
+                       ( [ "-I" ^ Filename.concat brew_prefix "include" ],
+                         [ "-L" ^ Filename.concat brew_prefix "lib"; "-lintl" ] );
+        +              ( [ "-I" ^ Filename.concat gettext_keg_prefix "include" ],
+        +                [ "-L" ^ Filename.concat gettext_keg_prefix "lib"; "-lintl" ] );
+                       (* MacOS with MacPorts. *)
+                       ([ "-I/opt/local/include" ], [ "-L/opt/local/lib"; "-lintl" ]);
+                       (* OpenBSD and FreeBSD. *)
+        EOF
+        opam pin --no-action add gettext-stub .
+        cd ..
+
+        opam source fileutils
+        cd fileutils*
+        patch -Nu -p 1 <<"EOF"
+        --- a/fileutils.opam
+        +++ b/fileutils.opam
+        @@ -28,7 +28,7 @@
+           "dune" {>= "2.9"}
+           "base-unix"
+           "ounit2" {>= "2.0.0" & with-test}
+        -  "ocaml" {>= "4.14"}
+        +  "ocaml" {>= "4.08"}
+           "odoc" {with-doc}
+         ]
+         build: [
+        EOF
+        opam pin --no-action add fileutils .
+        cd ..
 
     - name: Install gettext
       if: matrix.job.gettext
@@ -976,9 +1090,104 @@ jobs:
         cd _opampkgs
 
         # [2026-04] Use upstream devel code because 0.5.0 in opam repository is broken.
+        # Patch unnecessarily strict compiler version constraint.
         git clone https://github.com/gildor478/ocaml-gettext.git
         cd ocaml-gettext
+        patch -Nu -p 1 <<"EOF"
+        --- a/gettext.opam
+        +++ b/gettext.opam
+        @@ -19,7 +19,7 @@ doc: "https://gildor478.github.io/ocaml-gettext/"
+         bug-reports: "https://github.com/gildor478/ocaml-gettext/issues"
+         depends: [
+           "dune" {>= "3.17"}
+        -  "ocaml" {>= "4.14.0"}
+        +  "ocaml" {>= "4.08.0"}
+           "cppo" {>= "1.8.0" & build}
+           "seq" {>= "base" & with-test}
+           "ounit2" {>= "2.2.7" & with-test}
+        EOF
         opam pin --no-action --working-dir add gettext .
+        cd ..
+
+        # [2026-04] Use of [In_channel] is the cause of ocaml >= 4.14 version
+        # constraint. Patch to support OCaml >= 4.08.
+        opam source gettext-stub
+        cd gettext-stub*
+        patch -Nu -p 1 <<"EOF"
+        --- a/src/tools/discover-stub/discover.ml
+        +++ b/src/tools/discover-stub/discover.ml
+        @@ -11,24 +11,25 @@ int main() {
+         |}
+         
+         let () =
+        -  let brew_prefix =
+        -    let default_path = "/usr/local" in
+        -    let path =
+        -      try
+        -        let brew_exec = FileUtil.which "brew" in
+        -        let i = Unix.open_process_in (brew_exec ^ " --prefix") in
+        -        let s =
+        -          match String.trim (In_channel.input_all i) with
+        -          | "" -> default_path
+        -          | s -> s
+        -        in
+        -        In_channel.close i;
+        -        s
+        -      with Not_found -> default_path
+        -    in
+        -    Filename.concat (Filename.concat path "opt") "gettext"
+        -  in
+           C.main ~name:"gettext" (fun c ->
+        +      let brew_prefix =
+        +        let default_path =
+        +          if Sys.file_exists "/opt/homebrew" then "/opt/homebrew"
+        +          else "/usr/local" in
+        +        try
+        +          let brew_exec =
+        +            match C.Process.run c "command" ["-v"; "brew"] with
+        +            | { exit_code = 0; stdout; _ } -> String.trim stdout
+        +            | _ -> raise Not_found
+        +          in
+        +          match C.Process.run c brew_exec ["--prefix"] with
+        +          | { exit_code = 0; stdout; _ } -> String.trim stdout
+        +          | _ -> raise Not_found
+        +        with Not_found -> default_path
+        +      in
+        +      let gettext_keg_prefix =
+        +        Filename.concat (Filename.concat brew_prefix "opt") "gettext"
+        +      in
+               let is_working (c_flags, link_flags) =
+                 C.c_test c gettext_code ~link_flags ~c_flags
+               in
+        @@ -46,6 +47,8 @@ let () =
+                        *)
+                       ( [ "-I" ^ Filename.concat brew_prefix "include" ],
+                         [ "-L" ^ Filename.concat brew_prefix "lib"; "-lintl" ] );
+        +              ( [ "-I" ^ Filename.concat gettext_keg_prefix "include" ],
+        +                [ "-L" ^ Filename.concat gettext_keg_prefix "lib"; "-lintl" ] );
+                       (* MacOS with MacPorts. *)
+                       ([ "-I/opt/local/include" ], [ "-L/opt/local/lib"; "-lintl" ]);
+                       (* OpenBSD and FreeBSD. *)
+        EOF
+        opam pin --no-action add gettext-stub .
+        cd ..
+
+        # Patch unnecessarily strict compiler version constraint.
+        opam source fileutils
+        cd fileutils*
+        patch -Nu -p 1 <<"EOF"
+        --- a/fileutils.opam
+        +++ b/fileutils.opam
+        @@ -28,7 +28,7 @@
+           "dune" {>= "2.9"}
+           "base-unix"
+           "ounit2" {>= "2.0.0" & with-test}
+        -  "ocaml" {>= "4.14"}
+        +  "ocaml" {>= "4.08"}
+           "odoc" {with-doc}
+         ]
+         build: [
+        opam pin --no-action add fileutils .
 
     - run: opam install gettext
       if: matrix.job.gettext
@@ -1081,9 +1290,120 @@ jobs:
         cd _opampkgs
 
         # [2026-04] Use upstream devel code because 0.5.0 in opam repository is broken.
+        # Patch unnecessarily strict compiler version constraint.
+        # Fix a bug when compiling with OCaml >= 5.4
         git clone https://github.com/gildor478/ocaml-gettext.git
         cd ocaml-gettext
+        patch -Nu -p 1 <<"EOF"
+        --- a/gettext.opam
+        +++ b/gettext.opam
+        @@ -19,7 +19,7 @@ doc: "https://gildor478.github.io/ocaml-gettext/"
+         bug-reports: "https://github.com/gildor478/ocaml-gettext/issues"
+         depends: [
+           "dune" {>= "3.17"}
+        -  "ocaml" {>= "4.14.0"}
+        +  "ocaml" {>= "4.08.0"}
+           "cppo" {>= "1.8.0" & build}
+           "seq" {>= "base" & with-test}
+           "ounit2" {>= "2.2.7" & with-test}
+        --- a/src/bin/ocaml-xgettext/xgettext.ml
+        +++ b/src/bin/ocaml-xgettext/xgettext.ml
+        @@ -112,7 +112,11 @@ let rec is_like lid = function
+           | [] -> false
+           | func :: functions -> (
+               match lid with
+        +#if OCAML_VERSION >= (5, 4, 0)
+        +      | (Lident f | Ldot (_, {txt = f; _})) when f = func -> true
+        +#else
+               | (Lident f | Ldot (_, f)) when f = func -> true
+        +#endif
+               | _ -> is_like lid functions )
+         
+         let visit_expr (iterator : Ast_iterator.iterator) expr =
+        EOF
         opam pin --no-action --working-dir add gettext .
+        cd ..
+
+        # [2026-04] Use of [In_channel] is the cause of ocaml >= 4.14 version
+        # constraint. Patch to support OCaml >= 4.08.
+        opam source gettext-stub
+        cd gettext-stub*
+        patch -Nu -p 1 <<"EOF"
+        --- a/src/tools/discover-stub/discover.ml
+        +++ b/src/tools/discover-stub/discover.ml
+        @@ -11,24 +11,25 @@ int main() {
+         |}
+         
+         let () =
+        -  let brew_prefix =
+        -    let default_path = "/usr/local" in
+        -    let path =
+        -      try
+        -        let brew_exec = FileUtil.which "brew" in
+        -        let i = Unix.open_process_in (brew_exec ^ " --prefix") in
+        -        let s =
+        -          match String.trim (In_channel.input_all i) with
+        -          | "" -> default_path
+        -          | s -> s
+        -        in
+        -        In_channel.close i;
+        -        s
+        -      with Not_found -> default_path
+        -    in
+        -    Filename.concat (Filename.concat path "opt") "gettext"
+        -  in
+           C.main ~name:"gettext" (fun c ->
+        +      let brew_prefix =
+        +        let default_path =
+        +          if Sys.file_exists "/opt/homebrew" then "/opt/homebrew"
+        +          else "/usr/local" in
+        +        try
+        +          let brew_exec =
+        +            match C.Process.run c "command" ["-v"; "brew"] with
+        +            | { exit_code = 0; stdout; _ } -> String.trim stdout
+        +            | _ -> raise Not_found
+        +          in
+        +          match C.Process.run c brew_exec ["--prefix"] with
+        +          | { exit_code = 0; stdout; _ } -> String.trim stdout
+        +          | _ -> raise Not_found
+        +        with Not_found -> default_path
+        +      in
+        +      let gettext_keg_prefix =
+        +        Filename.concat (Filename.concat brew_prefix "opt") "gettext"
+        +      in
+               let is_working (c_flags, link_flags) =
+                 C.c_test c gettext_code ~link_flags ~c_flags
+               in
+        @@ -46,6 +47,8 @@ let () =
+                        *)
+                       ( [ "-I" ^ Filename.concat brew_prefix "include" ],
+                         [ "-L" ^ Filename.concat brew_prefix "lib"; "-lintl" ] );
+        +              ( [ "-I" ^ Filename.concat gettext_keg_prefix "include" ],
+        +                [ "-L" ^ Filename.concat gettext_keg_prefix "lib"; "-lintl" ] );
+                       (* MacOS with MacPorts. *)
+                       ([ "-I/opt/local/include" ], [ "-L/opt/local/lib"; "-lintl" ]);
+                       (* OpenBSD and FreeBSD. *)
+        EOF
+        opam pin --no-action add gettext-stub .
+        cd ..
+
+        # [2026-04] Patch unnecessarily strict compiler version constraint.
+        opam source fileutils
+        cd fileutils*
+        patch -Nu -p 1 <<"EOF"
+        --- a/fileutils.opam
+        +++ b/fileutils.opam
+        @@ -28,7 +28,7 @@
+           "dune" {>= "2.9"}
+           "base-unix"
+           "ounit2" {>= "2.0.0" & with-test}
+        -  "ocaml" {>= "4.14"}
+        +  "ocaml" {>= "4.08"}
+           "odoc" {with-doc}
+         ]
+         build: [
+        EOF
+        opam pin --no-action add fileutils .
 
     - name: Install gettext
       if: matrix.job.gettext
