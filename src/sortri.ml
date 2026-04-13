@@ -25,39 +25,39 @@ let dbgsort = Util.debug "sort"
 let bysize =
   Prefs.createBool "sortbysize" false
     ~category:(`Advanced `Syncprocess)
-    "list changed files by size, not name"
-    ("When this flag is set, the user interface will list changed files "
-     ^ "by size (smallest first) rather than by name.  This is useful, for "
-     ^ "example, for synchronizing over slow links, since it puts very "
-     ^ "large files at the end of the list where they will not prevent "
-     ^ "smaller files from being transferred quickly.\n\n"
-     ^ "This preference (as well as the other sorting flags, but not the "
-     ^ "sorting preferences that require patterns as arguments) can be "
-     ^ "set interactively and temporarily using the 'Sort' menu in the "
-     ^ "graphical and text user interfaces.")
+    (s_ "list changed files by size, not name")
+    (s_ "When this flag is set, the user interface will list changed files \
+     by size (smallest first) rather than by name.  This is useful, for \
+     example, for synchronizing over slow links, since it puts very \
+     large files at the end of the list where they will not prevent \
+     smaller files from being transferred quickly.\n\n\
+     This preference (as well as the other sorting flags, but not the \
+     sorting preferences that require patterns as arguments) can be \
+     set interactively and temporarily using the 'Sort' menu in the \
+     graphical and text user interfaces.")
 
 let newfirst =
   Prefs.createBool "sortnewfirst" false
     ~category:(`Advanced `Syncprocess)
-    "list new before changed files"
-    ("When this flag is set, the user interface will list newly created "
-     ^ "files before all others.  This is useful, for example, for checking "
-     ^ "that newly created files are not `junk', i.e., ones that should be "
-     ^ "ignored or deleted rather than synchronized.")
+    (s_ "list new before changed files")
+    (s_ "When this flag is set, the user interface will list newly created \
+     files before all others.  This is useful, for example, for checking \
+     that newly created files are not 'junk', i.e., ones that should be \
+     ignored or deleted rather than synchronized.")
 
 let sortfirst = Pred.create "sortfirst"
     ~category:(`Advanced `Syncprocess)
-    ("Each argument to \\texttt{sortfirst} is a pattern \\ARG{pathspec}, "
-     ^ "which describes a set of paths.  "
-     ^ "Files matching any of these patterns will be listed first in the "
-     ^ "user interface. "
-     ^ "The syntax of \\ARG{pathspec} is "
-     ^ "described in \\sectionref{pathspec}{Path Specification}.")
+    (s_ "Each argument to \\texttt{sortfirst} is a pattern \\ARG{pathspec}, \
+     which describes a set of paths.  \
+     Files matching any of these patterns will be listed first in the \
+     user interface. \
+     The syntax of \\ARG{pathspec} is \
+     described in \\sectionref{pathspec}{Path Specification}.")
 
 let sortlast = Pred.create "sortlast"
     ~category:(`Advanced `Syncprocess)
-    ("Similar to \\verb|sortfirst|, except that files matching one of these "
-     ^ "patterns will be listed at the very end.")
+    (s_ "Similar to \\verb|sortfirst|, except that files matching one of these \
+     patterns will be listed at the very end.")
 
 type savedPrefs = {nf:bool; bs:bool; sf:string list; sl:string list}
 let savedPrefs = ref(None)

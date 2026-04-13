@@ -33,17 +33,19 @@ let writeCommitLog source target tempname =
   debug (fun() -> Util.msg "Writing commit log: renaming %s to %s via %s\n"
     sourcename targetname tempname);
   Util.convertUnixErrorsToFatal
-    "writing commit log"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (s_ "writing commit log")
     (fun () ->
        let c =
          System.open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_excl]
            0o600 commitLogName in
-       Printf.fprintf c "Warning: the last run of %s terminated abnormally "
-         Uutil.myName;
-       Printf.fprintf c "while moving\n   %s\nto\n   %s\nvia\n   %s\n\n"
-         sourcename targetname tempname;
-       Printf.fprintf c "Please check the state of these files immediately\n";
-       Printf.fprintf c "(and delete this notice when you've done so).\n";
+       Printf.fprintf c
+         (f_ "Warning: the last run of Unison terminated abnormally \
+           while moving\n   %s\nto\n   %s\nvia\n   %s\n\n\
+           Please check the state of these files immediately\n\
+           (and delete this notice when you've done so).\n")
+           sourcename targetname tempname;
        close_out c)
 
 let clearCommitLog tmpName =
@@ -64,15 +66,17 @@ let clearCommitLog tmpName =
     if Sys.unix then commitLogName else commitLogNameWin () in
 
   Util.convertUnixErrorsToFatal
-    "clearing commit log"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (s_ "clearing commit log")
       (fun () -> System.unlink commitLogUnlinkPath)
 
 let processCommitLog () =
   if System.file_exists commitLogName then begin
     raise(Util.Fatal(
-          Printf.sprintf
-            "Warning: the previous run of %s terminated in a dangerous state.
-            Please consult the file %s, delete it, and try again."
+          Printf.sprintf (f_
+            "Warning: the previous run of %s terminated in a dangerous state. \
+            Please consult the file %s, delete it, and try again.")
                 Uutil.myName
                 commitLogName))
   end else
@@ -89,13 +93,13 @@ let processCommitLogs() =
 
 let copyOnConflict = Prefs.createBool "copyonconflict" false
   ~category:(`Advanced `Syncprocess)
-  "keep copies of conflicting files"
-  "When this flag is set, Unison will make a copy of files that would \
+  (s_ "keep copies of conflicting files")
+  (s_ "When this flag is set, Unison will make a copy of files that would \
    otherwise be overwritten or deleted in case of conflicting changes, \
    and more generally whenever the default behavior is overridden. \
    This makes it possible to automatically resolve conflicts in a \
    fairly safe way when synchronizing continuously, in combination \
-   with the \\verb|-repeat watch| and \\verb|-prefer newer| preferences."
+   with the \\verb|-repeat watch| and \\verb|-prefer newer| preferences.")
 
 let prepareCopy workingDir path notDefault =
   if notDefault && Prefs.read copyOnConflict then begin
@@ -117,10 +121,16 @@ let finishCopy copyInfo =
       let rec copyPath n =
         let p =
           Path.addToFinalName path
-            (Format.sprintf " (conflict%s_on_%04d-%02d-%02d%s)"
+            (* TRANSLATORS: This string is, in case of a conflict, appended to
+               the file name on the disk. The first %s is either empty or "#1",
+               "#2", etc. %04d-%02d-%02d is year, month and day. The second %s
+               is either empty or "_was_deleted" (translated separately). *)
+            (Format.sprintf (f_ " (conflict%s_on_%04d-%02d-%02d%s)")
                (if n = 0 then "" else " #" ^ string_of_int n)
                (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday
-               (if tmpPathOpt = None then "_was_deleted" else ""))
+               (* TRANSLATORS: This string is in case of a conflict appended to
+                  the file name on the disk. *)
+               (if tmpPathOpt = None then (s_ "_was_deleted") else ""))
         in
         if Os.exists workingDir p then copyPath (n + 1) else p
       in begin
@@ -283,7 +293,9 @@ let performRename fspathTo localPathTo (workingDirFrom, pathFrom)
   let source = Fspath.concat workingDirFrom pathFrom in
   let target = Fspath.concat workingDirTo pathTo in
   Util.convertUnixErrorsToTransient
-    (Printf.sprintf "renaming %s to %s"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (Printf.sprintf (f_ "renaming %s to %s")
        (Fspath.toDebugString source) (Fspath.toDebugString target))
     (fun () ->
       debugverbose (fun() ->
@@ -293,7 +305,7 @@ let performRename fspathTo localPathTo (workingDirFrom, pathFrom)
       debugverbose (fun() ->
         Util.msg "back from Fileinfo.getType from renameLocal\n");
       if filetypeFrom = `ABSENT then raise (Util.Transient (Printf.sprintf
-           "Error while renaming %s to %s -- source file has disappeared!"
+           (f_ "Error while renaming %s to %s -- source file has disappeared!")
            (Fspath.toPrintString source) (Fspath.toPrintString target)));
       let filetypeTo = Fileinfo.getType false target Path.empty in
 
@@ -329,7 +341,10 @@ let performRename fspathTo localPathTo (workingDirFrom, pathFrom)
              (similar) renaming fail in a cryptic way.  So it
              seems better to abort early by converting Unix errors
              to Fatal ones (rather than Transient). *)
-          Util.convertUnixErrorsToFatal "renaming with commit log"
+          Util.convertUnixErrorsToFatal
+            (* TRANSLATORS: This is used as an error location in a message like
+               "Error in %s:" (where %s is the string to translate here). *)
+            (s_ "renaming with commit log")
             (fun () ->
               debug (fun() -> Util.msg "rename %s to %s\n"
                        (Fspath.toDebugString source)
@@ -454,7 +469,9 @@ let rec createDirectories fspath localPath props =
 let setupTargetPathsAndCreateParentDirectoryLocal (fspath, (path, props)) =
   let localPath = Update.translatePathLocal fspath path in
   Util.convertUnixErrorsToTransient
-    "creating parent directories"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (s_ "creating parent directories")
     (fun () -> createDirectories fspath localPath props);
   let (workingDir,realPath) = Fspath.findWorkingDir fspath localPath in
   let tempPath = Os.tempPath ~fresh:false workingDir realPath in
@@ -835,10 +852,11 @@ let move
   | Updates (Absent, _),
       Updates ((File _ | Dir _), _),
       Updates (Absent, _) when reverting -> ()
-  | _ -> raise (Util.Transient "Internal error. Please report this bug (keep\n\
+  | _ -> raise (Util.Transient
+                 (s_ "Internal error. Please report this bug (keep\n\
                  the details of what you were doing) and (temporarily)\n\
                  turn off the \"moves\" preference to continue with\n\
-                 update propagation.")
+                 update propagation."))
   end;
   Update.translatePath rootFrom pathFrom' >>= fun localPathFrom ->
   normalizeProps propsFrom' propsTo'
@@ -865,17 +883,17 @@ let (>>=) = Lwt.bind
 let diffCmd =
   Prefs.createString "diff" "diff -u OLDER NEWER"
     ~category:(`Advanced `General)
-    "set command for showing differences between files"
-    ("This preference can be used to control the name and command-line "
-     ^ "arguments of the system "
-     ^ "utility used to generate displays of file differences.  The default "
-     ^ "is `\\verb|diff -u OLDER NEWER|'.  If the value of this preference contains the substrings "
-     ^ "CURRENT1 and CURRENT2, these will be replaced by the names of the files to be "
-     ^ "diffed.  If the value of this preference contains the substrings "
-     ^ "NEWER and OLDER, these will be replaced by the names of files to be "
-     ^ "diffed, NEWER being the most recently modified file of the two.  "
-     ^ "Without any of these substrings, the two filenames will be appended to the command.  In all "
-     ^ "cases, the filenames are suitably quoted.")
+    (s_ "set command for showing differences between files")
+    (s_ "This preference can be used to control the name and command-line \
+     arguments of the system \
+     utility used to generate displays of file differences.  The default \
+     is '\\verb|diff -u OLDER NEWER|'.  If the value of this preference contains the substrings \
+     CURRENT1 and CURRENT2, these will be replaced by the names of the files to be \
+     diffed.  If the value of this preference contains the substrings \
+     NEWER and OLDER, these will be replaced by the names of files to be \
+     diffed, NEWER being the most recently modified file of the two.  \
+     Without any of these substrings, the two filenames will be appended to the command.  In all \
+     cases, the filenames are suitably quoted.")
 
 let tempName s = Os.tempFilePrefix ^ s
 
@@ -913,7 +931,9 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
   match root1,root2 with
     (Local,fspath1),(Local,fspath2) ->
       Util.convertUnixErrorsToTransient
-        "diffing files"
+        (* TRANSLATORS: This is used as an error location in a message like
+           "Error in %s:" (where %s is the string to translate here). *)
+        (s_ "diffing files")
         (fun () ->
            let path1 = Update.translatePathLocal fspath1 path1 in
            let path2 = Update.translatePathLocal fspath2 path2 in
@@ -921,7 +941,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
              (Fspath.concat fspath1 path1) (Fspath.concat fspath2 path2))
   | (Local,fspath1),(Remote host2,fspath2) ->
       Util.convertUnixErrorsToTransient
-        "diffing files"
+        (s_ "diffing files")
         (fun () ->
            let path1 = Update.translatePathLocal fspath1 path1 in
            let (workingDir, realPath) = Fspath.findWorkingDir fspath1 path1 in
@@ -940,7 +960,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
            Os.delete workingDir tmppath)
   | (Remote host1,fspath1),(Local,fspath2) ->
       Util.convertUnixErrorsToTransient
-        "diffing files"
+        (s_ "diffing files")
         (fun () ->
            let path2 = Update.translatePathLocal fspath2 path2 in
            let (workingDir, realPath) = Fspath.findWorkingDir fspath2 path2 in
@@ -976,7 +996,9 @@ let get_files_in_directory dir =
 
 let ls dir pattern =
   Util.convertUnixErrorsToTransient
-    "listing files"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (s_ "listing files")
     (fun () ->
        let files = get_files_in_directory dir in
        let re = Rx.glob pattern in
@@ -996,12 +1018,14 @@ let ls dir pattern =
 
 let formatMergeCmd p f1 f2 backup out1 out2 outarch batchmode =
   if not (Globals.shouldMerge p) then
-    raise (Util.Transient ("'merge' preference not set for "^(Path.toString p)));
+    raise (Util.Transient (Printf.sprintf
+      (f_ "'merge' preference not set for %s") (Path.toString p)));
   let raw =
     try Globals.mergeCmdForPath p
     with Not_found ->
-      raise (Util.Transient ("'merge' preference does not provide a command "
-                             ^ "template for " ^ (Path.toString p)))
+      raise (Util.Transient (Printf.sprintf
+        (f_ "'merge' preference does not provide a command template for %s")
+        (Path.toString p)))
   in
   let cooked = raw in
   let cooked = Util.replacesubstring cooked "CURRENT1" f1 in
@@ -1013,10 +1037,10 @@ let formatMergeCmd p f1 f2 backup out1 out2 outarch batchmode =
         match Util.findsubstring "CURRENTARCH" cooked with
           None -> cooked
         | Some _ -> raise (Util.Transient
-                      ("No archive found, but the 'merge' command "
-                       ^ "template expects one.  (Consider enabling "
-                       ^ "'backupcurrent' for this file or using CURRENTARCHOPT "
-                       ^ "instead of CURRENTARCH.)"))
+                      (s_ "No archive found, but the 'merge' command \
+                       template expects one.  (Consider enabling \
+                       'backupcurrent' for this file or using CURRENTARCHOPT \
+                       instead of CURRENTARCH.)"))
       end
     | Some(s) ->
         let cooked = Util.replacesubstring cooked "CURRENTARCHOPT" s in
@@ -1052,9 +1076,9 @@ let keeptempfilesaftermerge =
     "*" ""
 
 let showStatus = function
-  | Unix.WEXITED i -> Printf.sprintf "exited (%d)" i
-  | Unix.WSIGNALED i -> Printf.sprintf "killed with signal %d" i
-  | Unix.WSTOPPED i -> Printf.sprintf "stopped with signal %d" i
+  | Unix.WEXITED i -> Printf.sprintf (f_ "exited (%d)") i
+  | Unix.WSIGNALED i -> Printf.sprintf (f_ "killed with signal %d") i
+  | Unix.WSTOPPED i -> Printf.sprintf (f_ "stopped with signal %d") i
 
 let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
   debug (fun () -> Util.msg "merge path %s between roots %s and %s\n"
@@ -1097,7 +1121,9 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
 
   let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
 
-  Util.convertUnixErrorsToTransient "merging files" (fun () ->
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  Util.convertUnixErrorsToTransient (s_ "merging files") (fun () ->
     (* Install finalizer (below) in case we unwind the stack *)
     Util.finalize (fun () ->
 
@@ -1170,12 +1196,12 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
           (Fspath.quotes (Fspath.concat workingDirForMerge new2))
           (Fspath.quotes (Fspath.concat workingDirForMerge newarch))
           (if Prefs.read Globals.batch then "batch" else "") in
-      Trace.log (Printf.sprintf "Merge command: %s\n" cmd);
+      Trace.log (Printf.sprintf (f_ "Merge command: %s\n") cmd);
 
       let returnValue, mergeResultLog =
         Lwt_unix.run (External.runExternalProgram cmd) in
 
-      Trace.log (Printf.sprintf "Merge result (%s):\n%s\n"
+      Trace.log (Printf.sprintf (f_ "Merge result (%s):\n%s\n")
                    (showStatus returnValue) mergeResultLog);
       debug (fun () -> Util.msg "Merge result = %s\n"
                    (showStatus returnValue));
@@ -1187,9 +1213,9 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
          the displaying from the querying... *)
       if not
           (showMergeFn
-             (Printf.sprintf "Results of merging %s" (Path.toString path1))
+             (Printf.sprintf (f_ "Results of merging %s") (Path.toString path1))
              mergeResultLog) then
-        raise (Util.Transient ("Merge command canceled by the user"));
+        raise (Util.Transient (s_ "Merge command canceled by the user"));
 
       (* It's useful for now to be a bit verbose about what we're doing, but let's
          keep it easy to switch this to debug-only in some later release... *)
@@ -1235,7 +1261,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
             copy [(new1,working1); (new1,working2); (new1,workingarch)];
           end else begin
             say (fun () -> Util.msg "One output detected but merge command returned nonzero exit status\n");
-            raise (Util.Transient "One output detected but merge command returned nonzero exit status\n")
+            raise (Util.Transient (s_ "One output detected but merge command \
+              returned nonzero exit status\n"))
           end
       end
 
@@ -1255,7 +1282,7 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
           let info2' = Fileinfo.getType false workingDirForMerge working2 in
           let fp2' = Os.fingerprint workingDirForMerge working2 info2' in
           if fp1 = fp1' && fp2 = fp2' then
-            raise (Util.Transient "Merge program didn't change either temp file");
+            raise (Util.Transient (s_ "Merge program didn't change either temp file"));
           if fp1' = fp2' then begin
             say (fun () -> Util.msg "Merge program made files equal\n");
             copy [(working1,workingarch)];
@@ -1267,8 +1294,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
             copy [(working2,working1);(working2,workingarch)]
           end else
             if returnValue <> Unix.WEXITED 0 then
-              raise (Util.Transient ("Error: the merge function changed both of "
-                                     ^ "its inputs but did not make them equal"))
+              raise (Util.Transient (s_ "Error: the merge function changed both of \
+                                     its inputs but did not make them equal"))
             else begin
               say (fun () -> (Util.msg "Merge program changed both of its inputs in";
                               Util.msg "different ways, but returned zero.\n"));
@@ -1293,13 +1320,13 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
               copy [(working2,working1); (working2,workingarch)];
             end
         else if returnValue = Unix.WEXITED 0 then begin
-            raise (Util.Transient ("Error: the merge program deleted both of its "
-                                   ^ "inputs and generated no output!"))
+            raise (Util.Transient (s_ "Error: the merge program deleted both of its \
+                                   inputs and generated no output!"))
         end else begin
             say (fun() -> Util.msg "The merge program exited with nonzero status and did not leave";
                           Util.msg " both files equal");
-            raise (Util.Transient ("Error: the merge program failed and did not leave"
-                                   ^ " both files equal"))
+            raise (Util.Transient (s_ "Error: the merge program failed and did not leave \
+                                   both files equal"))
         end
       end else begin
         assert false
@@ -1313,7 +1340,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
            debug (fun () -> Util.msg "Updating unison archives for %s to reflect results of merge\n"
                    (Path.toString path1));
            if not (Stasher.shouldBackupCurrent path1) then
-             Util.msg "Warning: 'backupcurrent' is not set for path %s\n" (Path.toString path1);
+             Util.msg (f_ "Warning: 'backupcurrent' is not set for path %s\n")
+               (Path.toString path1);
            let infoarch = Fileinfo.getBasicWithRess false arch_fspath Path.empty in
            let fp = Os.fingerprint arch_fspath Path.empty infoarch.typ in
            debug (fun () -> Util.msg "New fingerprint is %s\n" (Os.fullfingerprint_to_string fp));

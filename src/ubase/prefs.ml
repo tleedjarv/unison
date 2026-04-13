@@ -33,7 +33,7 @@ let profilePathname ?(add_ext=true) n =
 
 let thePrefsFile () =
   match !profileName with
-    None -> raise (Util.Transient("No preference file has been specified"))
+    None -> raise (Util.Transient(s_ "No preference file has been specified"))
   | Some(n) -> profilePathname n
 
 let profileUnchanged () =
@@ -161,14 +161,14 @@ let isInternal = function
   | _ -> false
 
 let topic = function
-  | `General -> "General"
-  | `Sync -> "What to sync"
-  | `Syncprocess -> "How to sync"
-  | `Syncprocess_CLI -> "How to sync (text interface (CLI) only)"
-  | `CLI -> "Text interface (CLI)"
-  | `GUI -> "Graphical interface (GUI)"
-  | `Remote -> "Remote connections"
-  | `Archive -> "Archive management"
+  | `General -> s_ "General"
+  | `Sync -> s_ "What to sync"
+  | `Syncprocess -> s_ "How to sync"
+  | `Syncprocess_CLI -> s_ "How to sync (text interface (CLI) only)"
+  | `CLI -> s_ "Text interface (CLI)"
+  | `GUI -> s_ "Graphical interface (GUI)"
+  | `Remote -> s_ "Remote connections"
+  | `Archive -> s_ "Archive management"
 
 type typ =
   [`BOOL | `INT | `STRING | `STRING_LIST | `BOOLDEF | `CUSTOM | `UNKNOWN]
@@ -198,11 +198,11 @@ let documentation nm =
     if isInternal category then raise Not_found;
     let doc =
       if not deprec then doc
-      else "(Deprecated) " ^ doc
+      else (s_ "(Deprecated)") ^ " " ^ doc
     in
     let fulldoc =
       if not deprec then fulldoc
-      else "{\\em (Deprecated)} " ^ fulldoc
+      else "{\\em " ^ (s_ "(Deprecated)") ^ "} " ^ fulldoc
     in
     (doc, fulldoc)
   with Not_found ->
@@ -248,13 +248,13 @@ let combine_pspec f = function
 
 let deprecatedPref name p =
   combine_pspec @@ fun () ->
-  Util.warn ("Preference \"" ^ name ^ "\" is deprecated!\n"
-    ^ "It may be removed in the next release, so you should\n"
-    ^ "stop using this preference on the command line and\n"
-    ^ "in the profiles."
-    ^ (if read p <> readDefault p then "" else
-         "\nYou will not lose out on anything; you have currently\n"
-       ^ "set this preference to its default value."))
+  Util.warn (Printf.sprintf (f_ "Preference \"%s\" is deprecated!\n\
+    It may be removed in the next release, so you should\n\
+    stop using this preference on the command line and\n\
+    in the profiles.%s") name
+      (if read p <> readDefault p then "" else
+         s_ "\nYou will not lose out on anything; you have currently\n\
+           set this preference to its default value."))
 
 let registerPref name typ cell pspec category cli_only deprec doc fulldoc =
   if Util.StringMap.mem name !prefs then
@@ -303,7 +303,9 @@ let create name ~category ?(cli_only=false) ?(local=false) ?send default ?(depre
     m
 
 let createBool name ~category ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
-  let doc = if default then doc ^ " (default true)" else doc in
+  (* TRANSLATORS: Indicating the default value of a preference
+     (as in "default true"). *)
+  let doc = if default then doc ^ " (" ^ (s_ "default") ^ " true)" else doc in
   createPrefInternal name `BOOL category cli_only local send default deprecated doc fulldoc
     (fun v -> [if v then "true" else "false"])
     (fun cell -> Uarg.Bool (fun b -> set cell b))
@@ -363,15 +365,17 @@ let markRemoved name =
 let string2bool name = function
    "true"  -> true
  | "false" -> false
- | other   -> raise (Util.Fatal (name^" expects a boolean value, but \n"^other
-                                ^ " is not a boolean"))
+ | other   -> raise (Util.Fatal (Printf.sprintf
+                (f_ "%s expects a boolean value, but \n%s is not a boolean")
+                name other))
 
 let string2int name string =
  try
    int_of_string string
  with Failure _ ->
-   raise (Util.Fatal (name ^ " expects an integer value, but\n"
-                 ^ string ^ " is not an integer"))
+   raise (Util.Fatal (Printf.sprintf
+     (f_ "%s expects an integer value, but\n%s is not an integer")
+     name string))
 
 (* Takes a filename and returns a list of "parsed lines" containing
       (filename, lineno, varname, value)
@@ -380,9 +384,9 @@ let rec readAFile ?(fail=true) ?(add_ext=true) filename =
   let path = profilePathname ~add_ext:add_ext filename in
   let locname =
     if add_ext then
-      Printf.sprintf "Profile \"%s\" (file \"%s\")" filename path
+      Printf.sprintf (f_ "Profile \"%s\" (file \"%s\")") filename path
     else
-      Printf.sprintf "File \"%s\"" path
+      Printf.sprintf (f_ "File \"%s\"") path
   in
   let bom = "\xef\xbb\xbf" in (* BOM: UTF-8 byte-order mark *)
   let rec loop chan lineNum lines =
@@ -408,10 +412,10 @@ let rec readAFile ?(fail=true) ?(add_ext=true) filename =
   match chan, fail with
   | None, true when add_ext ->
       raise (Util.Fatal (Printf.sprintf
-        "Profile %s not found (looking for file %s)" filename path))
+        (f_ "Profile %s not found (looking for file %s)") filename path))
   | None, true ->
       raise (Util.Fatal (Printf.sprintf
-        "Preference file %s not found" path))
+        (f_ "Preference file %s not found") path))
   | None, false -> []
   | Some chan, _ ->
       try loop chan 1 [] with e -> close_in_noerr chan; raise e
@@ -433,12 +437,12 @@ and parseLines lines =
                   readAFile f ~fail:fail ~add_ext:add_ext
                 with Util.Fatal err ->
                   raise (Util.Fatal (Printf.sprintf
-                    "Included from %s, line %d:\n%s"
+                    (f_ "Included from %s, line %d:\n%s")
                     (String.uncapitalize_ascii locname) lineNum err))
               in
               loop rest (Safelist.append sublines res)
           | _ -> raise (Util.Fatal(Printf.sprintf
-                                     "%s, line %d:\nGarbled 'include' directive: %s"
+                                     (f_ "%s, line %d:\nGarbled 'include' directive: %s")
                                      locname lineNum theLine)) in
         if l = "" || l.[0]='#' then
           loop rest res
@@ -457,7 +461,7 @@ and parseLines lines =
               loop rest ((loc, varName, theResult) :: res)
           | _ -> (* theLine does not contain '=' *)
               raise (Util.Fatal(Printf.sprintf
-                                  "%s, line %d:\nGarbled line (no '='): %s"
+                                  (f_ "%s, line %d:\nGarbled line (no '='): %s")
                                   locname lineNum theLine)) in
   loop lines []
 
@@ -468,9 +472,9 @@ let processLines lines =
          let pref = Util.StringMap.find varName !prefs in
          if pref.category = `Internal `Pseudo then raise Not_found;
          if pref.cli_only then
-           raise (IllegalValue ("\"" ^ varName
-             ^ "\" is a command line-only option; "
-             ^ "it must not be present in a profile."));
+           raise (IllegalValue (Printf.sprintf
+             (f_ "\"%s\" is a command line-only option; \
+              it must not be present in a profile.") varName));
          match pref.pspec with
            Uarg.Bool boolFunction ->
              boolFunction (string2bool varName theResult)
@@ -480,12 +484,13 @@ let processLines lines =
              stringFunction theResult
          | _ -> assert false
        with Not_found ->
-         raise (Util.Fatal (locName ^ ", line " ^
-                            string_of_int lineNum ^ ": `" ^
-                            varName ^ "' is not a valid option"))
+         raise (Util.Fatal (Printf.sprintf
+                              (f_ "%s, line %d: '%s' is not a valid option")
+                              locName lineNum varName))
        | IllegalValue str ->
-           raise (Util.Fatal (locName ^ ", line " ^
-                            string_of_int lineNum ^ ": " ^ str)))
+           raise (Util.Fatal (Printf.sprintf
+                                (f_ "%s, line %d: %s")
+                                locName lineNum str)))
     lines
 
 let loadTheFile () =
@@ -507,21 +512,21 @@ let loadStrings l =
 let _ = create "source" ()
   ~category:(`Advanced `General)
   ~cli_only:true
-  "include a file's preferences"
-  "Include preferences from a file.  \\texttt{source \\ARG{name}} reads the \
+  (s_ "include a file's preferences")
+  (s_ "Include preferences from a file.  \\texttt{source \\ARG{name}} reads the \
    file \\showtt{name} in the \\texttt{.unison} directory and includes its \
-   contents as if it was part of a profile or given directly on command line."
+   contents as if it was part of a profile or given directly on command line.")
   (fun _ s -> processLines (readAFile ~add_ext:false s))
   (fun v -> []) Umarshal.unit
 
 let _ = create "include" ()
   ~category:(`Advanced `General)
   ~cli_only:true
-  "include a profile's preferences"
-  "Include preferences from a profile.  \\texttt{include \\ARG{name}} reads \
+  (s_ "include a profile's preferences")
+  (s_ "Include preferences from a profile.  \\texttt{include \\ARG{name}} reads \
    the profile \\showtt{name} (or file \\showtt{name} in the \\texttt{.unison} \
    directory if profile \\showtt{name} does not exist) and includes its \
-   contents as if it was part of a profile or given directly on command line."
+   contents as if it was part of a profile or given directly on command line.")
   (fun _ s -> processLines (readAFile s))
   (fun v -> []) Umarshal.unit
 
@@ -554,8 +559,8 @@ let gettext_args =
   Safelist.map (fun (k, s, d) -> (k, gettext_argspec s, "")) gettext_argspecs
 
 let title = function
-  | `Advanced `Sync -> "Fine-tune sync"
-  | `Advanced `General -> "Other"
+  | `Advanced `Sync -> s_ "Fine-tune sync"
+  | `Advanced `General -> s_ "Other"
   | `Basic t | `Advanced t -> topic t
   | `Expert -> ""
   | `Internal _ -> assert false
@@ -577,7 +582,7 @@ let oneLineDocs ?(hpre="") ?(hpost="") u =
     Format.pp_open_box fmt l;
     Format.pp_print_break fmt l (1 - l);
     if deprec then begin
-      Format.pp_print_string fmt "(deprecated)";
+      Format.pp_print_string fmt (s_ "(deprecated)");
       Format.pp_print_space fmt ()
     end;
     Format.pp_print_text fmt doc;
@@ -602,13 +607,13 @@ let oneLineDocs ?(hpre="") ?(hpost="") u =
 
   out u; if u <> "" then out "\n";
 
-  out (hpre ^ "Basic options:" ^ hpost ^ "\n");
+  out (hpre ^ (s_ "Basic options:") ^ hpost ^ "\n");
   formatTopics (fun t -> `Basic t) (`General :: topicsInOrder);
 
-  out ("\n" ^ hpre ^ "Advanced options:" ^ hpost ^ "\n");
+  out ("\n" ^ hpre ^ (s_ "Advanced options:") ^ hpost ^ "\n");
   formatTopics (fun t -> `Advanced t) (topicsInOrder @ [`General]);
 
-  out ("\n" ^ hpre ^ "Expert options:" ^ hpost ^ "\n");
+  out ("\n" ^ hpre ^ (s_ "Expert options:") ^ hpost ^ "\n");
   formatTopic (`Expert);
 
   Buffer.contents buf
@@ -683,7 +688,8 @@ let printFullTeXDocs () =
   Safelist.iter
     (fun (name, {pspec; fulldoc; deprec; _}) ->
        Printf.eprintf "\\item [{%s \\tt %s}]\n%s%s\n\n"
-         name (prefArg pspec) (if deprec then "{\\em (Deprecated)} " else "") fulldoc)
+         name (prefArg pspec)
+         (if deprec then "{\\em " ^ (s_ "(Deprecated)") ^ "} " else "") fulldoc)
     (listVisiblePrefs());
   Printf.eprintf "\\end{description}\n"
 
@@ -776,12 +782,12 @@ let printFullDocs = function
 
 let addprefsto = createString "addprefsto" ""
   ~category:(`Advanced `General)
-  "file to add new prefs to"
-  "By default, new preferences added by Unison (e.g., new \\verb|ignore| \
+  (s_ "file to add new prefs to")
+  (s_ "By default, new preferences added by Unison (e.g., new \\verb|ignore| \
    clauses) will be appended to whatever preference file Unison was told \
    to load at the beginning of the run.  Setting the preference \
    \\texttt{addprefsto \\ARG{filename}} makes Unison \
-   add new preferences to the file named \\ARG{filename} instead."
+   add new preferences to the file named \\ARG{filename} instead.")
 
 let addLine l =
   let filename =
@@ -792,7 +798,7 @@ let addLine l =
     debug (fun() ->
       Util.msg "Adding '%s' to %s\n" l (System.fspathToDebugString filename));
     let resultmsg =
-      l ^ "' added to profile " ^ filename in
+      Printf.sprintf (f_ "'%s' added to profile %s") l filename in
     let ochan =
       System.open_out_gen [Open_wronly; Open_creat; Open_append] 0o600 filename
     in
@@ -804,7 +810,7 @@ let addLine l =
     Sys_error e ->
       begin
         let resultmsg =
-          (Printf.sprintf "Could not write preferences file (%s)\n" e) in
+          (Printf.sprintf (f_ "Could not write preferences file (%s)\n") e) in
         Util.warn resultmsg;
         resultmsg
       end

@@ -58,12 +58,12 @@ let validate features =
     match failed with
     | None -> ()
     | Some e ->
-        raise (Util.Fatal
-          ("Client and server are incompatible. Setting up feature \""
-           ^ name ^ "\" failed with error\n\"" ^ e ^ "\".\n\n"
-           ^ "It may be possible to rectify this by changing the user "
-           ^ "preferences.\nUltimately, it may require upgrading either "
-           ^ "the server or the client."))
+        raise (Util.Fatal (Printf.sprintf
+          (f_ "Client and server are incompatible. Setting up feature \
+           \"%s\" failed with error\n\"%s\".\n\n\
+           It may be possible to rectify this by changing the user \
+           preferences.\nUltimately, it may require upgrading either \
+           the server or the client.") name e))
   in
   Hashtbl.iter aux allFeatures
 

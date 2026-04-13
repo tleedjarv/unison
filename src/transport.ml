@@ -38,8 +38,8 @@ let fileSize uiFrom uiTo =
 let maxthreads =
   Prefs.createInt "maxthreads" 0
     ~category:(`Advanced `General)
-    "maximum number of simultaneous file transfers"
-    ("This preference controls how much concurrency is allowed during \
+    (s_ "maximum number of simultaneous file transfers")
+    (s_ "This preference controls how much concurrency is allowed during \
       the transport phase.  Normally, it should be set reasonably high \
       to maximize performance, but when Unison is used over a \
       low-bandwidth link it may be helpful to set it lower (e.g. \
@@ -180,9 +180,9 @@ and doMove
          so a move can be propagated instead of a copy.
          Whatever exists on fromPath' in toRoot, will be overwritten. *)
       logLwtNumbered
-        ("Moving/renaming file " ^ Path.toString toPath ^ " --> "
-         ^ Path.toString fromPath' ^ "\n  on " ^ root2string toRoot)
-        ("Moving/renaming file " ^ Path.toString toPath)
+        (Printf.sprintf (f_ "Moving/renaming file %s --> %s\n  on %s")
+          (Path.toString toPath) (Path.toString fromPath') (root2string toRoot))
+        (Printf.sprintf (f_ "Moving/renaming file %s") (Path.toString toPath))
         (tryMove
           (fun () ->
             Files.move
@@ -203,9 +203,9 @@ and doMove
          contents of the move source are unchanged, so a revert move
          can be propagated instead of a copy. *)
       logLwtNumbered
-        ("Moving/renaming file " ^ Path.toString toPath' ^ " --> "
-         ^ Path.toString toPath ^ "\n  on " ^ root2string toRoot)
-        ("Moving/renaming file " ^ Path.toString toPath')
+        (Printf.sprintf (f_ "Moving/renaming file %s --> %s\n  on %s")
+          (Path.toString toPath') (Path.toString toPath) (root2string toRoot))
+        (Printf.sprintf (f_ "Moving/renaming file %s") (Path.toString toPath'))
         (tryMove
           (fun () ->
             Files.move
@@ -228,9 +228,9 @@ and doMove
          so a move can be propagated instead of a copy.
          Whatever exists on toPath in toRoot, will be overwritten. *)
       logLwtNumbered
-        ("Moving/renaming file " ^ Path.toString fromPath' ^ " --> "
-         ^ Path.toString toPath ^ "\n  on " ^ root2string toRoot)
-        ("Moving/renaming file " ^ Path.toString fromPath')
+        (Printf.sprintf (f_ "Moving/renaming file %s --> %s\n  on %s")
+          (Path.toString fromPath') (Path.toString toPath) (root2string toRoot))
+        (Printf.sprintf (f_ "Moving/renaming file %s") (Path.toString fromPath'))
         (tryMove
           (fun () ->
             Files.move
@@ -253,9 +253,9 @@ and doMove
          contents of the move source are unchanged, so a revert move
          can be propagated instead of a copy. *)
       logLwtNumbered
-        ("Moving/renaming file " ^ Path.toString toPath ^ " --> "
-         ^ Path.toString toPath' ^ "\n  on " ^ root2string toRoot)
-        ("Moving/renaming file " ^ Path.toString toPath)
+        (Printf.sprintf (f_ "Moving/renaming file %s --> %s\n  on %s")
+          (Path.toString toPath) (Path.toString toPath') (root2string toRoot))
+        (Printf.sprintf (f_ "Moving/renaming file %s") (Path.toString toPath))
         (tryMove
           (fun () ->
             Files.move
@@ -289,9 +289,9 @@ and doAction
               toRoot toPath toContents notDefault id
         | {typ = `ABSENT}, {ui = uiTo} ->
            logLwtNumbered
-             ("Deleting " ^ Path.toString toPath ^
-              "\n  from "^ root2string toRoot)
-             ("Deleting " ^ Path.toString toPath)
+             (Printf.sprintf (f_ "Deleting %s\n  from %s")
+               (Path.toString toPath) (root2string toRoot))
+             (Printf.sprintf (f_ "Deleting %s") (Path.toString toPath))
              (fun () ->
                 Files.delete fromRoot fromPath toRoot toPath uiTo notDefault)
       (* No need to transfer the whole directory/file if there were only
@@ -300,29 +300,26 @@ and doAction
       | {status= `Unchanged | `PropsChanged; desc= fromProps; ui= uiFrom},
         {status= `Unchanged | `PropsChanged; desc= toProps; ui = uiTo} ->
           logLwtNumbered
-            ("Copying properties for " ^ Path.toString toPath
-             ^ "\n  from " ^ root2string fromRoot ^ "\n  to " ^
-             root2string toRoot)
-            ("Copying properties for " ^ Path.toString toPath)
+            (Printf.sprintf (f_ "Copying properties for %s\n  from %s\n  to %s")
+              (Path.toString toPath) (root2string fromRoot) (root2string toRoot))
+            (Printf.sprintf (f_ "Copying properties for %s") (Path.toString toPath))
             (fun () ->
               Files.setProp
                 fromRoot fromPath toRoot toPath fromProps toProps uiFrom uiTo)
       | {typ = `FILE; ui = uiFrom}, {typ = `FILE; ui = uiTo} ->
           logLwtNumbered
-            ("Updating file " ^ Path.toString toPath ^ "\n  from " ^
-             root2string fromRoot ^ "\n  to " ^
-             root2string toRoot)
-            ("Updating file " ^ Path.toString toPath)
+            (Printf.sprintf (f_ "Updating file %s\n  from %s\n  to %s")
+              (Path.toString toPath) (root2string fromRoot) (root2string toRoot))
+            (Printf.sprintf (f_ "Updating file %s") (Path.toString toPath))
             (fun () ->
               Files.copy (`Update (fileSize uiFrom uiTo))
                 fromRoot fromPath uiFrom [] toRoot toPath uiTo []
                 notDefault id)
       | {ui = uiFrom; props = propsFrom}, {ui = uiTo; props = propsTo} ->
           logLwtNumbered
-            ("Copying " ^ Path.toString toPath ^ "\n  from " ^
-             root2string fromRoot ^ "\n  to " ^
-             root2string toRoot)
-            ("Copying " ^ Path.toString toPath)
+            (Printf.sprintf (f_ "Copying %s\n  from %s\n  to %s")
+              (Path.toString toPath) (root2string fromRoot) (root2string toRoot))
+            (Printf.sprintf (f_ "Copying %s") (Path.toString toPath))
             (fun () ->
                Files.copy `Copy
                  fromRoot fromPath uiFrom propsFrom
@@ -330,14 +327,14 @@ and doAction
                  notDefault id))
     (fun e -> Trace.logonly
         (Printf.sprintf
-           "Failed [%s]: %s\n" (Path.toString toPath) (Util.printException e));
+           (f_ "Failed [%s]: %s\n") (Path.toString toPath) (Util.printException e));
       return ())
 
 let propagate root1 root2 reconItem id showMergeFn =
   let path = reconItem.path1 in
   match reconItem.replicas with
     Problem p ->
-      Trace.log (Printf.sprintf "[ERROR] Skipping %s\n  %s\n"
+      Trace.log (Printf.sprintf (f_ "[ERROR] Skipping %s\n  %s\n")
                    (Path.toString path) p);
       return ()
   | Different
@@ -345,7 +342,7 @@ let propagate root1 root2 reconItem id showMergeFn =
       let notDefault = dir <> def in
       match dir with
         Conflict c ->
-          Trace.log (Printf.sprintf "[CONFLICT] Skipping %s\n  %s\n"
+          Trace.log (Printf.sprintf (f_ "[CONFLICT] Skipping %s\n  %s\n")
                        (Path.toString path) c);
           return ()
       | Replica1ToReplica2 ->
@@ -356,7 +353,7 @@ let propagate root1 root2 reconItem id showMergeFn =
             root2 reconItem.path2 rc2 root1 reconItem.path1 rc1 notDefault id
       | Merge ->
           if rc1.typ <> `FILE || rc2.typ <> `FILE then
-            raise (Util.Transient "Can only merge two existing files");
+            raise (Util.Transient (s_ "Can only merge two existing files"));
           Files.merge
             root1 reconItem.path1 rc1.ui root2 reconItem.path2 rc2.ui id
             showMergeFn;
@@ -377,7 +374,10 @@ let logStart () =
   let tm = Util.localtime t in
   let m =
     Printf.sprintf
-      "%s%s started propagating changes at %02d:%02d:%02d.%02d on %02d %s %04d\n"
+      (* TRANSLATORS: The first %s is blank. The second %s is the program name
+         and version. %02d:%02d:%02d.%02d on %02d %s %04d is
+         hours:minutes:seconds.milliseconds monthday month_name year *)
+      (f_ "%s%s started propagating changes at %02d:%02d:%02d.%02d on %02d %s %04d\n")
       (if Prefs.read Trace.terse || Prefs.read Globals.batch then "" else "\n\n")
       (String.capitalize_ascii Uutil.myNameAndVersion)
       tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
@@ -391,7 +391,11 @@ let logFinish () =
   let tm = Util.localtime t in
   let m =
     Printf.sprintf
-      "%s finished propagating changes at %02d:%02d:%02d.%02d on %02d %s %04d, %.3f s\n%s"
+      (* TRANSLATORS: The first %s is the program name and version.
+         %02d:%02d:%02d.%02d on %02d %s %04d is
+         hours:minutes:seconds.milliseconds monthday month_name year.
+         %.3f is seconds. The final %s is blank. *)
+      (f_ "%s finished propagating changes at %02d:%02d:%02d.%02d on %02d %s %04d, %.3f s\n%s")
       (String.capitalize_ascii Uutil.myNameAndVersion)
       tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
       (min 99 (truncate (mod_float t 1. *. 100.)))

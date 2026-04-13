@@ -123,9 +123,9 @@ let event_is_deletion (_, evl, _, _) = List.exists is_deletion evl
 let st =
   try Lwt_inotify.init () with
   | Unix.Unix_error ((EMFILE | EBADF), _, _) ->
-      Watchercommon.error "unable to start inotify: system limit reached \
+      Watchercommon.error (s_ "unable to start inotify: system limit reached \
         (you can do a web search for \"inotify max_user_instances\" \
-        to understand the reasons and mitigations for this error)"
+        to understand the reasons and mitigations for this error)")
 
 module IntSet =
   Set.Make
@@ -174,7 +174,7 @@ let watch () =
     (Lwt.catch (fun () -> watch_rec ())
        (fun e ->
           Watchercommon.error
-            ("error while handling events: " ^ Watchercommon.format_exc e)))
+            (s_ "error while handling events: " ^ Watchercommon.format_exc e)))
 
 let i = ref 0
 
@@ -225,16 +225,16 @@ let add_watch path file follow =
     | ENOENT ->
         raise Watchercommon.Already_lost
     | ENOSPC ->
-        Watchercommon.error ("cannot add a watcher: system limit reached"
-            ^ " (you can do a web search for \"inotify max_user_watches\""
-            ^ " to understand the reasons and mitigations for this error)")
+        Watchercommon.error (s_ "cannot add a watcher: system limit reached \
+            (you can do a web search for \"inotify max_user_watches\" \
+            to understand the reasons and mitigations for this error)")
     | EACCES | ENOTDIR | ELOOP ->
         (* These errors should be well handled by Unison (they will
            result in errors during update detection *)
         ()
     | _ ->
         Watchercommon.error
-          (Format.sprintf "unexpected error while adding a watcher: %s"
+          (Format.sprintf (f_ "unexpected error while adding a watcher: %s")
           (Unix.error_message errno))
 
 end

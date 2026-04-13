@@ -2,14 +2,16 @@
    This file has been automatically generated, see docs.ml. *)
 
 let docs =
-    ("about", ("About Unison", 
-     "Unison File Synchronizer\n\
+    ("about", ((* TRANSLATORS: Section heading for manual in UI *)s_ "About Unison", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Unison File Synchronizer\n\
       Version 2.53.8\n\
       \n\
       "))
 ::
-    ("", ("Overview", 
-     "Overview\n\
+    ("", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Overview", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Overview\n\
       \n\
       \032  Unison is a file-synchronization tool for POSIX-compliant systems (e.g.\n\
       \032  BSDs, GNU/Linux, macOS) and Windows. It allows two replicas of a\n\
@@ -43,13 +45,15 @@ let docs =
       \n\
       "))
 ::
-    ("", ("Preface", 
-     "Preface\n\
+    ("", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Preface", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Preface\n\
       \n\
       "))
 ::
-    ("people", ("People", 
-     "People\n\
+    ("people", ((* TRANSLATORS: Section heading for manual in UI *)s_ "People", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "People\n\
       \n\
       \032  Benjamin Pierce (http://www.cis.upenn.edu/~bcpierce/) leads the Unison\n\
       \032  project. The current version of Unison was designed and implemented by\n\
@@ -79,8 +83,9 @@ let docs =
       \n\
       "))
 ::
-    ("obtaining", ("Obtaining Unison", 
-     "Obtaining Unison\n\
+    ("obtaining", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Obtaining Unison", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Obtaining Unison\n\
       \n\
       Source code\n\
       \n\
@@ -99,8 +104,9 @@ let docs =
       \n\
       "))
 ::
-    ("development", ("Community, Maintenance, and Development", 
-     "Community, Maintenance, and Development\n\
+    ("development", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Community, Maintenance, and Development", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Community, Maintenance, and Development\n\
       \n\
       \032  Many people use and contribute to Unison. This community has two main\n\
       \032  homes.\n\
@@ -123,8 +129,9 @@ let docs =
       \n\
       "))
 ::
-    ("copying", ("Copying", 
-     "Copying\n\
+    ("copying", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Copying", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Copying\n\
       \n\
       \032  This file is part of Unison.\n\
       \n\
@@ -144,8 +151,9 @@ let docs =
       \n\
       "))
 ::
-    ("ack", ("Acknowledgements", 
-     "Acknowledgements\n\
+    ("ack", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Acknowledgements", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Acknowledgements\n\
       \n\
       \032  Work on Unison has been supported by the National Science Foundation\n\
       \032  under grants CCR-9701826 and ITR-0113226, Principles and Practice of\n\
@@ -154,8 +162,9 @@ let docs =
       \n\
       "))
 ::
-    ("upgrading", ("Upgrading", 
-     "Upgrading\n\
+    ("upgrading", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Upgrading", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Upgrading\n\
       \n\
       \032  (This section is perhaps misplaced, but is early because it is far\n\
       \032  better to have at least skimmed it than to not know it exists.)\n\
@@ -250,8 +259,9 @@ let docs =
       \n\
       "))
 ::
-    ("tutorial", ("Tutorial", 
-     "Tutorial\n\
+    ("tutorial", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Tutorial", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Tutorial\n\
       \n\
       Preliminaries\n\
       \n\
@@ -641,8 +651,9 @@ let docs =
       \n\
       "))
 ::
-    ("basics", ("Basic Concepts", 
-     "Basic Concepts\n\
+    ("basics", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Basic Concepts", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Basic Concepts\n\
       \n\
       \032  To understand how Unison works, it is necessary to discuss a few\n\
       \032  straightforward concepts.\n\
@@ -812,8 +823,9 @@ let docs =
       \n\
       "))
 ::
-    ("failures", ("Invariants", 
-     "Invariants\n\
+    ("failures", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Invariants", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Invariants\n\
       \n\
       \032  Given the importance and delicacy of the job that it performs, it is\n\
       \032  important to understand both what a synchronizer does under normal\n\
@@ -944,15 +956,17 @@ let docs =
       \n\
       "))
 ::
-    ("", ("Reference Guide", 
-     "Reference Guide\n\
+    ("", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Reference Guide", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Reference Guide\n\
       \n\
       \032  This section covers the features of Unison in detail.\n\
       \n\
       "))
 ::
-    ("running", ("Running Unison", 
-     "Running Unison\n\
+    ("running", ((* TRANSLATORS: Section heading for manual in UI *)s_ "Running Unison", 
+     (* TRANSLATORS: This is auto-generated for the manual in UI.
+Please judge if translation is needed or not. *)s_ "Running Unison\n\
       \n\
       \032  There are several ways to start Unison.\n\
       \032    * Typing \226\128\156unison profile\226\128\157 on the command line. Unison will look for a\n\
@@ -1082,6 +1096,8 @@ let docs =
       \n\
       \032  Here are all the preferences supported by Unison. This list can be\n\
       \032  obtained by typing unison -help.\n\
+      \n\
+      \032Linked with DUMMY gettext\n\
       \n\
       Usage: unison [options]\n\
       \032   or unison root1 root2 [options]\n\
@@ -1393,7 +1409,7 @@ let docs =
       \032         Default is false.\n\
       \n\
       \032  contactquietly\n\
-      \032         If this flag is set, Unison will skip displaying the \226\128\152Contacting\n\
+      \032         If this flag is set, Unison will skip displaying the \226\128\153Contacting\n\
       \032         server\226\128\153 message (which some users find annoying) during startup.\n\
       \n\
       \032  copymax n\n\
@@ -1450,7 +1466,7 @@ let docs =
       \032  diff xxx\n\
       \032         This preference can be used to control the name and command-line\n\
       \032         arguments of the system utility used to generate displays of\n\
-      \032         file differences. The default is \226\128\152diff -u OLDER NEWER\226\128\153. If the\n\
+      \032         file differences. The default is \226\128\153diff -u OLDER NEWER\226\128\153. If the\n\
       \032         value of this preference contains the substrings CURRENT1 and\n\
       \032         CURRENT2, these will be replaced by the names of the files to be\n\
       \032         diffed. If the value of this preference contains the substrings\n\
@@ -1478,7 +1494,7 @@ let docs =
       \032  dumbtty\n\
       \032         When set to true, this flag makes the text mode user interface\n\
       \032         avoid trying to change any of the terminal settings. (Normally,\n\
-      \032         Unison puts the terminal in \226\128\152raw mode\226\128\153, so that it can do things\n\
+      \032         Unison puts the terminal in \226\128\153raw mode\226\128\153, so that it can do things\n\
       \032         like overwriting the current line.) This is useful, for example,\n\
       \032         when Unison runs in a shell inside of Emacs.\n\
       \n\
@@ -1496,7 +1512,7 @@ let docs =
       \n\
       \032  fastcheck xxx\n\
       \032         When this preference is set to true, Unison will use the\n\
-      \032         modification time and length of a file as a \226\128\152pseudo inode\n\
+      \032         modification time and length of a file as a \226\128\153pseudo inode\n\
       \032         number\226\128\153 when scanning replicas for updates, instead of reading\n\
       \032         the full contents of every file. (This does not apply to the\n\
       \032         very first run, when Unison will always scan all files\n\
@@ -1560,7 +1576,7 @@ let docs =
       \n\
       \032  follow xxx\n\
       \032         Including the preference -follow pathspec causes Unison to treat\n\
-      \032         symbolic links matching pathspec as \226\128\152invisible\226\128\153 and behave as if\n\
+      \032         symbolic links matching pathspec as \226\128\153invisible\226\128\153 and behave as if\n\
       \032         the object pointed to by the link had appeared literally at this\n\
       \032         position in the replica. See the section \226\128\156Symbolic Links\226\128\157 for\n\
       \032         more details. The syntax of pathspec is described in the section\n\
@@ -1650,11 +1666,11 @@ let docs =
       \032  ignorecase xxx\n\
       \032         When set to true, this flag causes Unison to treat filenames as\n\
       \032         case insensitive\226\128\148i.e., files in the two replicas whose names\n\
-      \032         differ in (upper- and lower-case) \226\128\152spelling\226\128\153 are treated as the\n\
+      \032         differ in (upper- and lower-case) \226\128\153spelling\226\128\153 are treated as the\n\
       \032         same file. When the flag is set to false, Unison will treat all\n\
       \032         filenames as case sensitive. Ordinarily, when the flag is set to\n\
       \032         default, filenames are automatically taken to be\n\
-      \032         case-insensitive if either host is running Windows or OSX. In\n\
+      \032         case-insensitive if either host is running Windows or macOS. In\n\
       \032         rare circumstances it may be useful to set the flag manually.\n\
       \n\
       \032  ignoreinodenumbers\n\
@@ -1730,7 +1746,7 @@ let docs =
       \032  label xxx\n\
       \032         Used in a profile to provide a descriptive string documenting\n\
       \032         its settings. (This is useful for users that switch between\n\
-      \032         several profiles, especially using the \226\128\152fast switch\226\128\153 feature of\n\
+      \032         several profiles, especially using the \226\128\153fast switch\226\128\153 feature of\n\
       \032         the graphical user interface.)\n\
       \n\
       \032  links xxx\n\
@@ -1805,8 +1821,8 @@ let docs =
       \032  mountpoint xxx\n\
       \032         Including the preference -mountpoint PATH causes Unison to\n\
       \032         check, at the end of update detection, that PATH exists within\n\
-      \032         each root, and abort if not. This can avoid synchronzing\n\
-      \032         whenremovable media is not mounted. This preference can be given\n\
+      \032         each root, and abort if not. This can avoid synchronzing when\n\
+      \032         removable media is not mounted. This preference can be given\n\
       \032         more than once. See the section \226\128\156Mount Points and Removable\n\
       \032         Media\226\128\157 .\n\
       \n\
@@ -1885,7 +1901,7 @@ let docs =
       \032  owner\n\
       \032         When this flag is set to true, the owner attributes of the files\n\
       \032         are synchronized. Whether the owner names or the owner\n\
-      \032         identifiers are synchronizeddepends on the preference numerids.\n\
+      \032         identifiers are synchronized depends on the preference numerids.\n\
       \n\
       \032  path xxx\n\
       \032         When no path preference is given, Unison will simply synchronize\n\
@@ -1966,7 +1982,7 @@ let docs =
       \n\
       \032         The two roots can be given in either order; Unison will sort\n\
       \032         them into a canonical order before doing anything else. It also\n\
-      \032         tries to \226\128\152canonize\226\128\153 the machine names and paths that appear in\n\
+      \032         tries to \226\128\153canonize\226\128\153 the machine names and paths that appear in\n\
       \032         the roots, so that, if Unison is invoked later with a slightly\n\
       \032         different name for the same root, it will be able to locate the\n\
       \032         correct archives.\n\
@@ -1983,7 +1999,7 @@ let docs =
       \032         Carbon-compatible ._ AppleDouble files. When the flag is set to\n\
       \032         false, Unison will not synchronize these data. Ordinarily, the\n\
       \032         flag is set to default, and these data are automatically\n\
-      \032         synchronized if either host is running OSX. In rare\n\
+      \032         synchronized if either host is running macOS. In rare\n\
       \032         circumstances it is useful to set the flag manually.\n\
       \n\
       \032  rsync\n\
@@ -2000,7 +2016,7 @@ let docs =
       \032         delete the contents of both roots, so that it can install its\n\
       \032         own files for testing. This flag only makes sense on the command\n\
       \032         line. When it is provided, no preference file is read: all\n\
-      \032         preferences must be specified on thecommand line. Also, since\n\
+      \032         preferences must be specified on the command line. Also, since\n\
       \032         the self-test procedure involves overwriting the roots and\n\
       \032         backup directory, the names of the roots and of the backupdir\n\
       \032         preference must include the string \"test\" or else the tests will\n\
@@ -2015,7 +2031,7 @@ let docs =
       \n\
       \032  showarchive\n\
       \032         When this preference is set, Unison will print out the \226\128\153true\n\
-      \032         names\226\128\153of the roots, in the same form as is expected by the\n\
+      \032         names\226\128\153 of the roots, in the same form as is expected by the\n\
       \032         rootalias preference.\n\
       \n\
       \032  silent\n\
@@ -2024,7 +2040,7 @@ let docs =
       \032         silent to true automatically sets the batch preference to true.\n\
       \n\
       \032  socket xxx\n\
-      \032         Start unison as a server listening on a TCP socket (with TCP\n\
+      \032         Start Unison as a server listening on a TCP socket (with TCP\n\
       \032         port number as argument) or a local socket (aka Unix domain\n\
       \032         socket) (with socket path as argument).\n\
       \n\
@@ -2053,7 +2069,7 @@ let docs =
       \032  sortnewfirst\n\
       \032         When this flag is set, the user interface will list newly\n\
       \032         created files before all others. This is useful, for example,\n\
-      \032         for checking that newly created files are not \226\128\152junk\226\128\153, i.e., ones\n\
+      \032         for checking that newly created files are not \226\128\153junk\226\128\153, i.e., ones\n\
       \032         that should be ignored or deleted rather than synchronized.\n\
       \n\
       \032  source xxx\n\
@@ -2110,8 +2126,8 @@ let docs =
       \032         1 encoding will be compared byte-for-byte, even if they may be\n\
       \032         valid characters in some other encoding). When Unison runs in\n\
       \032         case sensitive mode, this flag only makes a difference if one\n\
-      \032         host is running Mac OS X. Under Mac OS X, it selects whether\n\
-      \032         comparing the filenames up to decomposition, or byte-for-byte.\n\
+      \032         host is running macOS. Under macOS, it selects whether comparing\n\
+      \032         the filenames up to decomposition, or byte-for-byte.\n\
       \n\
       \032  version\n\
       \032         Print the current version number and exit. (This option only\n\

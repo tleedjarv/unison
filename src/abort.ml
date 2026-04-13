@@ -22,13 +22,13 @@ let debug = Trace.debug "abort"
 let maxerrors =
   Prefs.createInt "maxerrors" 1
     ~category:(`Advanced `General)
-    "maximum number of errors before a directory transfer is aborted"
-    "This preference controls after how many errors Unison aborts a \
+    (s_ "maximum number of errors before a directory transfer is aborted")
+    (s_ "This preference controls after how many errors Unison aborts a \
      directory transfer.  Setting it to a large number allows Unison \
      to transfer most of a directory even when some files fail to be \
      copied.  The default is 1.  If the preference is set too high, \
      Unison may take a long time to abort in case of repeated \
-     failures (for instance, when the disk is full)."
+     failures (for instance, when the disk is full).")
 
 (****)
 
@@ -62,8 +62,11 @@ let all () = abortAll := true
 
 let isAll () = !abortAll
 
+let abortedByUserRequestExn = Util.Transient (s_ "Aborted by user request")
+let abortedExn = Util.Transient (s_ "Aborted")
+
 let checkAll () =
-  if !abortAll then raise (Util.Transient "Aborted by user request")
+  if !abortAll then raise abortedByUserRequestExn
 
 let check id =
   debug (fun() -> Util.msg "Checking line %s\n" (Uutil.File.toString id));
@@ -71,9 +74,9 @@ let check id =
   if errorCount id >= Prefs.read maxerrors then begin
     debug (fun() ->
       Util.msg "Abort failure for line %s\n" (Uutil.File.toString id));
-    raise (Util.Transient "Aborted")
+    raise abortedExn
   end
 
 let testException e =
-  (e = Util.Transient "Aborted") ||
-  (e = Util.Transient "Aborted by user request")
+  (e = abortedExn) ||
+  (e = abortedByUserRequestExn)

@@ -60,23 +60,23 @@ let printVersionAndExit =
   Prefs.createBool versionPrefName false
     ~category:(`Basic `General)
     ~cli_only:true
-    "print version and exit"
-    ("Print the current version number and exit.  "
-     ^ "(This option only makes sense on the command line.)")
+    (s_ "print version and exit")
+    (s_ "Print the current version number and exit.  \
+     (This option only makes sense on the command line.)")
 
 let docsPrefName = "doc"
 let docs =
   Prefs.createString docsPrefName ""
     ~category:(`Basic `General)
     ~cli_only:true
-    "show documentation ('-doc topics' lists topics)"
-    (  "The command-line argument \\texttt{-doc \\ARG{secname}} causes unison to "
-       ^ "display section  \\ARG{secname} of the manual on the standard output "
-       ^ "and then exit.   Use \\verb|-doc all| to display the whole manual, "
-       ^ "which includes exactly the same information as the printed and HTML "
-       ^ "manuals, modulo "
-       ^ "formatting.  Use \\verb|-doc topics| to obtain a list of the "
-       ^ "names of the various sections that can be printed.")
+    (s_ "show documentation ('-doc topics' lists topics)")
+    (s_ "The command-line argument \\texttt{-doc \\ARG{secname}} causes unison to \
+       display section  \\ARG{secname} of the manual on the standard output \
+       and then exit.   Use \\verb|-doc all| to display the whole manual, \
+       which includes exactly the same information as the printed and HTML \
+       manuals, modulo \
+       formatting.  Use \\verb|-doc topics| to obtain a list of the \
+       names of the various sections that can be printed.")
 
 let prefsdocsPrefName = "prefsdocs"
 let prefsdocs =
@@ -106,10 +106,10 @@ let socket =
   Prefs.createString socketPrefName ""
     ~category:(`Advanced `Remote)
     ~cli_only:true
-    "act as a server on a socket"
-    ("Start " ^ Uutil.myName ^ " as a server listening on a TCP socket "
-     ^ "(with TCP port number as argument) or a local socket (aka Unix "
-     ^ "domain socket) (with socket path as argument).")
+    (s_ "act as a server on a socket")
+    (s_ "Start Unison as a server listening on a TCP socket \
+     (with TCP port number as argument) or a local socket (aka Unix \
+     domain socket) (with socket path as argument).")
 
 let serverHostNameAlias = "host"
 let serverHostName = "listen"
@@ -117,12 +117,12 @@ let serverHost =
   Prefs.createString serverHostName ""
     ~category:(`Advanced `Remote)
     ~cli_only:true
-    "listen on this name or addr in server socket mode (can repeat)"
-    ("When acting as a server on a TCP socket, Unison will by default listen "
-     ^ "on \"any\" address (0.0.0.0 and [::]).  This command-line argument "
-     ^ "allows to specify a different listening address and can be repeated "
-     ^ "to listen on multiple addresses.  Listening address can be specified "
-     ^ "as a host name or an IP address.")
+    (s_ "listen on this name or addr in server socket mode (can repeat)")
+    (s_ "When acting as a server on a TCP socket, Unison will by default listen \
+     on \"any\" address (0.0.0.0 and [::]).  This command-line argument \
+     allows to specify a different listening address and can be repeated \
+     to listen on multiple addresses.  Listening address can be specified \
+     as a host name or an IP address.")
 let () = Prefs.alias serverHost serverHostNameAlias
 
 (* User preference for which UI to use if there is a choice *)
@@ -131,25 +131,25 @@ let interface =
   Prefs.create uiPrefName Uicommon.Graphic
     ~category:(`Advanced `General)
     ~cli_only:true
-    "select UI ('text' or 'graphic'); command-line only"
-    ("This preference selects either the graphical or the textual user "
-     ^ "interface.  Legal values are \\verb|graphic| or \\verb|text|.  "
-     ^ "\n\nBecause this option is processed specially during Unison's "
-     ^ "start-up sequence, it can {\\em only} be used on the command line.  "
-     ^ "In preference files it has no effect."
-     ^ "\n\nIf "
-     ^ "the Unison executable was compiled with only a textual interface, "
-     ^ "this option has "
-     ^ "no effect.  (The pre-compiled binaries are all compiled with both "
-     ^ "interfaces available.)")
+    (s_ "select UI ('text' or 'graphic'); command-line only")
+    (s_ "This preference selects either the graphical or the textual user \
+     interface.  Legal values are \\verb|graphic| or \\verb|text|.  \
+     \n\nBecause this option is processed specially during Unison's \
+     start-up sequence, it can {\\em only} be used on the command line.  \
+     In preference files it has no effect.\
+     \n\nIf \
+     the Unison executable was compiled with only a textual interface, \
+     this option has \
+     no effect.  (The pre-compiled binaries are all compiled with both \
+     interfaces available.)")
     (fun _ -> function
         "text" -> Uicommon.Text
       | "graphic" -> Uicommon.Graphic
       | other ->
-          raise (Prefs.IllegalValue ("option ui :\n\
+          raise (Prefs.IllegalValue (Printf.sprintf (f_ "option ui :\n\
                                       text -> textual user interface\n\
-                                      graphic -> graphic user interface\n"
-                                      ^other^ " is not a legal value")))
+                                      graphic -> graphic user interface\n\
+                                      %s is not a legal value") other)))
     (function Uicommon.Text -> ["text"]
       | Uicommon.Graphic -> ["graphic"])
     Uicommon.minterface
@@ -162,7 +162,7 @@ let catch_all f =
       (* Util.msg "Done catch_all...\n"; *)
     with Prefs.IllegalValue str -> raise (Util.Fatal str)
   with e ->
-    Util.msg "Unison server failed: %s\n" (Uicommon.exn2string e);
+    Util.msg (f_ "Unison server failed: %s\n") (Uicommon.exn2string e);
     (* A final desperate attempt to print out some debug information.
        If we are really-really out of memory then this may fail but
        then it's unlikely we reach this point anyway. *)
@@ -185,7 +185,7 @@ let init () = begin
 
   (* Print version if requested *)
   if Util.StringMap.mem versionPrefName argv then begin
-    gui_safe_printf "%s version %s\n" Uutil.myName Uutil.myVersion;
+    gui_safe_printf (f_ "%s version %s\n") Uutil.myName Uutil.myVersion;
     exit 0
   end;
 
@@ -213,16 +213,16 @@ let init () = begin
       [] ->
         assert false
     | "topics"::_ ->
-        Printf.printf "Documentation topics:\n";
+        Printf.printf (f_ "Documentation topics:\n");
         Safelist.iter
           (fun (sn,(n,doc)) ->
             if sn<>"" then Printf.printf "   %12s %s\n" sn n)
           Strings.docs;
         Printf.printf
-          "\nType \"%s -doc <topic>\" for detailed information about <topic>\n"
+          (f_ "\nType \"%s -doc <topic>\" for detailed information about <topic>\n")
           Uutil.myName;
         Printf.printf
-          "or \"%s -doc all\" for the whole manual\n\n"
+          (f_ "or \"%s -doc all\" for the whole manual\n\n")
           Uutil.myName
     | "all"::_ ->
         Printf.printf "\n";
@@ -235,9 +235,9 @@ let init () = begin
           Printf.printf "\n%s\n" d
         with
           Not_found ->
-            Printf.printf "Documentation topic %s not recognized:"
+            Printf.printf (f_ "Documentation topic %s not recognized:")
               topic;
-            Printf.printf "\nType \"%s -doc topics\" for a list\n"
+            Printf.printf (f_ "\nType \"%s -doc topics\" for a list\n")
               Uutil.myName)
     end;
     exit 0

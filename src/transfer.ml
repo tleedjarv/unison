@@ -449,8 +449,8 @@ struct
       raise
         (Util.Transient
            (Format.sprintf
-              "Internal error during rsync transfer (preprocess), \
-               please report: %d %d - %d %d"
+              (f_ "Internal error during rsync transfer (preprocess), \
+               please report: %d %d - %d %d")
               sigs.blockCount (Bigarray.Array1.dim sigs.weakChecksum)
               (sigs.blockCount * sigs.checksumSize)
               (Bigarray.Array1.dim sigs.strongChecksum)));
@@ -665,8 +665,8 @@ struct
       raise
         (Util.Transient
            (Format.sprintf
-              "Internal error during rsync transfer (compression), \
-               please report: %d %d - %d %d"
+              (f_ "Internal error during rsync transfer (compression), \
+               please report: %d %d - %d %d")
               sigs.blockCount (Bigarray.Array1.dim sigs.weakChecksum)
               (sigs.blockCount * sigs.checksumSize)
               (Bigarray.Array1.dim sigs.strongChecksum)));
@@ -731,9 +731,9 @@ struct
       then
         raise
           (Util.Transient
-             (Format.sprintf "Internal error during rsync transfer, \
+             (Format.sprintf (f_ "Internal error during rsync transfer, \
                               please report: \
-                              k:%d/%d pos:%d csSize:%d dim:%d"
+                              k:%d/%d pos:%d csSize:%d dim:%d")
                 k sigs.blockCount pos sigs.checksumSize
                 (Bigarray.Array1.dim sigs.strongChecksum)));
       fingerprintMatchRec sigs.strongChecksum pos fp sigs.checksumSize

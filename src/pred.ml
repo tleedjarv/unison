@@ -34,9 +34,9 @@ type t =
   }
 
 let error_msg s =
-   Printf.sprintf "bad pattern: %s\n\
+   Printf.sprintf (f_ "bad pattern: %s\n\
     A pattern must be introduced by one of the following keywords:\n\
- \032   Name, Path, BelowPath or Regex." s
+ \032   Name, Path, BelowPath or Regex.") s
 
 (* [select str [(p1, f1), ..., (pN, fN)] fO]: (roughly) *)
 (* match str with                                       *)
@@ -67,7 +67,7 @@ let compile_pattern clause =
         (* Actually find "(^| )mapSep( |$)" (by surrounding [clause] by spaces
            possibly removed by previous trimming) to detect an empty pattern
            and/or an empty string *)
-      ("", _)     -> raise (Prefs.IllegalValue "Empty pattern")
+      ("", _)     -> raise (Prefs.IllegalValue (s_ "Empty pattern"))
     | (p, None)   -> (p, None)
     | (p, Some v) -> (p, Some (Util.trimWhitespace v)) in
   let compiled =
@@ -77,31 +77,32 @@ let compile_pattern clause =
          ("Path ", fun str ->
             if str<>"" && str.[0] = '/' then
               raise (Prefs.IllegalValue
-                       ("Malformed pattern: "
-                        ^ "\"" ^ p ^ "\"\n"
-                        ^ "'Path' patterns may not begin with a slash; "
-                        ^ "only relative paths are allowed."));
+                       (Printf.sprintf (f_ "Malformed pattern: \
+                        \"%s\"\n\
+                        'Path' patterns may not begin with a slash; \
+                        only relative paths are allowed.") p));
             Rx.globx str);
          ("BelowPath ", fun str ->
             if str<>"" && str.[0] = '/' then
               raise (Prefs.IllegalValue
-                       ("Malformed pattern: "
-                        ^ "\"" ^ p ^ "\"\n"
-                        ^ "'BelowPath' patterns may not begin with a slash; "
-                        ^ "only relative paths are allowed."));
+                       (Printf.sprintf (f_ "Malformed pattern: \
+                        \"%s\"\n\
+                        'BelowPath' patterns may not begin with a slash; \
+                        only relative paths are allowed.") p));
             Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]);
          ("Regex ", Rx.rx)]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
     with
       Rx.Parse_error | Rx.Not_supported ->
-        raise (Prefs.IllegalValue ("Malformed pattern \"" ^ p ^ "\"."))
+        raise (Prefs.IllegalValue
+          (Printf.sprintf (f_ "Malformed pattern \"%s\".") p))
     end in
   (compiled, v)
 
 let create name ~category ?(local=false) ?send ?(initial = []) fulldoc =
   let pref =
     Prefs.create name ~category ~local ?send initial
-      ("add a pattern to the " ^ name ^ " list")
+      (Printf.sprintf (f_ "add a pattern to the %s list") name)
       fulldoc
       (fun oldList string ->
          ignore (compile_pattern string); (* Check well-formedness *)

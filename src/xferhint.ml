@@ -21,12 +21,12 @@ let debug = Trace.debug "xferhint"
 let xferbycopying =
   Prefs.createBool "xferbycopying" true
     ~category:(`Advanced `Remote)
-    "optimize transfers using local copies"
-    ("When this preference is set, Unison will try to avoid transferring "
-   ^ "file contents across the network by recognizing when a file with the "
-   ^ "required contents already exists in the target replica.  This usually "
-   ^ "allows file moves to be propagated very quickly.  The default value is "
-   ^ "\\texttt{true}.  ")
+    (s_ "optimize transfers using local copies")
+    (s_ "When this preference is set, Unison will try to avoid transferring \
+      file contents across the network by recognizing when a file with the \
+      required contents already exists in the target replica.  This usually \
+      allows file moves to be propagated very quickly.  The default value is \
+      \\texttt{true}.")
 
 module FPMap =
   Hashtbl.Make

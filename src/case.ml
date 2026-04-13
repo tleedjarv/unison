@@ -23,16 +23,16 @@
 let caseInsensitiveMode =
   Prefs.createBoolWithDefault "ignorecase"
     ~category:(`Advanced `Sync)
-    "identify upper/lowercase filenames (true/false/default)"
-    ("When set to {\\tt true}, this flag causes Unison to treat "
-     ^ "filenames as case insensitive---i.e., files in the two "
-     ^ "replicas whose names differ in (upper- and lower-case) `spelling' "
-     ^ "are treated as the same file.  When the flag is set to {\\tt false}, Unison "
-     ^ "will treat all filenames as case sensitive.  Ordinarily, when the flag is "
-     ^ "set to {\\tt default}, "
-     ^ "filenames are automatically taken to be case-insensitive if "
-     ^ "either host is running Windows or OSX.  In rare circumstances it may be  "
-     ^ "useful to set the flag manually.")
+    (s_ "identify upper/lowercase filenames (true/false/default)")
+    (s_ "When set to {\\tt true}, this flag causes Unison to treat \
+     filenames as case insensitive---i.e., files in the two \
+     replicas whose names differ in (upper- and lower-case) 'spelling' \
+     are treated as the same file.  When the flag is set to {\\tt false}, Unison \
+     will treat all filenames as case sensitive.  Ordinarily, when the flag is \
+     set to {\\tt default}, \
+     filenames are automatically taken to be case-insensitive if \
+     either host is running Windows or macOS.  In rare circumstances it may be \
+     useful to set the flag manually.")
 
 (* Defining this variable as a preference ensures that it will be propagated
    to the other host during initialization *)
@@ -44,17 +44,17 @@ let someHostIsInsensitive =
 let unicode =
   Prefs.createBoolWithDefault "unicode"
     ~category:(`Advanced `General)
-    "assume Unicode encoding in case insensitive mode"
-    "When set to {\\tt true}, this flag causes Unison to perform \
+    (s_ "assume Unicode encoding in case insensitive mode")
+    (s_ "When set to {\\tt true}, this flag causes Unison to perform \
      case insensitive file comparisons assuming Unicode encoding.  \
      This is the default.  When the flag is set to {\\tt false}, \
      Latin 1 encoding is assumed (this means that all bytes that are \
      not letters in Latin 1 encoding will be compared byte-for-byte, \
      even if they may be valid characters in some other encoding).  \
      When Unison runs in case sensitive mode, this flag only makes \
-     a difference if one host is running Mac OS X.  \
-     Under Mac OS X, it selects whether comparing the filenames up to \
-     decomposition, or byte-for-byte."
+     a difference if one host is running macOS.  \
+     Under macOS, it selects whether comparing the filenames up to \
+     decomposition, or byte-for-byte.")
 
 let unicodeEncoding =
   Prefs.createBool "unicodeEnc" false

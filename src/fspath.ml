@@ -284,16 +284,16 @@ let canonizeFspath p0 =
           (* it works for (2), and on (3) it may leave a mess for someone    *)
           (* else to pick up.                                                *)
           if isRootDirLocalString p || isInvalidWinPath p then raise
-            (Util.Fatal (Printf.sprintf
-               "Cannot find canonical name of root directory %s\n(%s)%s" p why
-               (if isInvalidWinPath p then "\nMaybe you need to add a "
-                 ^ "backslash at end of the root path?" else "")));
+            (Util.Fatal (Printf.sprintf (f_
+               "Cannot find canonical name of root directory %s\n(%s)%s") p why
+               (if isInvalidWinPath p then s_ "\nMaybe you need to add a \
+                 backslash at end of the root path?" else "")));
           let parent = winSafeDirname p in
           let parent' = begin
             (try System.chdir parent with
-               Sys_error why2 -> raise (Util.Fatal (Printf.sprintf
+               Sys_error why2 -> raise (Util.Fatal (Printf.sprintf (f_
                  "Cannot find canonical name of %s: unable to cd either to it \
-(%s)\nor to its parent %s\n(%s)" p why parent why2)));
+(%s)\nor to its parent %s\n(%s)") p why parent why2)));
             System.getcwd () end in
           System.chdir original;
           let bn = Filename.basename p in
@@ -322,7 +322,9 @@ let canonizeFspath p0 =
 *)
 
 let canonize x =
-  Util.convertUnixErrorsToFatal "canonizing path" (fun () -> canonizeFspath x)
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  Util.convertUnixErrorsToFatal (s_ "canonizing path") (fun () -> canonizeFspath x)
 
 let maxlinks = 100
 let findWorkingDir fspath path =
@@ -333,7 +335,7 @@ let findWorkingDir fspath path =
       if n>=maxlinks then
         raise
           (Util.Transient (Printf.sprintf
-             "Too many symbolic links from %s" abspath));
+             (f_ "Too many symbolic links from %s") abspath));
       try
         (* Relevant on Windows: We can (and should) use [extendedPath] only
            on the very first input, which is known to satisfy [Fspath.t]
@@ -381,7 +383,7 @@ let findWorkingDir fspath path =
     followlinks 0 abspath in
   if isRootDirLocalString realpath then
     raise (Util.Transient(Printf.sprintf
-                            "The path %s is a root directory" abspath));
+                            (f_ "The path %s is a root directory") abspath));
   let p = Filename.basename realpath in
   debug
     (fun() ->

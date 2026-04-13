@@ -35,17 +35,17 @@ let myNameCapitalized = String.capitalize_ascii Uutil.myName
  **********************************************************************)
 
 let tryAgainMessage =
-  Printf.sprintf
+  Printf.sprintf (f_
 "You can use %s to synchronize a local directory with another local directory,
 or with a remote directory.
 You can also synchronize a single file if you enter a file name.
 
-Please enter the first (local) directory that you want to synchronize."
+Please enter the first (local) directory that you want to synchronize.")
 myNameCapitalized
 
 (* ---- *)
 
-let helpmessage = Printf.sprintf
+let helpmessage = Printf.sprintf (f_
 "%s can synchronize a local directory with another local directory, or with
 a directory on a remote machine. You can also synchronize a single file
 by entering a file name instead of a directory.
@@ -67,7 +67,7 @@ server running on the remote machine, listening to the port that you
 specify here.  (Use \"%s -socket xxx\" on the remote machine to
 start the %s server.)  You must enter the host, port, and the directory
 on the remote machine (relative to the working directory of the
-%s server running on that machine)."
+%s server running on that machine).")
 myNameCapitalized myNameCapitalized myNameCapitalized myNameCapitalized myNameCapitalized myNameCapitalized myNameCapitalized
 
 (**********************************************************************
@@ -141,7 +141,7 @@ let getLock f =
         raise e
   in
   if !busy then
-    Trace.status "Synchronizer is busy, please wait.."
+    Trace.status (s_ "Synchronizer is busy, please wait..")
   else begin
     busy := true; protect ~finally:(fun () -> busy := false) f
   end
@@ -331,9 +331,9 @@ let safeExit () =
   if not !inExit then begin
     inExit := true;
     if not !busy then exit 0 else
-    if twoBox ~parent:(toplevelWindow ()) ~title:"Premature exit"
+    if twoBox ~parent:(toplevelWindow ()) ~title:(s_ "Premature exit")
         ~astock:`YES ~bstock:`NO
-        "Unison is working, exit anyway ?"
+        (s_ "Unison is working, exit anyway ?")
     then exit 0;
     inExit := false
   end
@@ -571,7 +571,7 @@ let kib2str v =
     Format.sprintf "%.0f B" v
 
 let statistics () =
-  let title = "Statistics" in
+  let title = s_ "Statistics" in
   let t = GWindow.dialog ~title ~parent:(toplevelWindow ()) () in
   let t_dismiss = GButton.button ~stock:`CLOSE ~packing:t#action_area#add () in
   t_dismiss#grab_default ();
@@ -594,18 +594,18 @@ let statistics () =
   l#selection#set_mode `NONE;
   ignore (l#append_column (GTree.view_column ~title:""
     ~renderer:(GTree.cell_renderer_text [], ["text", c_1]) ()));
-  ignore (l#append_column (GTree.view_column ~title:"Client"
+  ignore (l#append_column (GTree.view_column ~title:(s_ "Client")
     ~renderer:(GTree.cell_renderer_text [`XALIGN 1.0], ["text", c_client]) ()));
-  ignore (l#append_column (GTree.view_column ~title:"Server"
+  ignore (l#append_column (GTree.view_column ~title:(s_ "Server")
     ~renderer:(GTree.cell_renderer_text [`XALIGN 1.0], ["text", c_server]) ()));
-  ignore (l#append_column (GTree.view_column ~title:"Total"
+  ignore (l#append_column (GTree.view_column ~title:(s_ "Total")
     ~renderer:(GTree.cell_renderer_text [`XALIGN 1.0], ["text", c_total]) ()));
   let rate_row = lst#append () in
-  ignore (lst#set ~row:rate_row ~column:c_1 "Reception rate");
+  ignore (lst#set ~row:rate_row ~column:c_1 (s_ "Reception rate"));
   let receive_row = lst#append () in
-  ignore (lst#set ~row:receive_row ~column:c_1 "Data received");
+  ignore (lst#set ~row:receive_row ~column:c_1 (s_ "Data received"));
   let data_row = lst#append () in
-  ignore (lst#set ~row:data_row ~column:c_1 "File data written");
+  ignore (lst#set ~row:data_row ~column:c_1 (s_ "File data written"));
 
   ignore (t#event#connect#map ~callback:(fun _ ->
     emission#activate true;
@@ -687,7 +687,7 @@ let gui_safe_eprintf fmt =
     if System.has_stderr ~info:s then Printf.eprintf "%s%!" s) fmt
 
 let fatalError ?(quit=false) message =
-  let title = if quit then "Fatal error" else "Error" in
+  let title = if quit then s_ "Fatal error" else s_ "Error" in
   let () =
     Trace.sendLogMsgsToStderr := false; (* We don't know if stderr is available *)
     try Trace.log (title ^ ": " ^ message ^ "\n")
@@ -723,7 +723,7 @@ let fatalError ?(quit=false) message =
 let fatalErrorHandler = ref (fatalError ~quit:true)
 
 let stackOverflowNoQuitMsg () =
-  "Stack overflow. This could indicate a programming error.\n\
+  s_ "Stack overflow. This could indicate a programming error.\n\
     You should be able to continue without having to quit \
     the application but the error may repeat.\n\n\
     Technical information in case you need to report a bug:\n"
@@ -732,7 +732,7 @@ let stackOverflowNoQuitMsg () =
 (* ------ *)
 
 let getFirstRoot () =
-  let t = GWindow.dialog ~parent:(toplevelWindow ()) ~title:"Root selection"
+  let t = GWindow.dialog ~parent:(toplevelWindow ()) ~title:(s_ "Root selection")
       ~modal:true ~resizable:true () in
   t#misc#grab_focus ();
 
@@ -744,11 +744,11 @@ let getFirstRoot () =
 
   let f1 = GPack.hbox ~spacing:4
       ~packing:(t#vbox#pack ~expand:true ~padding:4) () in
-  ignore (GMisc.label ~text:"Dir:" ~packing:(f1#pack ~expand:false) ());
+  ignore (GMisc.label ~text:(s_ "Dir:") ~packing:(f1#pack ~expand:false) ());
   let fileE = GEdit.entry ~packing:f1#add () in
   fileE#misc#grab_focus ();
   let b = GFile.chooser_button ~action:`SELECT_FOLDER
-    ~title:"Select a local directory"
+    ~title:(s_ "Select a local directory")
     ~packing:(f1#pack ~expand:false) () in
   ignore (b#connect#selection_changed ~callback:(fun () ->
             if not fileE#is_focus then
@@ -778,11 +778,11 @@ let getFirstRoot () =
 (* ------ *)
 
 let getSecondRoot () =
-  let t = GWindow.dialog ~parent:(toplevelWindow ()) ~title:"Root selection"
+  let t = GWindow.dialog ~parent:(toplevelWindow ()) ~title:(s_ "Root selection")
       ~modal:true ~resizable:true () in
   t#misc#grab_focus ();
 
-  let message = "Please enter the second directory you want to synchronize." in
+  let message = s_ "Please enter the second directory you want to synchronize." in
 
   let vb = t#vbox in
   let hb = GPack.hbox ~packing:(vb#pack ~expand:false ~padding:15) () in
@@ -791,7 +791,7 @@ let getSecondRoot () =
            ~packing:(hb#pack ~expand:false ~padding:15) ());
   let helpB = GButton.button ~stock:`HELP ~packing:hb#add () in
   ignore (helpB#connect#clicked
-            ~callback:(fun () -> okBox ~parent:t ~title:"Picking roots" ~typ:`INFO
+            ~callback:(fun () -> okBox ~parent:t ~title:(s_ "Picking roots") ~typ:`INFO
                 ~message:helpmessage));
 
   let result = ref None in
@@ -799,11 +799,11 @@ let getSecondRoot () =
   let f = GPack.vbox ~packing:(vb#pack ~expand:false) () in
 
   let f1 = GPack.hbox ~spacing:4 ~packing:f#add () in
-  ignore (GMisc.label ~text:"Directory:" ~packing:(f1#pack ~expand:false) ());
+  ignore (GMisc.label ~text:(s_ "Directory:") ~packing:(f1#pack ~expand:false) ());
   let fileE = GEdit.entry ~packing:f1#add () in
   fileE#misc#grab_focus ();
   let b = GFile.chooser_button ~action:`SELECT_FOLDER
-    ~title:"Select a local directory"
+    ~title:(s_ "Select a local directory")
     ~packing:(f1#pack ~expand:false) () in
   ignore (b#connect#selection_changed ~callback:(fun () ->
             if not fileE#is_focus then
@@ -813,22 +813,22 @@ let getSecondRoot () =
 
   let f0 = GPack.hbox ~spacing:4 ~packing:f#add () in
   let localB = GButton.radio_button ~packing:(f0#pack ~expand:false)
-      ~label:"Local" () in
+      ~label:(s_ "Local") () in
   let sshB = GButton.radio_button ~group:localB#group
       ~packing:(f0#pack ~expand:false)
       ~label:"SSH" () in
   let socketB = GButton.radio_button ~group:sshB#group
-      ~packing:(f0#pack ~expand:false) ~label:"Socket" () in
+      ~packing:(f0#pack ~expand:false) ~label:(s_ "Socket") () in
 
   let f2 = GPack.hbox ~spacing:4 ~packing:f#add () in
-  ignore (GMisc.label ~text:"Host:" ~packing:(f2#pack ~expand:false) ());
+  ignore (GMisc.label ~text:(s_ "Host:") ~packing:(f2#pack ~expand:false) ());
   let hostE = GEdit.entry ~packing:f2#add () in
 
-  ignore (GMisc.label ~text:"(Optional) User:"
+  ignore (GMisc.label ~text:(s_ "(Optional) User:")
             ~packing:(f2#pack ~expand:false) ());
   let userE = GEdit.entry ~packing:f2#add () in
 
-  ignore (GMisc.label ~text:"Port:"
+  ignore (GMisc.label ~text:(s_ "Port:")
             ~packing:(f2#pack ~expand:false) ());
   let portE = GEdit.entry ~packing:f2#add () in
 
@@ -882,12 +882,12 @@ let getSecondRoot () =
       t#destroy ()
     with Failure _ ->
       if portE#text="" then
-        okBox ~parent:t ~title:"Error" ~typ:`ERROR ~message:"Please enter a port"
-      else okBox ~parent:t ~title:"Error" ~typ:`ERROR
-          ~message:"The port you specify must be an integer"
+        okBox ~parent:t ~title:(s_ "Error") ~typ:`ERROR ~message:(s_ "Please enter a port")
+      else okBox ~parent:t ~title:(s_ "Error") ~typ:`ERROR
+          ~message:(s_ "The port you specify must be an integer")
     | Util.Transient s | Util.Fatal s | Invalid_argument s | Prefs.IllegalValue s ->
       okBox ~parent:t ~title:"Error" ~typ:`ERROR
-        ~message:("Something's wrong with the values you entered, try again.\n" ^ s) in
+        ~message:(s_ "Something's wrong with the values you entered, try again.\n" ^ s) in
   let f3 = t#action_area in
   let cancelButton =
     GButton.button ~stock:`CANCEL ~packing:f3#add () in
@@ -925,7 +925,7 @@ let passwordDialogs = ref []
 let createPasswordDialog passwordDialog rootName msg response =
   let t =
     GWindow.dialog ~parent:(toplevelWindow ())
-      ~title:"Unison: SSH connection" ~position:`CENTER
+      ~title:(s_ "Unison: SSH connection") ~position:`CENTER
       ~modal:true ~resizable:false ~border_width:6 () in
   t#misc#grab_focus ();
 
@@ -933,7 +933,7 @@ let createPasswordDialog passwordDialog rootName msg response =
 
   let header =
     primaryText
-      (Format.sprintf "Connecting to '%s'..." (Unicode.protect rootName)) in
+      (Format.sprintf (f_ "Connecting to '%s'...") (Unicode.protect rootName)) in
 
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
   ignore (GMisc.image ~stock:`DIALOG_AUTHENTICATION ~icon_size:`DIALOG
@@ -1136,7 +1136,7 @@ let createProfile parent =
   let assistant = GAssistant.assistant ~modal:true () in
   assistant#set_transient_for parent#as_window;
   assistant#set_modal true;
-  assistant#set_title "Profile Creation";
+  assistant#set_title (s_ "Profile Creation");
 
   let empty s = s = "" in
   let nonEmpty s = s <> "" in
@@ -1152,12 +1152,12 @@ let createProfile parent =
   let intro =
     GMisc.label
       ~xpad:12 ~ypad:12
-      ~text:"Welcome to the Unison Profile Creation Assistant.\n\n\
-             Click \"Next\" to begin."
+      ~text:(s_ "Welcome to the Unison Profile Creation Assistant.\n\n\
+             Click \"Next\" to begin.")
     () in
   ignore
     (assistant#append_page
-       ~title:"Profile Creation"
+       ~title:(s_ "Profile Creation")
        ~page_type:`INTRO
        ~complete:true
       intro#as_widget);
@@ -1166,8 +1166,8 @@ let createProfile parent =
   let description = GPack.vbox ~border_width:12 ~spacing:6 () in
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
-       ~text:"Please enter the name of the profile and \
-              possibly a short description."
+       ~text:(s_ "Please enter the name of the profile and \
+              possibly a short description.")
        ~packing:(description#pack ~expand:false) ());
   let tbl =
     let al = GBin.alignment ~packing:(description#pack ~expand:false) () in
@@ -1178,14 +1178,14 @@ let createProfile parent =
     GEdit.entry ~activates_default:true
       ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X) () in
   let name = GtkReact.entry nameEntry in
-  ignore (GMisc.label ~text:"Profile _name:" ~xalign:0.
+  ignore (GMisc.label ~text:(s_ "Profile _name:") ~xalign:0.
             ~use_underline:true ~mnemonic_widget:nameEntry
             ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
   let labelEntry =
     GEdit.entry ~activates_default:true
        ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X) () in
   let label = GtkReact.entry labelEntry in
-  ignore (GMisc.label ~text:"_Description:" ~xalign:0.
+  ignore (GMisc.label ~text:(s_ "_Description:") ~xalign:0.
             ~use_underline:true ~mnemonic_widget:labelEntry
             ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
   let existingProfileLabel =
@@ -1193,7 +1193,7 @@ let createProfile parent =
   in
   adjustSize existingProfileLabel;
   GtkReact.label_markup existingProfileLabel
-    (name >> fun s -> Format.sprintf " <i>Profile %s already exists.</i>"
+    (name >> fun s -> Format.sprintf (f_ " <i>Profile %s already exists.</i>")
                         (escapeMarkup s));
   let profileExists =
     name >> fun s -> s <> "" && System.file_exists (Prefs.profilePathname s)
@@ -1202,7 +1202,7 @@ let createProfile parent =
 
   ignore
     (assistant#append_page
-       ~title:"Profile Description"
+       ~title:(s_ "Profile Description")
        ~page_type:`CONTENT
        description#as_widget);
   let setPageComplete page b = assistant#set_page_complete page#as_widget b in
@@ -1214,31 +1214,31 @@ let createProfile parent =
     GPack.vbox ~spacing:6 ~packing:(connection#pack ~expand:false) () in
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
-       ~text:"You can use Unison to synchronize a local directory \
-              with another local directory, or with a remote directory."
+       ~text:(s_ "You can use Unison to synchronize a local directory \
+              with another local directory, or with a remote directory.")
        ~packing:(vb#pack ~expand:false) ());
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
-       ~text:"Please select the kind of synchronization \
-              you want to perform."
+       ~text:(s_ "Please select the kind of synchronization \
+              you want to perform.")
        ~packing:(vb#pack ~expand:false) ());
   let tbl =
     let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
     al#set_left_padding 12;
     GPack.table ~rows:2 ~columns:2 ~col_spacings:12 ~row_spacings:6
       ~packing:(al#add) () in
-  ignore (GMisc.label ~text:"Description:" ~xalign:0. ~yalign:0.
+  ignore (GMisc.label ~text:(s_ "Description:") ~xalign:0. ~yalign:0.
             ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
   let kindCombo =
     let al =
       GBin.alignment ~xscale:0. ~xalign:0.
         ~packing:(tbl#attach ~left:1 ~top:0) () in
     GEdit.combo_box_text
-      ~strings:["Local"; "Using SSH";
-                "Through a plain TCP connection"]
+      ~strings:[s_ "Local"; s_ "Using SSH";
+                s_ "Through a plain TCP connection"]
       ~active:0 ~packing:(al#add) ()
   in
-  ignore (GMisc.label ~text:"Synchronization _kind:" ~xalign:0.
+  ignore (GMisc.label ~text:(s_ "Synchronization _kind:") ~xalign:0.
             ~use_underline:true ~mnemonic_widget:(fst kindCombo)
             ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
   let kind =
@@ -1257,18 +1257,18 @@ let createProfile parent =
     (kind >> fun k ->
      match k with
        `Local ->
-          "Local synchronization."
+          s_ "Local synchronization."
      | `SSH ->
-          "This is the recommended way to synchronize \
+          s_ "This is the recommended way to synchronize \
            with a remote machine.  A\xc2\xa0remote instance of Unison is \
            automatically started via SSH."
      | `SOCKET ->
-          "Synchronization with a remote machine by connecting \
+          s_ "Synchronization with a remote machine by connecting \
            to an instance of Unison already listening \
            on a specific TCP port.");
   let vb = GPack.vbox ~spacing:6 ~packing:(connection#add) () in
   GtkReact.show vb (isLocal >> not);
-  ignore (GMisc.label ~markup:"<b>Configuration</b>" ~xalign:0.
+  ignore (GMisc.label ~markup:(s_ "<b>Configuration</b>") ~xalign:0.
             ~packing:(vb#pack ~expand:false) ());
   let al = GBin.alignment ~packing:(vb#add) () in
   al#set_left_padding 12;
@@ -1284,10 +1284,10 @@ let createProfile parent =
        `Local ->
           ""
      | `SSH ->
-          "There must be an SSH client installed on this machine, \
+          s_ "There must be an SSH client installed on this machine, \
            and Unison and an SSH server installed on the remote machine."
      | `SOCKET ->
-          "There must be a Unison server running on the remote machine, \
+          s_ "There must be a Unison server running on the remote machine, \
            listening on the port that you specify here.  \
            (Use \"Unison -socket xxx\" on the remote machine to start \
            the Unison server.)");
@@ -1300,9 +1300,9 @@ let createProfile parent =
     (kind >> fun k ->
      match k with
        `Local  -> ""
-     | `SSH    -> "Please enter the host to connect to and a user name, \
+     | `SSH    -> s_ "Please enter the host to connect to and a user name, \
                    if different from your user name on this machine."
-     | `SOCKET -> "Please enter the host and port to connect to.");
+     | `SOCKET -> s_ "Please enter the host and port to connect to.");
   let tbl =
     let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
     al#set_left_padding 12;
@@ -1311,7 +1311,7 @@ let createProfile parent =
   let hostEntry =
     GEdit.entry ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X) () in
   let host = GtkReact.entry hostEntry in
-  ignore (GMisc.label ~text:"_Host:" ~xalign:0.
+  ignore (GMisc.label ~text:(s_ "_Host:") ~xalign:0.
             ~use_underline:true ~mnemonic_widget:hostEntry
             ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
   let userEntry =
@@ -1320,7 +1320,7 @@ let createProfile parent =
   GtkReact.show userEntry (isSocket >> not);
   let user = GtkReact.entry userEntry in
   GtkReact.show
-    (GMisc.label ~text:"_User:" ~xalign:0. ~yalign:0.
+    (GMisc.label ~text:(s_ "_User:") ~xalign:0. ~yalign:0.
        ~use_underline:true ~mnemonic_widget:userEntry
        ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ())
     (isSocket >> not);
@@ -1330,15 +1330,15 @@ let createProfile parent =
   GtkReact.show portEntry isSocket;
   let port = GtkReact.entry portEntry in
   GtkReact.show
-    (GMisc.label ~text:"_Port:" ~xalign:0. ~yalign:0.
+    (GMisc.label ~text:(s_ "_Port:") ~xalign:0. ~yalign:0.
        ~use_underline:true ~mnemonic_widget:portEntry
        ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ())
     isSocket;
   let compressLabel =
     GMisc.label ~xalign:0. ~line_wrap:true
-      ~text:"Data compression can greatly improve performance \
+      ~text:(s_ "Data compression can greatly improve performance \
              on slow connections.  However, it may slow down \
-             things on (fast) local networks."
+             things on (fast) local networks.")
       ~packing:(vb#pack ~expand:false) ()
   in
   adjustSize compressLabel;
@@ -1346,7 +1346,7 @@ let createProfile parent =
   let compressButton =
     let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
     al#set_left_padding 12;
-    (GButton.check_button ~label:"Enable _compression" ~use_mnemonic:true
+    (GButton.check_button ~label:(s_ "Enable _compression") ~use_mnemonic:true
        ~active:false ~packing:al#add ())
   in
   GtkReact.show compressButton isSSH;
@@ -1380,7 +1380,7 @@ let createProfile parent =
   in
   ignore
     (assistant#append_page
-       ~title:"Connection Setup"
+       ~title:(s_ "Connection Setup")
        ~page_type:`CONTENT
        connection#as_widget);
   pageComplete >| setPageComplete connection;
@@ -1410,11 +1410,11 @@ let createProfile parent =
   let dirhb = GPack.hbox ~packing:(directorySelection#pack ~expand:false) () in
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:false ~justify:`LEFT
-       ~text:"Please select the two "
+       ~text:(s_ "Please select the two ")
        ~packing:(dirhb#pack ~expand:false) ());
   let dirKindCombo =
     GEdit.combo_box_text
-      ~strings:["directories"; "files"]
+      ~strings:[s_ "directories"; s_ "files"]
       ~active:0 ~packing:(dirhb#pack ~expand:false) () in
   let dirKind =
     GtkReact.text_combo dirKindCombo
@@ -1422,7 +1422,7 @@ let createProfile parent =
   in
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
-       ~text:" that you want to synchronize."
+       ~text:(s_ " that you want to synchronize.")
        ~packing:(dirhb#pack ~expand:false) ());
   (* Not sure what's going on here, but when setting the focus on an element,
      it's actually the next element that gets the focus by default. We want
@@ -1437,9 +1437,9 @@ let createProfile parent =
   adjustSize secondDirLabel1;
   GtkReact.show secondDirLabel1 ((React.lift2 (||) isLocal isSocket) >> not);
   GtkReact.label secondDirLabel1 (dirKind >> function
-    | `Dir  -> "The second directory is relative to your home \
+    | `Dir  -> s_ "The second directory is relative to your home \
                 directory on the remote machine."
-    | `File -> "The second file is relative to your home \
+    | `File -> s_ "The second file is relative to your home \
                 directory on the remote machine.");
   let secondDirLabel2 =
     GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
@@ -1449,10 +1449,10 @@ let createProfile parent =
   adjustSize secondDirLabel2;
   GtkReact.show secondDirLabel2 isSocket;
   GtkReact.label secondDirLabel2 (dirKind >> function
-    | `Dir  -> "The second directory is relative to \
+    | `Dir  -> s_ "The second directory is relative to \
                 the working directory of the Unison server \
                 running on the remote machine."
-    | `File -> "The second file is relative to \
+    | `File -> s_ "The second file is relative to \
                 the working directory of the Unison server \
                 running on the remote machine.");
   let tbl =
@@ -1462,7 +1462,7 @@ let createProfile parent =
     GPack.table ~rows:2 ~columns:2 ~col_spacings:12 ~row_spacings:6
       ~packing:(al#add) () in
   let firstDirButton =
-    GFile.chooser_button ~action:`SELECT_FOLDER ~title:"First Directory"
+    GFile.chooser_button ~action:`SELECT_FOLDER ~title:(s_ "First Directory")
        ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X) ()
   in
   React.lift2
@@ -1474,10 +1474,10 @@ let createProfile parent =
       );
       firstDirButton#set_title (
         match local, dirkind with
-        | true, `Dir   -> "First Directory"
-        | false, `Dir  -> "Local Directory"
-        | true, `File  -> "First File"
-        | false, `File -> "Local File"
+        | true, `Dir   -> s_ "First Directory"
+        | false, `Dir  -> s_ "Local Directory"
+        | true, `File  -> s_ "First File"
+        | false, `File -> s_ "Local File"
       )
     ) isLocal dirKind |> ignore;
 
@@ -1487,46 +1487,46 @@ let createProfile parent =
        ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ())
     (React.lift2 (fun local dirkind ->
         match local, dirkind with
-        | true, `Dir -> "_First directory:"
-        | false, `Dir -> "_Local directory:"
-        | true, `File -> "_First file:"
-        | false, `File -> "_Local file:"
+        | true, `Dir -> s_ "_First directory:"
+        | false, `Dir -> s_ "_Local directory:"
+        | true, `File -> s_ "_First file:"
+        | false, `File -> s_ "_Local file:"
       ) isLocal dirKind);
   let noneToEmpty o = match o with None -> "" | Some s -> s in
   let firstDir = GtkReact.file_chooser firstDirButton >> noneToEmpty in
 
   let secondDirButton =
-    GFile.chooser_button ~action:`SELECT_FOLDER ~title:"Second Directory"
+    GFile.chooser_button ~action:`SELECT_FOLDER ~title:(s_ "Second Directory")
        ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X) () in
   dirKind >| (function
     | `Dir  -> secondDirButton#set_action `SELECT_FOLDER;
-               secondDirButton#set_title "Second Directory"
+               secondDirButton#set_title (s_ "Second Directory")
     | `File -> secondDirButton#set_action `OPEN;
-               secondDirButton#set_title "Second File"
+               secondDirButton#set_title (s_ "Second File")
   );
 
   let secondDirLabel =
     GMisc.label ~xalign:0.
-      ~text:"Se_cond directory:"
+      ~text:(s_ "Se_cond directory:")
       ~use_underline:true ~mnemonic_widget:secondDirButton
       ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) () in
   GtkReact.show secondDirButton isLocal;
   GtkReact.show secondDirLabel isLocal;
   GtkReact.label_underlined secondDirLabel
-    (dirKind >> function `Dir -> "Se_cond directory:" | `File -> "Se_cond file:");
+    (dirKind >> function `Dir -> s_ "Se_cond directory:" | `File -> s_ "Se_cond file:");
   let remoteDirEdit =
     GEdit.entry ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X) ()
   in
   let remoteDirLabel =
     GMisc.label ~xalign:0.
-      ~text:"_Remote directory:"
+      ~text:(s_ "_Remote directory:")
       ~use_underline:true ~mnemonic_widget:remoteDirEdit
       ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ()
   in
   GtkReact.show remoteDirEdit (isLocal >> not);
   GtkReact.show remoteDirLabel (isLocal >> not);
   GtkReact.label_underlined remoteDirLabel
-    (dirKind >> function `Dir -> "_Remote directory:" | `File -> "_Remote file:");
+    (dirKind >> function `Dir -> s_ "_Remote directory:" | `File -> s_ "_Remote file:");
   let secondDir =
     React.lift3 (fun b l r -> if b then l else r) isLocal
       (GtkReact.file_chooser secondDirButton >> noneToEmpty)
@@ -1534,7 +1534,7 @@ let createProfile parent =
   in
   ignore
     (assistant#append_page
-       ~title:"Directory Selection"
+       ~title:(s_ "Directory Selection")
        ~page_type:`CONTENT
        directorySelection#as_widget);
   React.lift2 (||) (isLocal >> not) (React.lift2 (<>) firstDir secondDir)
@@ -1555,9 +1555,9 @@ let createProfile parent =
         GPack.vbox ~spacing:6 ~packing:(options#pack ~expand:false) () in
       let fatLabel =
         GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
-          ~text:"Select the following option if one of your \
+          ~text:(s_ "Select the following option if one of your \
                  directory is on a FAT partition.  This is typically \
-                 the case for a USB stick."
+                 the case for a USB stick.")
           ~packing:(vb#pack ~expand:false) ()
       in
       adjustSize fatLabel;
@@ -1565,7 +1565,7 @@ let createProfile parent =
         let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
         al#set_left_padding 12;
         (GButton.check_button
-           ~label:"Synchronization involving a _FAT partition"
+           ~label:(s_ "Synchronization involving a _FAT partition")
            ~use_mnemonic:true ~active:false ~packing:(al#add) ())
       in
       GtkReact.toggle_button fatButton
@@ -1590,9 +1590,9 @@ let createProfile parent =
   GtkReact.show vb askUnicode;
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
-       ~text:"When synchronizing in case insensitive mode, \
+       ~text:(s_ "When synchronizing in case insensitive mode, \
               Unison has to make some assumptions regarding \
-              filename encoding.  If unsure, use Unicode."
+              filename encoding.  If unsure, use Unicode.")
        ~packing:(vb#pack ~expand:false) ());
   let vb =
     let al = GBin.alignment
@@ -1601,7 +1601,7 @@ let createProfile parent =
     GPack.vbox ~spacing:0 ~packing:(al#add) ()
   in
   ignore
-    (GMisc.label ~xalign:0. ~text:"Filename encoding:"
+    (GMisc.label ~xalign:0. ~text:(s_ "Filename encoding:")
        ~packing:(vb#pack ~expand:false) ());
   let hb =
     let al = GBin.alignment
@@ -1624,7 +1624,7 @@ let createProfile parent =
 *)
   let p =
     assistant#append_page
-      ~title:"Specific Options" ~complete:true
+      ~title:(s_ "Specific Options") ~complete:true
       ~page_type:`CONTENT
       options#as_widget
   in
@@ -1635,9 +1635,9 @@ let createProfile parent =
        then
          assistant#set_current_page (p + 1)));
 
-  let conclusionOk = "You have now finished filling in the profile.\n\n\
+  let conclusionOk = s_ "You have now finished filling in the profile.\n\n\
              Click \"Apply\" to create it."
-  and conclusionFail = "There was an error when preparing the profile.\n\n\
+  and conclusionFail = s_ "There was an error when preparing the profile.\n\n\
              Click \"Back\" to review what you entered." in
   let conclusion =
     GMisc.label
@@ -1646,7 +1646,7 @@ let createProfile parent =
     () in
   let conclusionp =
     (assistant#append_page
-       ~title:"Done" ~complete:true
+       ~title:(s_ "Done") ~complete:true
        ~page_type:`CONFIRM
        conclusion#as_widget) in
 
@@ -1670,8 +1670,8 @@ let createProfile parent =
     | Util.Transient s | Util.Fatal s | Invalid_argument s | Prefs.IllegalValue s ->
         begin
           okBox ~parent ~title:"Error" ~typ:`ERROR
-            ~message:("There was a problem with the remote root "
-              ^ "data you entered.\n\n" ^ s);
+            ~message:(s_ "There was a problem with the remote root \
+              data you entered.\n\n" ^ s);
           None
         end
   in
@@ -1715,8 +1715,8 @@ let createProfile parent =
       close_out ch);
       profileName := Some (React.state name)
     with Sys_error errmsg ->
-      okBox ~parent:assistant ~typ:`ERROR ~title:"Could not save profile"
-        ~message:("Error when saving profile: " ^ errmsg)
+      okBox ~parent:assistant ~typ:`ERROR ~title:(s_ "Could not save profile")
+        ~message:(s_ "Error when saving profile: " ^ errmsg)
     end;
     assistant#destroy ();
   in
@@ -1733,13 +1733,13 @@ let documentationFn = ref (fun ~parent _ -> ())
 
 let nameOfType t =
   match t with
-    `BOOL        -> "boolean"
-  | `BOOLDEF     -> "boolean"
-  | `INT         -> "integer"
-  | `STRING      -> "text"
-  | `STRING_LIST -> "text list"
-  | `CUSTOM      -> "custom"
-  | `UNKNOWN     -> "unknown"
+    `BOOL        -> s_ "boolean"
+  | `BOOLDEF     -> s_ "boolean"
+  | `INT         -> s_ "integer"
+  | `STRING      -> s_ "text"
+  | `STRING_LIST -> s_ "text list"
+  | `CUSTOM      -> s_ "custom"
+  | `UNKNOWN     -> s_ "unknown"
 
 let defaultValue t =
   match t with
@@ -1754,7 +1754,7 @@ let defaultValue t =
 let editPreference parent nm ty vl =
   let t =
     GWindow.dialog ~parent ~border_width:12
-      ~title:"Edit the Preference"
+      ~title:(s_ "Edit the Preference")
       ~modal:false () in
   (* Simulate modal dialog (allowing to open other windows, such as help) *)
   parent#set_sensitive false;
@@ -1773,11 +1773,11 @@ let editPreference parent nm ty vl =
   let tbl =
     GPack.table ~rows ~columns ~col_spacings:12 ~row_spacings:6
       ~packing:(vb#pack ~expand:true) () in
-  ignore (GMisc.label ~text:"Preference:" ~xalign:0.
+  ignore (GMisc.label ~text:(s_ "Preference:") ~xalign:0.
             ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
-  ignore (GMisc.label ~text:"Description:" ~xalign:0.
+  ignore (GMisc.label ~text:(s_ "Description:") ~xalign:0.
             ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
-  ignore (GMisc.label ~text:"Type:" ~xalign:0.
+  ignore (GMisc.label ~text:(s_ "Type:") ~xalign:0.
             ~packing:(tbl#attach ~left:0 ~top:2 ~expand:`NONE) ());
   ignore (GMisc.label ~text:(Unicode.protect nm) ~xalign:0. ~selectable:true ()
             ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X));
@@ -1789,7 +1789,7 @@ let editPreference parent nm ty vl =
   let newValue =
     if isList then begin
       let valueLabel =
-        GMisc.label ~text:"V_alue:" ~use_underline:true ~xalign:0. ~yalign:0.
+        GMisc.label ~text:(s_ "V_alue:") ~use_underline:true ~xalign:0. ~yalign:0.
           ~packing:(tbl#attach ~left:0 ~top:3 ~expand:`NONE) ()
       in
       let cols = new GTree.column_list in
@@ -1829,7 +1829,7 @@ let editPreference parent nm ty vl =
       List.iter (fun b -> b#set_xalign 0.) [addB; removeB; editB; upB; downB];
       GtkReact.set_sensitive removeB hasSel;
       let editLabel =
-        GMisc.label ~text:"Edited _item:"
+        GMisc.label ~text:(s_ "Edited _item:")
           ~use_underline:true ~xalign:0.
           ~packing:(tbl#attach ~left:0 ~top:4 ~expand:`NONE) ()
       in
@@ -1943,14 +1943,14 @@ let editPreference parent nm ty vl =
           in
           let isTrue = v = "true" || v = "yes" in
           let trueB =
-            GButton.radio_button ~label:"_True" ~use_mnemonic:true
+            GButton.radio_button ~label:(s_ "_True") ~use_mnemonic:true
               ~active:isTrue ~packing:(hb#add) ()
           in
           ignore
-            (GButton.radio_button ~label:"_False" ~use_mnemonic:true
+            (GButton.radio_button ~label:(s_ "_False") ~use_mnemonic:true
                ~group:trueB#group ~active:(not isTrue) ~packing:(hb#add) ());
            ignore
-             (GMisc.label ~text:"Value:" ~xalign:0.
+             (GMisc.label ~text:(s_ "Value:") ~xalign:0.
                 ~packing:(tbl#attach ~left:0 ~top:3 ~expand:`NONE) ());
           (fun () -> [if trueB#active then "true" else "false"])
       | `INT | `STRING ->
@@ -1960,7 +1960,7 @@ let editPreference parent nm ty vl =
                ~packing:(tbl#attach ~left:1 ~top:3 ~expand:`X) ()
            in
            ignore
-             (GMisc.label ~text:"V_alue:" ~use_underline:true ~xalign:0.
+             (GMisc.label ~text:(s_ "V_alue:") ~use_underline:true ~xalign:0.
                 ~mnemonic_widget:valueEntry
                 ~packing:(tbl#attach ~left:0 ~top:3 ~expand:`NONE) ());
            (fun () -> [valueEntry#text])
@@ -2026,7 +2026,7 @@ let insertMarkup tags t s =
 
 let documentPreference ~compact ~packing =
   let vb = GPack.vbox ~spacing:6 ~packing () in
-  ignore (GMisc.label ~markup:"<b>Documentation</b>" ~xalign:0.
+  ignore (GMisc.label ~markup:(s_ "<b>Documentation</b>") ~xalign:0.
             ~packing:(vb#pack ~expand:false) ());
   let al = GBin.alignment ~packing:(vb#pack ~expand:true ~fill:true) () in
   al#set_left_padding 12;
@@ -2035,9 +2035,9 @@ let documentPreference ~compact ~packing =
     GPack.table ~rows:2 ~columns ~col_spacings:12 ~row_spacings:6
       ~packing:(al#add) () in
   tbl#misc#set_sensitive false;
-  ignore (GMisc.label ~text:"Short description:" ~xalign:0.
+  ignore (GMisc.label ~text:(s_ "Short description:") ~xalign:0.
             ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
-  ignore (GMisc.label ~text:"Long description:" ~xalign:0. ~yalign:0.
+  ignore (GMisc.label ~text:(s_ "Long description:") ~xalign:0. ~yalign:0.
             ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
   let shortDescr =
     GMisc.label ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X)
@@ -2119,7 +2119,7 @@ let documentPreference ~compact ~packing =
 let addPreference parent =
   let t =
     GWindow.dialog ~parent ~border_width:0
-      ~title:"Add a Preference"
+      ~title:(s_ "Add a Preference")
       ~modal:true () in
   t#set_default_height 575;
   let vb = t#vbox in
@@ -2136,7 +2136,7 @@ let addPreference parent =
   let lvhb = GPack.hbox ~spacing:6 ~packing:(lvb#pack ~expand:false) () in
   let preferenceLabel =
     GMisc.label
-      ~text:"_Preferences:" ~use_underline:true
+      ~text:(s_ "_Preferences:") ~use_underline:true
       ~xalign:0. ~yalign:1. ~packing:(lvhb#pack ~expand:true) ()
   in
   (* The spacing of [lvb] used to be 6. Now it's set to 1 and additionally
@@ -2157,7 +2157,7 @@ let addPreference parent =
   preferenceLabel#set_mnemonic_widget (Some (lst :> GObj.widget));
 
   let expand_all_btn =
-    GButton.button ~label:"Expand all" ~relief:`NONE
+    GButton.button ~label:(s_ "Expand all") ~relief:`NONE
       ~packing:(lvhb#pack ~expand:false) () in
   let expander =
     let xicon =
@@ -2169,12 +2169,12 @@ let addPreference parent =
       if not !expanded then begin
         lst#expand_all ();
         xicon#set_icon_name "pan-down-symbolic";
-        expand_all_btn#set_label "Collapse all";
+        expand_all_btn#set_label (s_ "Collapse all");
         expanded := true
       end else begin
         lst#collapse_all ();
         xicon#set_icon_name "pan-end-symbolic";
-        expand_all_btn#set_label "Expand all";
+        expand_all_btn#set_label (s_ "Expand all");
         expanded := false
       end
   in
@@ -2209,13 +2209,13 @@ let addPreference parent =
 
   let topicsInOrder = [ `Sync; `Syncprocess; `Syncprocess_CLI; `CLI; `GUI; `Remote; `Archive ] in
 
-  let basic = createGroup "1 — Basic preferences" in
+  let basic = createGroup (s_ "1 — Basic preferences") in
   let l = createTopics basic (fun t -> `Basic t) (`General :: topicsInOrder) in
 
-  let adv = createGroup "2 — Advanced preferences" in
+  let adv = createGroup (s_ "2 — Advanced preferences") in
   let l = l @ createTopics adv (fun t -> `Advanced t) (topicsInOrder @ [`General]) in
 
-  let l = (`Expert, createGroup "3 — Expert preferences") :: l in
+  let l = (`Expert, createGroup (s_ "3 — Expert preferences")) :: l in
 
   let parents = l in
   let purgeParents () =
@@ -2362,7 +2362,7 @@ let addPreference parent =
 let editProfile parent name =
   let t =
     GWindow.dialog ~parent ~border_width:12
-      ~title:(Format.sprintf "%s - Profile Editor" name)
+      ~title:(Format.sprintf (f_ "%s - Profile Editor") name)
       ~modal:false () in
   (* Simulate modal dialog (allowing to open other windows, such as help) *)
   parent#set_sensitive false;
@@ -2376,7 +2376,7 @@ let editProfile parent name =
   lvb#set_margin_bottom 12;
   let preferenceLabel =
     GMisc.label
-      ~text:"_Preferences:" ~use_underline:true
+      ~text:(s_ "_Preferences:") ~use_underline:true
       ~xalign:0. ~packing:(lvb#pack ~expand:false) ()
   in
   let hb = GPack.hbox ~spacing:12 ~packing:(lvb#add) () in
@@ -2441,9 +2441,9 @@ let editProfile parent name =
         let row = lst_sorted_store#convert_iter_to_child_iter rf#iter in
         let (nm, ty, vl) = lst_store#get ~row ~column:c_ml in
         if
-          twoBox ~kind:`DIALOG_QUESTION ~parent:t ~title:"Preference Deletion"
+          twoBox ~kind:`DIALOG_QUESTION ~parent:t ~title:(s_ "Preference Deletion")
             ~bstock:`CANCEL ~astock:`DELETE
-            (Format.sprintf "Do you really want to delete preference %s?"
+            (Format.sprintf (f_ "Do you really want to delete preference %s?")
                (Unicode.protect nm))
         then begin
           ignore (lst_store#remove row);
@@ -2581,8 +2581,8 @@ let editProfile parent name =
         close_out ch);
         setModified false
       with Sys_error errmsg ->
-        okBox ~parent:t ~typ:`ERROR ~title:"Could not save profile"
-          ~message:("Error when saving profile: " ^ errmsg)
+        okBox ~parent:t ~typ:`ERROR ~title:(s_ "Could not save profile")
+          ~message:(s_ "Error when saving profile: " ^ errmsg)
     end
   in
   let applyButton =
@@ -2633,7 +2633,7 @@ let getProfile quit =
   (* Build the dialog *)
   let t =
     GWindow.dialog ~parent ~border_width:12
-      ~title:"Profile Selection"
+      ~title:(s_ "Profile Selection")
       ~modal:false () in
   t#set_default_width 550;
   (* Simulate modal dialog (allowing to open other windows, such as help) *)
@@ -2671,7 +2671,7 @@ let getProfile quit =
   ignore (GMisc.label ~text:(sn_ "1 error" "2 errors" 2) ~packing:(lvb#pack ~expand:false) ());
   let selectLabel =
     GMisc.label
-      ~text:"Select a _profile:" ~use_underline:true
+      ~text:(s_ "Select a _profile:") ~use_underline:true
       ~xalign:0. ~packing:(lvb#pack ~expand:false) ()
   in
   let hb = GPack.hbox ~spacing:12 ~packing:(lvb#add) () in
@@ -2687,17 +2687,17 @@ let getProfile quit =
   selectLabel#set_mnemonic_widget (Some (lst :> GObj.widget));
   let vc_name =
     GTree.view_column
-       ~title:"Profile"
+       ~title:(s_ "Profile")
        ~renderer:(GTree.cell_renderer_text [], ["text", c_name]) ()
   in
   ignore (lst#append_column vc_name);
   ignore (lst#append_column
     (GTree.view_column
-       ~title:"Description"
+       ~title:(s_ "Description")
        ~renderer:(GTree.cell_renderer_text [], ["text", c_label]) ()));
 
   let vb = GPack.vbox ~spacing:6 ~packing:(vb#pack ~expand:false) () in
-  ignore (GMisc.label ~markup:"<b>Summary</b>" ~xalign:0.
+  ignore (GMisc.label ~markup:(s_ "<b>Summary</b>") ~xalign:0.
             ~packing:(vb#pack ~expand:false) ());
   let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
   al#set_left_padding 12;
@@ -2705,9 +2705,9 @@ let getProfile quit =
     GPack.table ~rows:2 ~columns:2 ~col_spacings:12 ~row_spacings:6
       ~packing:(al#add) () in
   tbl#misc#set_sensitive false;
-  ignore (GMisc.label ~text:"First root:" ~xalign:0.
+  ignore (GMisc.label ~text:(s_ "First root:") ~xalign:0.
             ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
-  ignore (GMisc.label ~text:"Second root:" ~xalign:0.
+  ignore (GMisc.label ~text:(s_ "Second root:") ~xalign:0.
             ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
   let root1 =
     GMisc.label ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X)
@@ -2781,9 +2781,9 @@ let getProfile quit =
     match React.state selInfo with
       Some ((profile, _), rf) ->
        if
-         twoBox ~kind:`DIALOG_QUESTION ~parent:t ~title:"Profile Deletion"
+         twoBox ~kind:`DIALOG_QUESTION ~parent:t ~title:(s_ "Profile Deletion")
            ~bstock:`CANCEL ~astock:`DELETE
-           (Format.sprintf "Do you really want to delete profile %s?"
+           (Format.sprintf (f_ "Do you really want to delete profile %s?")
               (transcode profile))
        then begin
          try
@@ -2826,7 +2826,7 @@ let get_size_chars obj ?desc ?lang ~height ~width () =
 let docWindow = ref None
 
 let documentation_aux ~parent sect =
-  let title = "Documentation" in
+  let title = s_ "Documentation" in
   let t = GWindow.dialog ~title ~parent () in
   let t_dismiss =
     GButton.button ~stock:`CLOSE ~packing:t#action_area#add () in
@@ -2911,7 +2911,7 @@ let twoBoxAdvanced
             ~selectable:true ~yalign:0. ~packing:v1#add ());
   t#add_button_stock `CANCEL `NO;
   let cmd () =
-    messageBox ~title:"Details" longtext
+    messageBox ~title:(s_ "Details") longtext
   in
   t#add_button advLabel `HELP;
   t#add_button_stock `APPLY `YES;
@@ -2942,7 +2942,7 @@ let summaryBox ~parent ~title ~message ~f =
   ignore (GMisc.label
             ~markup:(primaryText title ^ "\n\n" ^ escapeMarkup message)
             ~selectable:true ~xalign:0. ~yalign:0. ~packing:(v1#pack ~expand:false) ());
-  let exp = GBin.expander ~spacing:12 ~label:"Show details"
+  let exp = GBin.expander ~spacing:12 ~label:(s_ "Show details")
               ~packing:(v1#pack ~expand:true) () in
   let t_text =
     new scrolled_text ~editable:false ~shadow_type:`IN ~packing:exp#add () in
@@ -3060,7 +3060,7 @@ let createToplevelWindow () =
     toplevelWindow#set_title
       (if s = "" then myNameCapitalized else
        Format.sprintf "%s [%s]%s" myNameCapitalized s roots);
-    let s = if s="" then "No profile" else "Profile: " ^ s in
+    let s = if s="" then s_ "No profile" else s_ "Profile: " ^ s in
     profileLabel#set_text (transcode s)
   in
   displayNewProfileLabel ();
@@ -3068,11 +3068,11 @@ let createToplevelWindow () =
   (*********************************************************************
     Create the menus
    *********************************************************************)
-  let (fileMenu, _) = add_submenu "_Synchronization" in
-  let (actionMenu, actionItem) = add_submenu "_Actions" in
-  let (ignoreMenu, _) = add_submenu ~modi:[`SHIFT] "_Ignore" in
-  let (sortMenu, _) = add_submenu "S_ort" in
-  let (helpMenu, _) = add_submenu "_Help" in
+  let (fileMenu, _) = add_submenu (s_ "_Synchronization") in
+  let (actionMenu, actionItem) = add_submenu (s_ "_Actions") in
+  let (ignoreMenu, _) = add_submenu ~modi:[`SHIFT] (s_ "_Ignore") in
+  let (sortMenu, _) = add_submenu (s_ "S_ort") in
+  let (helpMenu, _) = add_submenu (s_ "_Help") in
   let (expertMenu, expertItem) = add_submenu "Expert" in
   let () = expertItem#set_visible false in (* Expert menu hidden by default *)
 
@@ -3125,20 +3125,20 @@ let createToplevelWindow () =
        ~title:(" ")
        ~renderer:(GTree.cell_renderer_text [], ["text", c_replica1]) ()));
   ignore (mainWindow#append_column
-    (GTree.view_column ~title:"  Action  "
+    (GTree.view_column ~title:(s_ "  Action  ")
        ~renderer:(GTree.cell_renderer_pixbuf [], ["pixbuf", c_action]) ()));
   ignore (mainWindow#append_column
     (GTree.view_column
        ~title:(" ")
        ~renderer:(GTree.cell_renderer_text [], ["text", c_replica2]) ()));
-  let status_view_col = GTree.view_column ~title:"  Status  "
+  let status_view_col = GTree.view_column ~title:(s_ "  Status  ")
        ~renderer:(GTree.cell_renderer_pixbuf [], ["pixbuf", c_status]) () in
   let status_t_rend = GTree.cell_renderer_text [] in
   status_view_col#pack ~expand:false ~from:`END status_t_rend;
   status_view_col#add_attribute status_t_rend "text" c_statust;
   ignore (mainWindow#append_column status_view_col);
   ignore (mainWindow#append_column
-    (GTree.view_column ~title:"  Path  "
+    (GTree.view_column ~title:(s_ "  Path  ")
        ~renderer:(GTree.cell_renderer_text [], ["text", c_path]) ()));
 
   let setMainWindowColumnHeaders roots =
@@ -3147,9 +3147,9 @@ let createToplevelWindow () =
     Array.iteri
       (fun i data ->
          (mainWindow#get_column i)#set_title data)
-      [| " " ^ Unicode.protect (escape r1) ^ " "; "  Action  ";
-         " " ^ Unicode.protect (escape r2) ^ " "; "  Status  ";
-         " Path" |];
+      [| " " ^ Unicode.protect (escape r1) ^ " "; s_ "  Action  ";
+         " " ^ Unicode.protect (escape r2) ^ " "; s_ "  Status  ";
+         s_ " Path" |];
   in
 
   (* See above for comment about tree path index and [theState] array index
@@ -3194,28 +3194,28 @@ let createToplevelWindow () =
           let path = Path.toString si.ri.path1 in
           match si.whatHappened with
             Some (Util.Failed _, Some det) ->
-              Some ("Merge execution details for file" ^
-                    transcodeFilename path,
+              Some (Printf.sprintf (f_ "Merge execution details for file %s")
+                    (transcodeFilename path),
                     det)
           | _ ->
               match si.ri.replicas with
                 Problem err ->
-                  Some ("Errors for file " ^ transcodeFilename path, err)
+                  Some (Printf.sprintf (f_ "Errors for file %s") (transcodeFilename path), err)
               | Different diff ->
                   let prefix s l =
                     Safelist.map (fun err -> Format.sprintf "%s%s\n" s err) l
                   in
                   let errors =
                     Safelist.append
-                      (prefix "[root 1]: " diff.errors1)
-                      (prefix "[root 2]: " diff.errors2)
+                      (prefix (s_ "[root 1]: ") diff.errors1)
+                      (prefix (s_ "[root 2]: ") diff.errors2)
                   in
                   let errors =
                     match si.whatHappened with
                        Some (Util.Failed err, _) -> err :: errors
                     |  _                         -> errors
                   in
-                  Some ("Errors for file " ^ transcodeFilename path,
+                  Some (Printf.sprintf (f_ "Errors for file %s") (transcodeFilename path),
                         String.concat "\n" errors)
     in
     match details with
@@ -3554,7 +3554,7 @@ let createToplevelWindow () =
     mainWindowModel#clear ();
     let tot = Array.length !theState - 1 in
     let totf = float_of_int (tot + 1) in
-    progressBar#set_text (Printf.sprintf "Displaying %i items..." (tot + 1));
+    progressBar#set_text (Printf.sprintf (f_ "Displaying %i items...") (tot + 1));
     for i = 0 to tot do
       if i mod 1024 = 0 then begin
         progressBar#set_fraction (max 0. (min 1. ((float_of_int i) /. totf)));
@@ -3582,7 +3582,7 @@ let createToplevelWindow () =
     displayRowAction iter i action;
     displayRowStatus iter status;
     if status = Failed then displayRowPath iter (path ^
-               "       [failed: click on this line for details]");
+               (s_ "       [failed: click on this line for details]"));
   in
 
   let fastRedisplay i =
@@ -3592,7 +3592,7 @@ let createToplevelWindow () =
     displayRowStatus iter status;
     if status = Failed then begin
       displayRowPath iter (path ^
-               "       [failed: click on this line for details]");
+               (s_ "       [failed: click on this line for details]"));
       match currentRow () with
       | Some (_, csi, _) when csi = si -> updateDetails ()
       | Some _ | None -> ()
@@ -3625,8 +3625,9 @@ let createToplevelWindow () =
       if delta >= 0.5 then begin
         t1 := t;
         let remTime =
-          if v >= 100. then "00:00 remaining" else
-          (Uicommon.Stats.eta !sta "--:--") ^ " remaining"
+          if v >= 100. then (s_ "00:00 remaining") else
+          (* TRANSLATORS: %s is the time remaining. *)
+          Printf.sprintf (f_ "%s remaining") (Uicommon.Stats.eta !sta "--:--")
         in
         let rate = Uicommon.Stats.avgRate1 !sta in
         let txt =
@@ -3727,7 +3728,7 @@ let createToplevelWindow () =
    ******************************************************************)
 
   let commitUpdates () =
-    Trace.status "Updating synchronizer state";
+    Trace.status (s_ "Updating synchronizer state");
     let t = Trace.startTimer "Updating synchronizer state" in
     gtk_sync true;
     Update.commitUpdates();
@@ -3751,7 +3752,7 @@ let createToplevelWindow () =
     sync_action := Some (fun () -> progressBar#pulse ());
     let findUpdates () =
       let t = Trace.startTimer "Checking for updates" in
-      Trace.status "Looking for changes";
+      Trace.status (s_ "Looking for changes");
       let updates = Update.findUpdates ~wantWatcher:true !unsynchronizedPaths in
       Trace.showTimer t;
       updates in
@@ -3767,11 +3768,11 @@ let createToplevelWindow () =
       if !Update.foundArchives then commitUpdates ();
       if thereAreEqualUpdates then
         Trace.status
-          "Replicas have been changed only in identical ways since last sync"
+          (s_ "Replicas have been changed only in identical ways since last sync")
       else
-        Trace.status "Everything is up to date"
+        Trace.status (s_ "Everything is up to date")
     end else
-      Trace.status "Check and/or adjust selected actions; then press Go";
+      Trace.status (s_ "Check and/or adjust selected actions; then press Go");
     theState :=
       Array.of_list
          (Safelist.map
@@ -3826,17 +3827,17 @@ let createToplevelWindow () =
     (ignoreMenu#add_item ~key:GdkKeysyms._i
        ~callback:(fun () -> getLock (fun () ->
           addRegExpByPath Uicommon.ignorePath))
-       "Permanently Ignore This _Path");
+       (s_ "Permanently Ignore This _Path"));
   grAdd grAction
     (ignoreMenu#add_item ~key:GdkKeysyms._E
        ~callback:(fun () -> getLock (fun () ->
           addRegExpByPath Uicommon.ignoreExt))
-       "Permanently Ignore Files with this _Extension");
+       (s_ "Permanently Ignore Files with this _Extension"));
   grAdd grAction
     (ignoreMenu#add_item ~key:GdkKeysyms._N
        ~callback:(fun () -> getLock (fun () ->
           addRegExpByPath Uicommon.ignoreName))
-       "Permanently Ignore Files with this _Name (in any Dir)");
+       (s_ "Permanently Ignore Files with this _Name (in any Dir)"));
 
   (*
   grAdd grRescan
@@ -3852,37 +3853,37 @@ let createToplevelWindow () =
        ~callback:(fun () -> getLock (fun () ->
           Sortri.sortByName();
           sortAndRedisplay()))
-       "Sort by _Name");
+       (s_ "Sort by _Name"));
   grAdd grRescan
     (sortMenu#add_item
        ~callback:(fun () -> getLock (fun () ->
           Sortri.sortBySize();
           sortAndRedisplay()))
-       "Sort by _Size");
+       (s_ "Sort by _Size"));
   grAdd grRescan
     (sortMenu#add_item
        ~callback:(fun () -> getLock (fun () ->
           Sortri.sortNewFirst();
           sortAndRedisplay()))
-       "Sort Ne_w Entries First (toggle)");
+       (s_ "Sort Ne_w Entries First (toggle)"));
   grAdd grRescan
     (sortMenu#add_item
        ~callback:(fun () -> getLock (fun () ->
           Sortri.restoreDefaultSettings();
           sortAndRedisplay()))
-       "_Default Ordering");
+       (s_ "_Default Ordering"));
 
   (*********************************************************************
     Main function : synchronize
    *********************************************************************)
   let synchronize () =
     if Array.length !theState = 0 then
-      Trace.status "Nothing to synchronize"
+      Trace.status (s_ "Nothing to synchronize")
     else begin
       grDisactivateAll ();
       make_busy toplevelWindow;
 
-      Trace.status "Propagating changes";
+      Trace.status (s_ "Propagating changes");
       Uicommon.transportStart ();
       grSet grStop true;
       let totalLength =
@@ -3911,10 +3912,10 @@ let createToplevelWindow () =
                            twoBoxAdvanced
                              ~parent:toplevelWindow
                              ~title:title
-                             ~message:("Do you want to commit the changes to"
-                                       ^ " the replicas ?")
+                             ~message:(s_ "Do you want to commit the changes to \
+                                        the replicas ?")
                              ~longtext:text
-                             ~advLabel:"View details..."
+                             ~advLabel:(s_ "View details...")
                              ~astock:`YES
                              ~bstock:`NO
                          else
@@ -3955,7 +3956,7 @@ let createToplevelWindow () =
           (fun si l ->
              match si.whatHappened with
                Some (Util.Failed err, _) ->
-                 (si, [err], "transport failure") :: l
+                 (si, [err], s_ "transport failure") :: l
              | _ ->
                  l)
           !theState []
@@ -3963,8 +3964,8 @@ let createToplevelWindow () =
       let failureCount = List.length failureList in
       let failures =
         if failureCount = 0 then [] else
-        [Printf.sprintf "%d failure%s"
-           failureCount (if failureCount = 1 then "" else "s")]
+        [Printf.sprintf (fn_ "%d failure" "%d failures" failureCount)
+           failureCount]
       in
       let partialList =
         Array.fold_right
@@ -3979,7 +3980,7 @@ let createToplevelWindow () =
                    | _              -> assert false
                  in
                  (si, errs,
-                  "partial transfer (errors during update detection)") :: l
+                  s_ "partial transfer (errors during update detection)") :: l
              | _ ->
                  l)
           !theState []
@@ -3987,18 +3988,20 @@ let createToplevelWindow () =
       let partialCount = List.length partialList in
       let partials =
         if partialCount = 0 then [] else
-        [Printf.sprintf "%d partially transferred" partialCount]
+        [Printf.sprintf
+          (fn_ "%d partially transferred" "%d partially transferred" partialCount)
+          partialCount]
       in
       let skippedList =
         Array.fold_right
           (fun si l ->
              match si.ri.replicas with
                Problem err ->
-                 (si, [err], "error during update detection") :: l
+                 (si, [err], s_ "error during update detection") :: l
              | Different diff when isConflict diff.direction ->
                  (si, [],
                   if isConflict diff.default_direction then
-                    "conflict"
+                    s_ "conflict"
                   else "skipped") :: l
              | _ ->
                  l)
@@ -4007,7 +4010,8 @@ let createToplevelWindow () =
       let skippedCount = List.length skippedList in
       let skipped =
         if skippedCount = 0 then [] else
-        [Printf.sprintf "%d skipped" skippedCount]
+        [Printf.sprintf
+          (fn_ "%d skipped" "%d skipped" skippedCount) skippedCount]
       in
       let nostartCount =
         if not (Abort.isAll ()) then 0 else
@@ -4017,14 +4021,15 @@ let createToplevelWindow () =
       in
       let nostart =
         if nostartCount = 0 then [] else
-        [Printf.sprintf "%d not started" nostartCount]
+        [Printf.sprintf
+          (fn_ "%d not started" "%d not started" nostartCount) nostartCount]
       in
       unsynchronizedPaths :=
         Some (Safelist.map (fun (si, _, _) -> si.ri.path1)
                 (failureList @ partialList @ skippedList),
               []);
       Trace.status
-        (Printf.sprintf "Synchronization complete         %s"
+        (Printf.sprintf (f_ "Synchronization complete         %s")
            (String.concat ", " (failures @ partials @ skipped @ nostart)));
       displayGlobalProgress 0.;
 
@@ -4033,24 +4038,24 @@ let createToplevelWindow () =
 
       let totalCount = failureCount + partialCount + skippedCount + nostartCount in
       if totalCount > 0 then begin
-        let format n item sing plur =
+        let format n item =
           match n with
             0 -> []
-          | 1 -> [Format.sprintf "one %s%s" item sing]
-          | n -> [Format.sprintf "%d %s%s" n item plur]
+          | 1 -> [Format.sprintf item (s_ "one")]
+          | n -> [Format.sprintf item (string_of_int n)]
         in
         let infos =
-          format failureCount "failure" "" "s" @
-          format partialCount "partially transferred director" "y" "ies" @
-          format skippedCount "skipped item" "" "s" @
-          format nostartCount "not started item" "" "s"
+          format failureCount (fn_ "%s failure" "%s failures" failureCount) @
+          format partialCount (fn_ "%s partially transferred directory" "%s partially transferred directories" partialCount) @
+          format skippedCount (fn_ "%s skipped item" "%s skipped items" skippedCount) @
+          format nostartCount (fn_ "%s not started item" "%s not started items" nostartCount)
         in
         let message =
           (if failureCount = 0 && nostartCount = 0 then
-             "The synchronization was successful.\n\n"
+             s_ "The synchronization was successful.\n\n"
            else "") ^
-          "The replicas are not fully synchronized.\n" ^
-          (if totalCount < 2 then "There was" else "There were") ^
+          (s_ "The replicas are not fully synchronized.\n") ^
+          (sn_ "There was" "There were" totalCount) ^
           begin match infos with
             [] -> assert false
           | [x] -> " " ^ x
@@ -4059,7 +4064,7 @@ let createToplevelWindow () =
           "."
         in
         summaryBox ~parent:toplevelWindow
-          ~title:"Synchronization summary" ~message ~f:
+          ~title:(s_ "Synchronization summary") ~message ~f:
           (fun t ->
              let bullet = "\xe2\x80\xa2 " in
              let layout = Pango.Layout.create t#misc#pango_context#as_context in
@@ -4139,30 +4144,30 @@ let createToplevelWindow () =
   grAdd grAction
     (insert_button actionBar
        ~stock:`GO_FORWARD
-       ~text:"Left to Right"
-       ~tooltip:"Propagate selected items\n\
-                 from the left replica to the right one"
+       ~text:(s_ "Left to Right")
+       ~tooltip:(s_ "Propagate selected items\n\
+                 from the left replica to the right one")
        ~callback:rightAction ());
 (*  actionBar#insert_space ();*)
   grAdd grAction
-    (insert_button actionBar ~text:"Skip"
+    (insert_button actionBar ~text:(s_ "Skip")
        ~stock:`NO
-       ~tooltip:"Skip selected items"
+       ~tooltip:(s_ "Skip selected items")
        ~callback:questionAction ());
 (*  actionBar#insert_space ();*)
   grAdd grAction
     (insert_button actionBar
        ~stock:`GO_BACK
-       ~text:"Right to Left"
-       ~tooltip:"Propagate selected items\n\
-                 from the right replica to the left one"
+       ~text:(s_ "Right to Left")
+       ~tooltip:(s_ "Propagate selected items\n\
+                 from the right replica to the left one")
        ~callback:leftAction ());
 (*  actionBar#insert_space ();*)
   grAdd grAction
     (insert_button actionBar
        ~stock:`ADD
-       ~text:"Merge"
-       ~tooltip:"Merge selected files"
+       ~text:(s_ "Merge")
+       ~tooltip:(s_ "Merge selected files")
        ~callback:mergeAction ());
 
   (*********************************************************************
@@ -4219,19 +4224,19 @@ let createToplevelWindow () =
         () in
 
   actionBar#insert (GButton.separator_tool_item ());
-  grAdd grDiff (insert_button actionBar ~text:"Diff"
+  grAdd grDiff (insert_button actionBar ~text:(s_ "Diff")
                   ~stock:`DIALOG_INFO
-                  ~tooltip:"Compare the two files at each replica"
+                  ~tooltip:(s_ "Compare the two files at each replica")
                   ~callback:diffCmd ());
 
   (*********************************************************************
     Detail button
    *********************************************************************)
 (*  actionBar#insert_space ();*)
-  grAdd grDetail (insert_button actionBar ~text:"Details"
+  grAdd grDetail (insert_button actionBar ~text:(s_ "Details")
                     ~stock:`INFO
-                    ~tooltip:"Show detailed information about\n\
-                              an item, when available"
+                    ~tooltip:(s_ "Show detailed information about\n\
+                              an item, when available")
                     ~callback:showDetCommand ());
 
   (*********************************************************************
@@ -4249,17 +4254,17 @@ let createToplevelWindow () =
    *********************************************************************)
   actionBar#insert (GButton.separator_tool_item ());
   grAdd grGo
-    (insert_button actionBar ~text:"Go"
+    (insert_button actionBar ~text:(s_ "Go")
        (* tooltip:"Go with displayed actions" *)
        ~stock:`EXECUTE
-       ~tooltip:"Perform the synchronization"
+       ~tooltip:(s_ "Perform the synchronization")
        ~callback:(fun () ->
                     getLock synchronize) ());
 
   grAdd grStop
-    (insert_button actionBar ~text:"Stop"
+    (insert_button actionBar ~text:(s_ "Stop")
        ~stock:`STOP
-       ~tooltip:"Stop update propagation"
+       ~tooltip:(s_ "Stop update propagation")
        ~callback:Abort.all ());
 
   (*********************************************************************
@@ -4270,7 +4275,7 @@ let createToplevelWindow () =
 
   let loadProfile p reload =
     debug (fun()-> Util.msg "Loading profile %s..." p);
-    Trace.status "Loading profile";
+    Trace.status (s_ "Loading profile");
     unsynchronizedPaths := None;
     profileInitSuccess := false;
     Uicommon.initPrefs ~profileName:p ~promptForRoots ~prepDebug ();
@@ -4314,9 +4319,9 @@ let createToplevelWindow () =
 
 (*  actionBar#insert_space ();*)
   grAdd grRescan
-    (insert_button actionBar ~text:"Rescan"
+    (insert_button actionBar ~text:(s_ "Rescan")
        ~stock:`REFRESH
-       ~tooltip:"Check for updates"
+       ~tooltip:(s_ "Check for updates")
        ~callback: (fun () -> reloadProfile(); detectCmd()) ());
 
   (*********************************************************************
@@ -4328,9 +4333,9 @@ let createToplevelWindow () =
       None   -> ()
     | Some p -> loadAndRunProfile p
   in
-  grAdd grRescan (insert_button actionBar ~text:"Change Profile"
+  grAdd grRescan (insert_button actionBar ~text:(s_ "Change Profile")
                     ~stock:`OPEN
-                    ~tooltip:"Select a different profile"
+                    ~tooltip:(s_ "Select a different profile")
                     ~callback:profileChange ());
 
   (*********************************************************************
@@ -4357,18 +4362,18 @@ let createToplevelWindow () =
       f x;
       delayUpdates := false;
       updateDetails () in
-    let actionMenu = replace_submenu "_Actions" actionItem in
+    let actionMenu = replace_submenu (s_ "_Actions") actionItem in
     grAdd grRescan
       (actionMenu#add_image_item
          ~callback:(fun _ -> withDelayedUpdates mainWindow#selection#select_all ())
          ~image:((GMisc.image ~stock:`SELECT_ALL ~icon_size:`MENU ())#coerce)
          ~modi:[`CONTROL] ~key:GdkKeysyms._A
-         "Select _All");
+         (s_ "Select _All"));
     grAdd grRescan
       (actionMenu#add_item
          ~callback:(fun _ -> withDelayedUpdates mainWindow#selection#unselect_all ())
          ~modi:[`SHIFT; `CONTROL] ~key:GdkKeysyms._A
-         "_Deselect All");
+         (s_ "_Deselect All"));
 
     ignore (actionMenu#add_separator ());
 
@@ -4377,27 +4382,27 @@ let createToplevelWindow () =
       let (root1,root2) = Globals.roots () in
       (root2hostname root1, root2hostname root2)
     in
-    let def_descr = "Left to Right" in
+    let def_descr = s_ "Propagate Left to Right" in
     let descr =
       if init || loc1 = loc2 then def_descr else
-      Printf.sprintf "from %s to %s" loc1 loc2 in
+      Printf.sprintf (f_ "Propagate from %s to %s") loc1 loc2 in
     let left =
       actionMenu#add_image_item ~key:GdkKeysyms._greater ~callback:rightAction
         ~image:((GMisc.image ~stock:`GO_FORWARD ~icon_size:`MENU ())#coerce)
-        ~name:("Propagate " ^ def_descr) ("Propagate " ^ descr) in
+        ~name:def_descr descr in
     grAdd grAction left;
     left#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._greater;
     left#add_accelerator ~group:accel_group GdkKeysyms._period;
 
-    let def_descl = "Right to Left" in
+    let def_descl = s_ "Propagate Right to Left" in
     let descl =
       if init || loc1 = loc2 then def_descl else
-      Printf.sprintf "from %s to %s"
+      Printf.sprintf "Propagate from %s to %s"
         (Unicode.protect loc2) (Unicode.protect loc1) in
     let right =
       actionMenu#add_image_item ~key:GdkKeysyms._less ~callback:leftAction
         ~image:((GMisc.image ~stock:`GO_BACK ~icon_size:`MENU ())#coerce)
-        ~name:("Propagate " ^ def_descl) ("Propagate " ^ descl) in
+        ~name:def_descl descl in
     grAdd grAction right;
     right#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._less;
     right#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._comma;
@@ -4405,7 +4410,7 @@ let createToplevelWindow () =
     let skip =
       actionMenu#add_image_item ~key:GdkKeysyms._slash ~callback:questionAction
         ~image:((GMisc.image ~stock:`NO ~icon_size:`MENU ())#coerce)
-        "Do _Not Propagate Changes" in
+        (s_ "Do _Not Propagate Changes") in
     grAdd grAction skip;
     skip#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._minus;
     skip#add_accelerator ~group:accel_group GdkKeysyms._KP_Divide;
@@ -4413,7 +4418,7 @@ let createToplevelWindow () =
     let merge =
       actionMenu#add_image_item ~key:GdkKeysyms._m ~callback:mergeAction
         ~image:((GMisc.image ~stock:`ADD ~icon_size:`MENU ())#coerce)
-        "_Merge the Files" in
+        (s_ "_Merge the Files") in
     grAdd grAction merge;
   (* merge#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._m; *)
 
@@ -4424,59 +4429,59 @@ let createToplevelWindow () =
          ~callback:(fun () ->
             doAction (fun ri _ ->
                         Recon.setDirection ri `Replica1ToReplica2 `Prefer))
-         "Resolve Conflicts in Favor of First Root");
+         (s_ "Resolve Conflicts in Favor of First Root"));
     grAdd grAction
       (actionMenu#add_item
          ~callback:(fun () ->
             doAction (fun ri _ ->
                         Recon.setDirection ri `Replica2ToReplica1 `Prefer))
-         "Resolve Conflicts in Favor of Second Root");
+         (s_ "Resolve Conflicts in Favor of Second Root"));
     grAdd grAction
       (actionMenu#add_item
          ~callback:(fun () ->
             doAction (fun ri _ ->
                         Recon.setDirection ri `Newer `Prefer))
-         "Resolve Conflicts in Favor of Most Recently Modified");
+         (s_ "Resolve Conflicts in Favor of Most Recently Modified"));
     grAdd grAction
       (actionMenu#add_item
          ~callback:(fun () ->
             doAction (fun ri _ ->
                         Recon.setDirection ri `Older `Prefer))
-         "Resolve Conflicts in Favor of Least Recently Modified");
+         (s_ "Resolve Conflicts in Favor of Least Recently Modified"));
     ignore (actionMenu#add_separator ());
     grAdd grAction
       (actionMenu#add_item
          ~callback:(fun () ->
             doAction (fun ri _ -> Recon.setDirection ri `Newer `Force))
-         "Force Newer Files to Replace Older Ones");
+         (s_ "Force Newer Files to Replace Older Ones"));
     grAdd grAction
       (actionMenu#add_item
          ~callback:(fun () ->
             doAction (fun ri _ -> Recon.setDirection ri `Older `Force))
-         "Force Older Files to Replace Newer Ones");
+         (s_ "Force Older Files to Replace Newer Ones"));
     ignore (actionMenu#add_separator ());
     grAdd grAction
       (actionMenu#add_item
          ~callback:(fun () ->
             doAction (fun ri _ -> Recon.revertToDefaultDirection ri))
-         "_Revert to Unison's Recommendation");
+         (s_ "_Revert to Unison's Recommendation"));
     grAdd grAction
       (actionMenu#add_item
          ~callback:(fun () ->
             doAction (fun ri _ -> Recon.setDirection ri `Merge `Force))
-         "Revert to the Merging Default, if Available");
+         (s_ "Revert to the Merging Default, if Available"));
 
     (* Diff *)
     ignore (actionMenu#add_separator ());
     grAdd grDiff (actionMenu#add_image_item ~key:GdkKeysyms._d ~callback:diffCmd
         ~image:((GMisc.image ~stock:`DIALOG_INFO ~icon_size:`MENU ())#coerce)
-        "Show _Diffs");
+        (s_ "Show _Diffs"));
 
     (* Details *)
     grAdd grDetail
       (actionMenu#add_image_item ~key:GdkKeysyms._i ~callback:showDetCommand
         ~image:((GMisc.image ~stock:`INFO ~icon_size:`MENU ())#coerce)
-        "Detailed _Information")
+        (s_ "Detailed _Information"))
 
   in
   buildActionMenu true;
@@ -4489,19 +4494,19 @@ let createToplevelWindow () =
     (fileMenu#add_image_item ~key:GdkKeysyms._g
        ~image:(GMisc.image ~stock:`EXECUTE ~icon_size:`MENU () :> GObj.widget)
        ~callback:(fun () -> getLock synchronize)
-       "_Go");
+       (s_ "_Go"));
   grAdd grRescan
     (fileMenu#add_image_item ~key:GdkKeysyms._r
        ~image:(GMisc.image ~stock:`REFRESH ~icon_size:`MENU () :> GObj.widget)
        ~callback:(fun () -> reloadProfile(); detectCmd())
-       "_Rescan");
+       (s_ "_Rescan"));
   grAdd grRescan
     (fileMenu#add_item ~key:GdkKeysyms._a
        ~callback:(fun () ->
                     reloadProfile();
                     Prefs.set Globals.batch true;
                     detectCmd())
-       "_Detect Updates and Proceed (Without Waiting)");
+       (s_ "_Detect Updates and Proceed (Without Waiting)"));
   grAdd grRescan
     (fileMenu#add_item ~key:GdkKeysyms._f
        ~callback:(
@@ -4536,7 +4541,7 @@ let createToplevelWindow () =
            Prefs.set Globals.paths paths;
            Prefs.set Globals.confirmBigDeletes confirmBigDeletes;
            unsynchronizedPaths := None)
-       "Re_check Unsynchronized Items");
+       (s_ "Re_check Unsynchronized Items"));
 
   ignore (fileMenu#add_separator ());
 
@@ -4544,7 +4549,7 @@ let createToplevelWindow () =
     (fileMenu#add_image_item ~key:GdkKeysyms._p
        ~callback:profileChange
        ~image:(GMisc.image ~stock:`OPEN ~icon_size:`MENU () :> GObj.widget)
-       "Change _Profile...");
+       (s_ "Change _Profile..."));
 
   let fastProf i key =
     let item = fileMenu#add_item ~key:key ~bindname:(string_of_int i) "" in
@@ -4555,14 +4560,14 @@ let createToplevelWindow () =
       | [] | _::_::_ -> ()
       | [l] ->
           let label = (GMisc.label_cast l) in
-          label#set_label ("Select profile " ^ name);
+          label#set_label (s_ "Select profile " ^ name);
           ignore (item#connect#activate
             ~callback:(fun _ ->
                if System.file_exists (Prefs.profilePathname name) then begin
-                 Trace.status ("Loading profile " ^ name);
+                 Trace.status (s_ "Loading profile " ^ name);
                  loadProfile name false; detectCmd ()
                end else
-                 Trace.status ("Profile " ^ name ^ " not found"))
+                 Trace.status (Printf.sprintf (f_ "Profile %s not found") name))
             );
           item#misc#show ()
     in
@@ -4587,14 +4592,14 @@ let createToplevelWindow () =
 
   ignore (fileMenu#add_separator ());
   ignore (fileMenu#add_item
-            ~callback:(fun _ -> statWin#show ()) "Show _Statistics");
+            ~callback:(fun _ -> statWin#show ()) (s_ "Show _Statistics"));
 
   ignore (fileMenu#add_separator ());
   let quit =
     fileMenu#add_image_item
       ~key:GdkKeysyms._q ~callback:safeExit
       ~image:((GMisc.image ~stock:`QUIT ~icon_size:`MENU ())#coerce)
-      "_Quit"
+      (s_ "_Quit")
   in
   quit#add_accelerator ~group:accel_group ~modi:[`CONTROL] GdkKeysyms._q;
 
@@ -4644,7 +4649,7 @@ let createToplevelWindow () =
     (fun err ->
        grDisactivateAll ();
        make_interactive toplevelWindow;
-       Trace.status ("Fatal error: " ^ err);
+       Trace.status (s_ "Fatal error: " ^ err);
        inExit := true;
        fatalError err;
        inExit := false;
@@ -4763,7 +4768,7 @@ let start = function
       in
       if displayAvailable then Private.start Uicommon.Graphic
       else begin
-        Util.warn "DISPLAY and WAYLAND_DISPLAY not set or empty; starting the Text UI\n";
+        Util.warn (s_ "DISPLAY and WAYLAND_DISPLAY not set or empty; starting the Text UI\n");
         Uitext.Body.start Uicommon.Text
       end
 

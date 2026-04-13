@@ -152,8 +152,8 @@ let add_watch path file _ =
         watch_info.handle <- Some (watch_root_directory path file)
       with Unix.Unix_error _ as e ->
         Watchercommon.error
-          (Format.sprintf
-             "Error while starting to watch for changes: %s@."
+          (Printf.sprintf
+             (f_ "Error while starting to watch for changes: %s\n")
              (Watchercommon.format_exc e))
   end
 

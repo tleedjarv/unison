@@ -267,19 +267,19 @@ let test() =
       f();
     ) in
 
-  Util.msg "Running internal tests...\n";
+  Util.msg (f_ "Running internal tests...\n");
 
   (* Paranoid checks, to make sure we do not delete anybody's filesystem! *)
   if not (Safelist.for_all
             (fun r -> Util.findsubstring "test" r <> None)
             (Globals.rawRoots())) then
-    raise (Util.Fatal
-      "Self-tests can only be run if both roots include the string 'test'");
+    raise (Util.Fatal (s_
+      "Self-tests can only be run if both roots include the string 'test'"));
   if Util.findsubstring "test" (Fspath.toPrintString (Stasher.backupDirectory())) = None then
     raise (Util.Fatal
-        ("Self-tests can only be run if the 'backupdir' preference (or wherever the backup "
-       ^ "directory name is coming from, e.g. the UNISONBACKUPDIR environment variable) "
-       ^ "includes the string 'test'"));
+        (s_ "Self-tests can only be run if the 'backupdir' preference (or wherever the backup \
+         directory name is coming from, e.g. the UNISONBACKUPDIR environment variable) \
+         includes the string 'test'"));
 
   Lwt_unix.run (Globals.allRootsIter (fun r -> makeRootEmpty r ()));
 
@@ -896,9 +896,9 @@ let test() =
   end;
 
   if !failures = 0 then
-    Util.msg "Success :-)\n"
+    Util.msg (f_ "Success :-)\n")
   else
-    raise (Util.Fatal "Self-tests failed\n")
+    raise (Util.Fatal (s_ "Self-tests failed\n"))
 
 (* Initialization: tie the knot between this module and Uicommon *)
 let _ = (Uicommon.testFunction := test)

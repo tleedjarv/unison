@@ -18,6 +18,19 @@ let rec findFirstSNIP ch =
       (Printf.printf "File does not contain ----SNIP----\n";
        exit 1) in
 
+let transl_comment =
+  "(* TRANSLATORS: Section heading for manual in UI *)" in
+
+let transl_comment2 =
+  "(* TRANSLATORS: This is auto-generated for the manual in UI.\n\
+    Please judge if translation is needed or not. *)" in
+
+let should_translate name s =
+  match name with
+  | "Junk" -> ""
+  | _ -> s ^ "s_ "
+in
+
 let prsection ch =
   let name = input_line ch in
   let shortname = input_line ch in
@@ -27,7 +40,8 @@ let prsection ch =
       (fprintf stderr "Second line after SNIP is '%s', not empty!\n" empty;
        exit 1)
     end;
-  fprintf ml "    (\"%s\", (\"%s\", \n     \"" shortname name;
+  fprintf ml "    (\"%s\", (%s\"%s\", \n     %s\""
+    shortname (should_translate name transl_comment) name (should_translate name transl_comment2);
   let rec loop () =
     let l = input_line ch in
     if l<>"----SNIP----" then begin

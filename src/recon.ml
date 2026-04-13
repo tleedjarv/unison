@@ -104,8 +104,9 @@ let root2direction root =
     | [true; false] -> `Replica1ToReplica2
     | [false; true] -> `Replica2ToReplica1
     | _ ->
-        raise (Util.Fatal (Printf.sprintf "%s\nis not uniquely identifying one \
-          of the current roots:\n  %s\n  %s" root r1 r2))
+        raise (Util.Fatal (Printf.sprintf
+          (f_ "%s\nis not uniquely identifying one \
+            of the current roots:\n  %s\n  %s") root r1 r2))
 
 let rootDirCache = ref []
 
@@ -124,78 +125,78 @@ let prefRoot prefV =
 let forceRoot: string Prefs.t =
   Prefs.createString "force" ""
     ~category:(`Advanced `Sync)
-    "force changes from this replica to the other"
-    ("Including the preference \\texttt{-force \\ARG{root}} causes Unison to "
-     ^ "resolve all differences (even non-conflicting changes) in favor of "
-     ^ "\\ARG{root}.  "
-     ^ "This effectively changes Unison from a synchronizer into a mirroring "
-     ^ "utility.  \n\n"
-     ^ "You can also specify a unique prefix or suffix of the path of one of "
-     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
-     ^ "You can also specify \\verb|-force newer| (or \\verb|-force older|) "
-     ^ "to force Unison to choose the file with the later (earlier) "
-     ^ "modtime.  In this case, the \\verb|-times| preference must also "
-     ^ "be enabled.  If modtimes are equal in both replicas when using "
-     ^ "\\verb|newer| or \\verb|older| then this preference will have no "
-     ^ "effect (changes will be synced as if without this preference or "
-     ^ "remain unsynced in case of a conflict).\n\n"
-     ^ "This preference is overridden by the \\verb|forcepartial| preference.\n\n"
-     ^ "This preference should be used only if you are {\\em sure} you "
-     ^ "know what you are doing!")
+    (s_ "force changes from this replica to the other")
+    (s_ "Including the preference \\texttt{-force \\ARG{root}} causes Unison to \
+     resolve all differences (even non-conflicting changes) in favor of \
+     \\ARG{root}.  \
+     This effectively changes Unison from a synchronizer into a mirroring \
+     utility.  \n\n\
+     You can also specify a unique prefix or suffix of the path of one of \
+     the roots or a unique prefix of the hostname of a remote root.\n\n\
+     You can also specify \\verb|-force newer| (or \\verb|-force older|) \
+     to force Unison to choose the file with the later (earlier) \
+     modtime.  In this case, the \\verb|-times| preference must also \
+     be enabled.  If modtimes are equal in both replicas when using \
+     \\verb|newer| or \\verb|older| then this preference will have no \
+     effect (changes will be synced as if without this preference or \
+     remain unsynced in case of a conflict).\n\n\
+     This preference is overridden by the \\verb|forcepartial| preference.\n\n\
+     This preference should be used only if you are {\\em sure} you \
+     know what you are doing!")
 
 let forceRootPartial: Pred.t =
   Pred.create "forcepartial"
     ~category:(`Advanced `Sync)
-    ("Including the preference \\texttt{forcepartial = \\ARG{PATHSPEC} -> \\ARG{root}} causes Unison to "
-     ^ "resolve all differences (even non-conflicting changes) in favor of "
-     ^ "\\ARG{root} for the files in \\ARG{PATHSPEC} (see \\sectionref{pathspec}{Path Specification} "
-     ^ "for more information).  "
-     ^ "This effectively changes Unison from a synchronizer into a mirroring "
-     ^ "utility.  \n\n"
-     ^ "You can also specify a unique prefix or suffix of the path of one of "
-     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
-     ^ "You can also specify \\verb|forcepartial PATHSPEC -> newer| "
-     ^ "(or \\verb|forcepartial PATHSPEC -> older|) "
-     ^ "to force Unison to choose the file with the later (earlier) "
-     ^ "modtime.  In this case, the \\verb|-times| preference must also "
-     ^ "be enabled.  If modtimes are equal in both replicas when using "
-     ^ "\\verb|newer| or \\verb|older| then this preference will have no "
-     ^ "effect (changes will be synced as if without this preference or "
-     ^ "remain unsynced in case of a conflict).\n\n"
-     ^ "This preference should be used only if you are {\\em sure} you "
-     ^ "know what you are doing!")
+    (s_ "Including the preference \\texttt{forcepartial = \\ARG{PATHSPEC} -> \\ARG{root}} causes Unison to \
+     resolve all differences (even non-conflicting changes) in favor of \
+     \\ARG{root} for the files in \\ARG{PATHSPEC} (see \\sectionref{pathspec}{Path Specification} \
+     for more information).  \
+     This effectively changes Unison from a synchronizer into a mirroring \
+     utility.  \n\n\
+     You can also specify a unique prefix or suffix of the path of one of \
+     the roots or a unique prefix of the hostname of a remote root.\n\n\
+     You can also specify \\verb|forcepartial PATHSPEC -> newer| \
+     (or \\verb|forcepartial PATHSPEC -> older|) \
+     to force Unison to choose the file with the later (earlier) \
+     modtime.  In this case, the \\verb|-times| preference must also \
+     be enabled.  If modtimes are equal in both replicas when using \
+     \\verb|newer| or \\verb|older| then this preference will have no \
+     effect (changes will be synced as if without this preference or \
+     remain unsynced in case of a conflict).\n\n\
+     This preference should be used only if you are {\\em sure} you \
+     know what you are doing!")
 
 let preferRoot: string Prefs.t =
   Prefs.createString "prefer" ""
     ~category:(`Advanced `Sync)
-    "choose this replica's version for conflicting changes"
-    ("Including the preference \\texttt{-prefer \\ARG{root}} causes Unison always to "
-     ^ "resolve conflicts in favor of \\ARG{root}, rather than asking for "
-     ^ "guidance from the user, except for paths marked by the preference "
-     ^ "\\texttt{merge}.  (The syntax of \\ARG{root} is the same as "
-     ^ "for the \\verb|root| preference, plus the special values "
-     ^ "\\verb|newer| and \\verb|older|.)  \n\n"
-     ^ "You can also specify a unique prefix or suffix of the path of one of "
-     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
-     ^ "This preference is overridden by the \\verb|preferpartial| preference.\n\n"
-     ^ "This preference should be used only if you are {\\em sure} you "
-     ^ "know what you are doing!")
+    (s_ "choose this replica's version for conflicting changes")
+    (s_ "Including the preference \\texttt{-prefer \\ARG{root}} causes Unison always to \
+     resolve conflicts in favor of \\ARG{root}, rather than asking for \
+     guidance from the user, except for paths marked by the preference \
+     \\texttt{merge}.  (The syntax of \\ARG{root} is the same as \
+     for the \\verb|root| preference, plus the special values \
+     \\verb|newer| and \\verb|older|.)  \n\n\
+     You can also specify a unique prefix or suffix of the path of one of \
+     the roots or a unique prefix of the hostname of a remote root.\n\n\
+     This preference is overridden by the \\verb|preferpartial| preference.\n\n\
+     This preference should be used only if you are {\\em sure} you \
+     know what you are doing!")
 
 let preferRootPartial: Pred.t =
   Pred.create "preferpartial"
     ~category:(`Advanced `Sync)
-    ("Including the preference \\texttt{preferpartial = \\ARG{PATHSPEC} -> \\ARG{root}} "
-     ^ "causes Unison always to "
-     ^ "resolve conflicts in favor of \\ARG{root}, rather than asking for "
-     ^ "guidance from the user, for the files in \\ARG{PATHSPEC} (see "
-     ^ "\\sectionref{pathspec}{Path Specification} "
-     ^ "for more information).  (The syntax of \\ARG{root} is the same as "
-     ^ "for the \\verb|root| preference, plus the special values "
-     ^ "\\verb|newer| and \\verb|older|.)  \n\n"
-     ^ "You can also specify a unique prefix or suffix of the path of one of "
-     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
-     ^ "This preference should be used only if you are {\\em sure} you "
-     ^ "know what you are doing!")
+    (s_ "Including the preference \\texttt{preferpartial = \\ARG{PATHSPEC} -> \\ARG{root}} \
+     causes Unison always to \
+     resolve conflicts in favor of \\ARG{root}, rather than asking for \
+     guidance from the user, for the files in \\ARG{PATHSPEC} (see \
+     \\sectionref{pathspec}{Path Specification} \
+     for more information).  (The syntax of \\ARG{root} is the same as \
+     for the \\verb|root| preference, plus the special values \
+     \\verb|newer| and \\verb|older|.)  \n\n\
+     You can also specify a unique prefix or suffix of the path of one of \
+     the roots or a unique prefix of the hostname of a remote root.\n\n\
+     This preference should be used only if you are {\\em sure} you \
+     know what you are doing!")
 
 (* [lookupPreferredRoot (): string * [`Force | `Prefer]] checks validity of  *)
 (* preferences "force"/"preference", returns a pair (root, force)            *)
@@ -221,8 +222,8 @@ let lookupPreferredRootPartial p =
 let noDeletion =
   Prefs.createStringList "nodeletion"
     ~category:(`Basic `Sync)
-    "prevent file deletions on one replica"
-    ("Including the preference \\texttt{-nodeletion \\ARG{root}} prevents \
+    (s_ "prevent file deletions on one replica")
+    (s_ "Including the preference \\texttt{-nodeletion \\ARG{root}} prevents \
       Unison from performing any file deletion on root \\ARG{root}.\n\n\
       You can also specify a unique prefix or suffix of the path of one of \
       the roots or a unique prefix of the hostname of a remote root.\n\n\
@@ -232,8 +233,8 @@ let noDeletion =
 let noUpdate =
   Prefs.createStringList "noupdate"
     ~category:(`Basic `Sync)
-    "prevent file updates and deletions on one replica"
-    ("Including the preference \\texttt{-noupdate \\ARG{root}} prevents \
+    ("prevent file updates and deletions on one replica")
+    (s_ "Including the preference \\texttt{-noupdate \\ARG{root}} prevents \
       Unison from performing any file update or deletion on root \
       \\ARG{root}.\n\n\
       You can also specify a unique prefix or suffix of the path of one of \
@@ -244,8 +245,8 @@ let noUpdate =
 let noCreation =
   Prefs.createStringList "nocreation"
     ~category:(`Basic `Sync)
-    "prevent file creations on one replica"
-    ("Including the preference \\texttt{-nocreation \\ARG{root}} prevents \
+    (s_ "prevent file creations on one replica")
+    (s_ "Including the preference \\texttt{-nocreation \\ARG{root}} prevents \
       Unison from performing any file creation on root \\ARG{root}.\n\n\
       You can also specify a unique prefix or suffix of the path of one of \
       the roots or a unique prefix of the hostname of a remote root.\n\n\
@@ -255,7 +256,7 @@ let noCreation =
 let noDeletionPartial =
   Pred.create "nodeletionpartial"
     ~category:(`Advanced `Sync)
-    ("Including the preference \
+    (s_ "Including the preference \
       \\texttt{nodeletionpartial = \\ARG{PATHSPEC} -> \\ARG{root}} prevents \
       Unison from performing any file deletion in \\ARG{PATHSPEC} \
       on root \\ARG{root} (see \\sectionref{pathspec}{Path Specification} \
@@ -265,7 +266,7 @@ let noDeletionPartial =
 let noUpdatePartial =
   Pred.create "noupdatepartial"
     ~category:(`Advanced `Sync)
-    ("Including the preference \
+    (s_ "Including the preference \
       \\texttt{noupdatepartial = \\ARG{PATHSPEC} -> \\ARG{root}} prevents \
       Unison from performing any file update or deletion in \
       \\ARG{PATHSPEC} on root \\ARG{root} (see \
@@ -276,7 +277,7 @@ let noUpdatePartial =
 let noCreationPartial =
   Pred.create "nocreationpartial"
     ~category:(`Advanced `Sync)
-    ("Including the preference \
+    (s_ "Including the preference \
       \\texttt{nocreationpartial = \\ARG{PATHSPEC} ->  \\ARG{root}} prevents \
       Unison from performing any file creation in \\ARG{PATHSPEC} \
       on root \\ARG{root} (see \\sectionref{pathspec}{Path Specification} \
@@ -287,12 +288,12 @@ let noCreationPartial =
 let maxSizeThreshold =
   Prefs.createInt "maxsizethreshold" (-1)
     ~category:(`Advanced `General)
-    "prevent transfer of files bigger than this (if >=0, in Kb)"
-    ("A number indicating above what filesize (in kilobytes) Unison should "
-     ^ "flag a conflict instead of transferring the file. "
-     ^ "This conflict remains even in the presence of force or prefer options. "
-     ^ "A negative number will allow every transfer independently of the size.  "
-     ^ "The default is -1. ")
+    (s_ "prevent transfer of files bigger than this (if >=0, in Kb)")
+    (s_ "A number indicating above what filesize (in kilobytes) Unison should \
+     flag a conflict instead of transferring the file. \
+     This conflict remains even in the presence of force or prefer options. \
+     A negative number will allow every transfer independently of the size.  \
+     The default is -1. ")
 
 let testPartialCancelPref root path actionKind =
   let partialCancelPref actionKind =
@@ -336,14 +337,14 @@ let shouldCancel path rc1 rc2 root =
   in
   match actionKind rc1 rc2 with
     `UPDATE   ->
-     if test `UPDATE then true, "would update a file with noupdate or noupdatepartial set"
-     else testSize rc1, "would transfer a file of size greater than maxsizethreshold"
+     if test `UPDATE then true, s_ "would update a file with noupdate or noupdatepartial set"
+     else testSize rc1, s_ "would transfer a file of size greater than maxsizethreshold"
   | `DELETION ->
-     if test `UPDATE then true, "would update a file with noupdate or noupdatepartial set"
-     else test `DELETION, "would delete a file with nodeletion or nodeletionpartial set"
+     if test `UPDATE then true, s_ "would update a file with noupdate or noupdatepartial set"
+     else test `DELETION, s_ "would delete a file with nodeletion or nodeletionpartial set"
   | `CREATION ->
-     if test `CREATION then true, "would create a file with nocreation or nocreationpartial set"
-     else testSize rc1, "would transfer a file of size greater than maxsizethreshold"
+     if test `CREATION then true, s_ "would create a file with nocreation or nocreationpartial set"
+     else testSize rc1, s_ "would transfer a file of size greater than maxsizethreshold"
 
 let filterRi ri =
   match ri.replicas with
@@ -385,17 +386,20 @@ let checkThatPreferredRootIsValid () =
     match prefRoot predvalue with
     | `None | `Replica1ToReplica2 | `Replica2ToReplica1 -> ()
     | (`Newer | `Older) when explicitRoot ->
-        raise (Util.Fatal ("Argument to preference '" ^ predname ^ "': "
-          ^ predvalue ^ " must not be keyword 'older' or 'newer'."))
+        raise (Util.Fatal (Printf.sprintf
+          (f_ "Argument to preference '%s': %s must not be \
+            keyword 'older' or 'newer'.") predname predvalue))
     | `Newer -> ()
     | `Older ->
         if not (Prefs.read Props.syncModtimes) then
           raise (Util.Transient (Printf.sprintf
-            "The '%s=older' preference can only be used with 'times=true'"
+            (f_ "The '%s=older' preference can only be used with 'times=true'")
             predname))
     | `Merge -> assert false
     | exception (Util.Fatal err) ->
-        raise (Util.Fatal ("Argument to preference '" ^ predname ^ "': " ^ err))
+        raise (Util.Fatal (Printf.sprintf
+          (* TRANSLATORS: The second %s is an error message. *)
+          (f_ "Argument to preference '%s': %s") predname err))
   in
   let checkPrefs ~explicitRoot extract prefs =
     Safelist.iter (fun (pref, prefName) ->
@@ -462,9 +466,9 @@ let propagateErrors allowPartial (rplc: Common.replicas): Common.replicas =
           checkForError diff.rc2.ui;
           rplc
         with UpdateError err ->
-          Problem ("[root 2]: " ^ err)
+          Problem ((s_ "[root 2]: ") ^ err)
       with UpdateError err ->
-        Problem ("[root 1]: " ^ err)
+        Problem ((s_ "[root 1]: ") ^ err)
 
 (* Using the error message to ignore symlinks is a bit fragile but this is
    the easiest way to keep code changes local and avoid a huge backwards
@@ -478,9 +482,9 @@ let skipIgnored result s othUi =
   | true, NoUpdates
   | true, Updates (Symlink _, _) -> result
   | true, Updates _ ->
-      Tree.add result (Problem "Syncing symbolic links is disabled, but \
+      Tree.add result (Problem (s_ "Syncing symbolic links is disabled, but \
         this path represents a symbolic link in one of the replicas and \
-        a non-link in the other replica.")
+        a non-link in the other replica."))
 
 type singleUpdate = Rep1Updated | Rep2Updated
 
@@ -699,7 +703,7 @@ let rec reconcile
              let action =
                if propsChanged1 = PropsSame then Replica2ToReplica1
                else if propsChanged2 = PropsSame then Replica1ToReplica2
-               else Conflict "properties changed on both sides" in
+               else Conflict (s_ "properties changed on both sides") in
              (equals,
               Tree.add unequals
                 (Different
@@ -734,18 +738,18 @@ let rec reconcile
 (* expect this.)                                                             *)
              let uc1' = File(desc1,ContentsSame) in
              let uc2' = File(desc2,ContentsSame) in
-             different uc1' uc2' "properties changed on both sides"
+             different uc1' uc2' (s_ "properties changed on both sides")
                        (oldType prev) equals unequals
        | ContentsSame, ContentsSame when Props.similar desc1 desc2 ->
            (add_equal counter equals (uc1, uc2), unequals)
        | ContentsSame, ContentsSame ->
-           different uc1 uc2 "properties changed on both sides"
+           different uc1 uc2 (s_ "properties changed on both sides")
                      (oldType prev) equals unequals
        | ContentsUpdated _, ContentsUpdated _
              when Globals.shouldMerge path ->
            toBeMerged uc1 uc2 (oldType prev) equals unequals
        | _ ->
-           different uc1 uc2 "contents changed on both sides"
+           different uc1 uc2 (s_ "contents changed on both sides")
                      (oldType prev) equals unequals
        end
   | (Updates (Symlink(l1) as uc1, prev),
@@ -753,10 +757,10 @@ let rec reconcile
        if l1 = l2 then
          (add_equal counter equals (uc1, uc2), unequals)
        else
-         different uc1 uc2 "symbolic links changed on both sides"
+         different uc1 uc2 (s_ "symbolic links changed on both sides")
                    (oldType prev) equals unequals
   | (Updates (uc1, prev), Updates (uc2, _)) ->
-      different uc1 uc2 "conflicting updates"
+      different uc1 uc2 (s_ "conflicting updates")
                 (oldType prev) equals unequals
 
 (* Sorts the paths so that they will be displayed in order                   *)

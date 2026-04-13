@@ -85,8 +85,8 @@ let permMask =
   Prefs.createInt "perms"
     (0o777 (* rwxrwxrwx *) + 0o1000 (* Sticky bit *))
     ~category:(`Basic `Sync)
-    "part of the permissions which is synchronized"
-    "The integer value of this preference is a mask indicating which \
+    (s_ "part of the permissions which is synchronized")
+    (s_ "The integer value of this preference is a mask indicating which \
      permission bits should be synchronized.  It is set by default to \
      $0o1777$: all bits but the set-uid and set-gid bits are \
      synchronised (synchronizing these latter bits can be a security \
@@ -95,7 +95,7 @@ let permMask =
      a FAT [Windows] filesystem, you should consider using the \
      {\\tt fat} preference instead of this preference.  If you need \
      Unison not to set permissions at all, set the value of this \
-     preference to $0$ and set the preference {\\tt dontchmod} to {\\tt true}."
+     preference to $0$ and set the preference {\\tt dontchmod} to {\\tt true}.")
 
 (* Os-specific local conventions on file permissions                         *)
 let (fileDefault, dirDefault, fileSafe, dirSafe) =
@@ -146,9 +146,9 @@ let diff (p, m) (p', m') = (p', (p lxor p') land m land m')
 
 let toString =
   function
-    (_, 0) -> "unknown permissions"
+    (_, 0) -> (s_ "unknown permissions")
   | (fp, _) when Prefs.read permMask = wind_mask ->
-      if fp land wind_mask <> 0 then "read-write" else "read-only"
+      if fp land wind_mask <> 0 then (s_ "read-write") else (s_ "read-only")
   | (fp, _) ->
      let m = Prefs.read permMask in
      let bit mb unknown off on =
@@ -201,15 +201,15 @@ let dontChmod =
   Prefs.createBool "dontchmod"
   false
   ~category:(`Advanced `Syncprocess)
-  "when set, never use the chmod system call"
-  (  "By default, Unison uses the 'chmod' system call to set the permission bits"
-  ^ " of files after it has copied them.  But in some circumstances (and under "
-  ^ " some operating systems), the chmod call always fails.  Setting this "
-  ^ " preference completely prevents Unison from ever calling chmod.")
+  (s_ "when set, never use the chmod system call")
+  (s_ "By default, Unison uses the 'chmod' system call to set the permission bits \
+   of files after it has copied them.  But in some circumstances (and under \
+   some operating systems), the chmod call always fails.  Setting this \
+   preference completely prevents Unison from ever calling chmod.")
 
 let validatePrefs () =
   if Prefs.read dontChmod && (Prefs.read permMask <> 0) then raise (Util.Fatal
-    "If the 'dontchmod' preference is set, the 'perms' preference should be 0")
+    (s_ "If the 'dontchmod' preference is set, the 'perms' preference should be 0"))
 
 let set abspath kind (fp, mask) =
   (* BCP: removed "|| kind <> `Update" on 10/2005, but reinserted it on 11/2008.
@@ -219,7 +219,9 @@ let set abspath kind (fp, mask) =
    *)
   if (mask <> 0 || kind = `Set) && (not (Prefs.read dontChmod)) then
     Util.convertUnixErrorsToTransient
-    "setting permissions"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (s_ "setting permissions")
       (fun () ->
         debug
           (fun() ->
@@ -230,12 +232,12 @@ let set abspath kind (fp, mask) =
           Fs.chmod abspath fp
         with Unix.Unix_error (Unix.EOPNOTSUPP, _, _) as e ->
           try
-            Util.convertUnixErrorsToTransient "setting permissions"
+            Util.convertUnixErrorsToTransient (s_ "setting permissions")
               (fun () -> raise e)
           with Util.Transient msg ->
             raise (Util.Transient
-                     (msg ^
-                      ". You can use preference \"fat\",\
+                     (msg ^ ". " ^
+                      s_ "You can use preference \"fat\",\
                        or else set preference \"perms\" to 0 and \
                        preference \"dontchmod\" to true to avoid this error")))
 
@@ -246,14 +248,14 @@ let check fspath path stats (fp, mask) =
   if fp land mask <> fp' land mask then
     raise
       (Util.Transient
-         (Format.sprintf
+         (Format.sprintf (f_
             "Failed to set permissions of file %s to %s: \
              the permissions was set to %s instead. \
              The filesystem probably does not support all permission bits. \
              If this is a FAT filesystem, you should set the \"fat\" option \
              to true. \
              Otherwise, you should probably set the \"perms\" option to 0o%o \
-             (or to 0 if you don't need to synchronize permissions)."
+             (or to 0 if you don't need to synchronize permissions).")
             (Fspath.toPrintString (Fspath.concat fspath path))
             (syncedPartsToString (fp, mask))
             (syncedPartsToString (fp', mask))
@@ -280,12 +282,12 @@ end
 let numericIds =
   Prefs.createBool "numericids" false
     ~category:(`Advanced `Syncprocess)
-    "don't map uid/gid values by user/group names"
-    "When this flag is set to \\verb|true|, groups and users are \
+    (s_ "don't map uid/gid values by user/group names")
+    (s_ "When this flag is set to \\verb|true|, groups and users are \
      synchronized numerically, rather than by name. \n\
      \n\
      The special uid 0 and the special group 0 are never mapped via \
-     user/group names even if this preference is not set."
+     user/group names even if this preference is not set.")
 
 (* For backward compatibility *)
 let _ = Prefs.alias numericIds "numericIds"
@@ -359,11 +361,14 @@ let extern id =
       with Not_found ->
         let id =
           try M.to_num nm with Not_found ->
-            raise (Util.Transient ("No " ^ M.kind ^ " " ^ nm))
+            raise (Util.Transient
+              (* TRANSLATORS: This is an error message that takes the form
+                 either "No user <username>" or "No group <groupname>". *)
+              (Printf.sprintf (f_ "No %s %s") M.kind nm))
         in
         if id = 0 then
           raise (Util.Transient
-                   (Printf.sprintf "Trying to map the non-root %s %s to %s 0"
+                   (Printf.sprintf (f_ "Trying to map the non-root %s %s to %s 0")
                       M.kind nm M.kind));
         Hashtbl.add tbl nm id;
         id
@@ -374,7 +379,9 @@ let set abspath id =
       ()
   | id ->
       Util.convertUnixErrorsToTransient
-        "setting file ownership"
+        (* TRANSLATORS: This is used as an error location in a message like
+           "Error in %s:" (where %s is the string to translate here). *)
+        (s_ "setting file ownership")
         (fun () ->
            M.set abspath id)
 
@@ -402,13 +409,13 @@ module Uid = Id (struct
 let sync =
   Prefs.createBool "owner" false
     ~category:(`Basic `Sync)
-    "synchronize owner"
-    ("When this flag is set to \\verb|true|, the owner attributes "
-     ^ "of the files are synchronized.  "
-     ^ "Whether the owner names or the owner identifiers are synchronized"
-     ^ "depends on the preference \\texttt{numerids}.")
+    (s_ "synchronize owner")
+    (s_ "When this flag is set to \\verb|true|, the owner attributes \
+     of the files are synchronized.  \
+     Whether the owner names or the owner identifiers are synchronized \
+     depends on the preference \\texttt{numerids}.")
 
-let kind = "user"
+let kind = s_ "user"
 
 let to_num nm = (Unix.getpwnam nm).Unix.pw_uid
 let toString id = (Unix.getpwuid id).Unix.pw_name
@@ -424,13 +431,13 @@ module Gid = Id (struct
 let sync =
   Prefs.createBool "group" false
     ~category:(`Basic `Sync)
-    "synchronize group attributes"
-    ("When this flag is set to \\verb|true|, the group attributes "
-     ^ "of the files are synchronized.  "
-     ^ "Whether the group names or the group identifiers are synchronized "
-     ^ "depends on the preference \\texttt{numerids}.")
+    (s_ "synchronize group attributes")
+    (s_ "When this flag is set to \\verb|true|, the group attributes \
+     of the files are synchronized.  \
+     Whether the group names or the group identifiers are synchronized \
+     depends on the preference \\texttt{numerids}.")
 
-let kind = "group"
+let kind = s_ "group"
 
 let to_num nm = (Unix.getgrnam nm).Unix.gr_gid
 let toString id = (Unix.getgrgid id).Unix.gr_name
@@ -457,9 +464,9 @@ end = struct
 let sync =
   Prefs.createBool "times" false
     ~category:(`Basic `Sync)
-    "synchronize modification times"
-    "When this flag is set to \\verb|true|, \
-     file modification times (but not directory modtimes) are propagated."
+    (s_ "synchronize modification times")
+    (s_ "When this flag is set to \\verb|true|, \
+     file modification times (but not directory modtimes) are propagated.")
 
 type t = Synced of float | NotSynced of float
 
@@ -537,7 +544,9 @@ let set abspath t =
   match t with
     Synced v ->
       Util.convertUnixErrorsToTransient
-        "setting modification time"
+        (* TRANSLATORS: This is used as an error location in a message like
+           "Error in %s:" (where %s is the string to translate here). *)
+        (s_ "setting modification time")
         (fun () ->
            if false then begin
              (* A special hack for Rasmus, who has a special situation that
@@ -587,8 +596,8 @@ let check fspath path stats t =
         raise
           (Util.Transient
              (Format.sprintf
-                "Failed to set modification time of file %s to %s: \
-             the time was set to %s instead"
+                (f_ "Failed to set modification time of file %s to %s: \
+             the time was set to %s instead")
             (Fspath.toPrintString (Fspath.concat fspath path))
             (syncedPartsToString t)
             (syncedPartsToString t')))
@@ -722,15 +731,15 @@ let syncXattrs =
   Prefs.createBool "xattrs" false
     ~category:(`Advanced `Sync)
     ~send:xattrEnabled
-    "synchronize extended attributes (xattrs)"
-    ("When this flag is set to \\verb|true|, the extended attributes of \
+    (s_ "synchronize extended attributes (xattrs)")
+    (s_ "When this flag is set to \\verb|true|, the extended attributes of \
      files and directories are synchronized. System extended attributes \
      are not synchronized.")
 
 let () = featXattrValid :=
   fun _ enabledThis ->
     if not enabledThis && Prefs.read syncXattrs then
-      Some ("You have requested synchronization of extended attributes (the \
+      Some (s_ "You have requested synchronization of extended attributes (the \
         \"xattrs\" preference) but the server does not support this.")
     else None
 
@@ -740,7 +749,7 @@ let xattrIgnorePred =
     ~send:xattrEnabled
     (* By default ignore the Linux xattr security and trusted namespaces *)
     ~initial:["Regex !(security|trusted)[.].*"; "Path !system.posix_acl_*"]
-    ("Preference \\texttt{-xattrignore \\ARG{namespec}} causes Unison to \
+    (s_ "Preference \\texttt{-xattrignore \\ARG{namespec}} causes Unison to \
      ignore extended attributes with names that match \\ARG{namespec}. \
      This can be used to exclude extended attributes that would fail \
      synchronization due to lack of permissions or technical differences \
@@ -764,7 +773,7 @@ let xattrIgnorenotPred =
   Pred.create "xattrignorenot"
     ~category:(`Advanced `Sync)
     ~send:xattrEnabled
-    ("This preference overrides the preference \\texttt{xattrignore}. \
+    (s_ "This preference overrides the preference \\texttt{xattrignore}. \
      It gives a list of patterns (in the same format as \
      \\verb|xattrignore|) for extended attributes that should {\\em not} \
      be ignored, whether or not they happen to match one of the \
@@ -861,22 +870,27 @@ let hash t h = if Prefs.read syncXattrs then Uutil.hash2 (Uutil.hash t) h else h
 
 let attrToString = function
   | (n, String v) ->
-      Printf.sprintf "Name: %s    Value: %s" n (String.escaped v)
+      Printf.sprintf (f_ "Name: %s    Value: %s") n (String.escaped v)
   | (n, Hash h) ->
-      Printf.sprintf "Name: %s    Fingerprint: %s" n (Digest.MD5.to_hex h)
+      Printf.sprintf (f_ "Name: %s    Fingerprint: %s") n (Digest.MD5.to_hex h)
   | (n, Loaded (_, h)) ->
-      Printf.sprintf "Name: %s    Fingerprint: %s" n (Digest.MD5.to_hex h)
+      Printf.sprintf (f_ "Name: %s    Fingerprint: %s") n (Digest.MD5.to_hex h)
 
 let toString' style = function
-  | Some ([], _) -> "0 xattrs"
+  | Some ([], _) -> s_ "0 xattrs"
   | Some ([(n, _) as x], z) ->
-      Printf.sprintf "1 xattr (%s bytes)%s" (Size.toString z)
+      (* TRANSLATORS: The final %s is either empty or ": " + attribute
+         name/value. *)
+      Printf.sprintf (f_ "1 xattr (%s bytes)%s") (Size.toString z)
         (match style with
         | `Summary -> ""
         | `Simple -> ": " ^ n
         | `Verbose -> ": " ^ attrToString x)
   | Some (l, z) ->
-      Printf.sprintf "%u xattrs (%s bytes)%s" (Safelist.length l) (Size.toString z)
+      let cnt = Safelist.length l in
+      (* TRANSLATORS: The final %s is either empty or ": " + list of attribute
+         names/values. The count is guaranteed to be > 1. *)
+      Printf.sprintf (fn_ "%u xattr (%s bytes)%s" "%u xattrs (%s bytes)%s" cnt) cnt (Size.toString z)
         (match style with
         | `Summary -> ""
         | `Simple -> ": " ^ (String.concat ", " (Safelist.map (fun (n, _) -> n) l))
@@ -931,8 +945,8 @@ let wrapFail default f =
   try f () with
   | Fs.XattrNotSupported -> default
   | Failure msg ->
-      raise (Util.Transient (msg ^
-        ". You can set preference \"xattrs\" to false to avoid this error."))
+      raise (Util.Transient (msg ^ ". " ^
+        s_ "You can set preference \"xattrs\" to false to avoid this error."))
 
 let optMap f = function None -> None | Some x -> Some (f x)
 let optAttrsMap f = optMap (fun (l, z) -> (Safelist.map f l, z))
@@ -954,8 +968,8 @@ let readAll path t =
               let v = Fs.xattr_get path n in
               if Digest.MD5.string v <> h then
                 raise (Util.Transient (
-                  Printf.sprintf "The value of extended attribute '%s' has \
-                    changed on source file %s" n (Fspath.toPrintString path)))
+                  Printf.sprintf (f_ "The value of extended attribute '%s' has \
+                    changed on source file %s") n (Fspath.toPrintString path)))
               else
                 Cache.add h v
         in
@@ -998,8 +1012,8 @@ let getXattrs path =
   let sortXattrs = Safelist.sort xattrNameCompare in
   let readXattr (n, len) =
     if len > 16777211 then (* Max length of strings on 32-bit OCaml *)
-      failwith ("The value of extended attribute '" ^ n ^
-        "' is larger than 16 MB. This is currently not supported") else
+      failwith (Printf.sprintf (f_ "The value of extended attribute '%s' \
+        is larger than 16 MB. This is currently not supported") n) else
     let v = Fs.xattr_get path n in
     let value =
       if len <= 32 then String v
@@ -1038,12 +1052,12 @@ let setXattrs path t =
               end)
           with
           | Fs.XattrNotSupported ->
-              raise (Util.Transient ("Extended attributes are not supported. \
+              raise (Util.Transient (s_ "Extended attributes are not supported. \
                        You can set preference \"xattrs\" to false \
                        to avoid this error."))
           | Failure msg ->
-              raise (Util.Transient (msg ^
-                       ". You can set preference \"xattrs\" to false \
+              raise (Util.Transient (msg ^ ". " ^
+                       s_ "You can set preference \"xattrs\" to false \
                        to avoid this error. You can add a 'debug' preference \
                        with value \"props+\" to see more details."))
         end
@@ -1083,7 +1097,7 @@ let check fspath path stats t =
       let abspath = Fspath.concat fspath path in
       let t' = get abspath stats in
       if not (similar t t') then
-        let msg = Format.sprintf ("Failed to set requested extended attributes \
+        let msg = Format.sprintf (f_ "Failed to set requested extended attributes \
           on %s.\nThe following attributes were requested to be set:\n%s\n\
           Actual attributes after setting:\n%s")
           (Fspath.toPrintString abspath) (toStringVerb t) (toStringVerb t') in
@@ -1107,8 +1121,8 @@ let syncACL =
   Prefs.createBool "acl" false
     ~category:(`Advanced `Sync)
     ~send:aclEnabled
-    "synchronize ACLs"
-    ("When this flag is set to \\verb|true|, the ACLs of files and \
+    (s_ "synchronize ACLs")
+    (s_ "When this flag is set to \\verb|true|, the ACLs of files and \
      directories are synchronized. The type of ACLs depends on the \
      platform and filesystem support. On Unix-like platforms it \
      can be NFSv4 ACLs, for example.")
@@ -1116,7 +1130,7 @@ let syncACL =
 let () = featACLValid :=
   fun _ enabledThis ->
     if not enabledThis && Prefs.read syncACL then
-      Some ("You have requested synchronization of ACLs (the \
+      Some (s_ "You have requested synchronization of ACLs (the \
         \"acl\" preference) but the server does not support this.")
     else None
 
@@ -1162,9 +1176,9 @@ let m = Umarshal.cond aclEnabled dummy Umarshal.(option string)
 let hash t h = if Prefs.read syncACL then Uutil.hash2 (Uutil.hash t) h else h
 
 let toString = function
-  | Some "" -> " <trivial ACL>"
+  | Some "" -> s_ " <trivial ACL>"
   | Some s -> " A=" ^ (inflate s)
-  | None -> if not (Prefs.read syncACL) then "" else " !No ACL support!"
+  | None -> if not (Prefs.read syncACL) then "" else s_ " !No ACL support!"
 
 let syncedPartsToString = toString
 
@@ -1210,8 +1224,8 @@ let diff t t' = if similar t t' then None else t'
 let wrapFail f =
   try f () with
   | Failure msg ->
-      raise (Util.Transient (msg ^
-        ". You can set preference \"acl\" to false to avoid this error."))
+      raise (Util.Transient (msg ^ ". " ^
+        s_ "You can set preference \"acl\" to false to avoid this error."))
 
 let getACLAsText path =
   wrapFail (fun () ->
@@ -1257,15 +1271,15 @@ let check fspath path stats acl =
       let acl' = get abspath stats in
       if not (similar acl acl') then
         let msg = Format.sprintf
-          "Failed to set ACL of file %s to\n%s\n\
+          (f_ "Failed to set ACL of file %s to\n%s\n\
           The ACL was instead set to\n%s\n\
           The filesystem probably does not have full ACL support or \
           the synchronized ACL is of different type, or there \
           are other incompatibilities between systems. \
           If this is a filesystem without correct ACL support, you \
-          should set the \"acl\" preference to false.%s"
+          should set the \"acl\" preference to false.%s")
           (Fspath.toPrintString abspath) (toString acl) (toString acl')
-          (if Prefs.read numericIds then "" else " Or, you may want to \
+          (if Prefs.read numericIds then "" else s_ " Or, you may want to \
              try setting the \"numericids\" preference to true if the \
              user/group names don't match on both systems.") in
         raise (Util.Transient msg)
@@ -1367,7 +1381,7 @@ let strip p =
 
 let toString p =
   Printf.sprintf
-    "modified on %s  size %-9.0f %s%s%s%s%s%s"
+    (f_ "modified on %s  size %-9.0f %s%s%s%s%s%s")
     (Time.toString p.time)
     (Uutil.Filesize.toFloat p.length)
     (Perm.toString p.perm)

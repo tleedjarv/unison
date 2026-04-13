@@ -71,11 +71,11 @@ let checkForChangesToSourceLocal
           let newFp = Os.fingerprint fspathFrom pathFrom sourceType in
           if archFp <> newFp then begin
             Update.markPossiblyUpdated fspathFrom pathFrom;
-            raise (Util.Transient (Printf.sprintf
+            raise (Util.Transient (Printf.sprintf (f_
               "The source file %s\n\
                has been modified but the fast update detection mechanism\n\
                failed to detect it.  Try running once with the fastcheck\n\
-               option set to 'no'."
+               option set to 'no'.")
               (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
           end
         end
@@ -83,9 +83,9 @@ let checkForChangesToSourceLocal
            clearlyChanged
         || archFp <> Os.fingerprint fspathFrom pathFrom sourceType
       then
-        raise (Util.Transient (Printf.sprintf
+        raise (Util.Transient (Printf.sprintf (f_
           "The source file %s\nhas been modified during synchronization.  \
-           Transfer aborted."
+           Transfer aborted.")
           (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
   | Some newfp ->
       (* newfp provided means that the archive contains a pseudo-fingerprint... *)
@@ -93,9 +93,9 @@ let checkForChangesToSourceLocal
       (* ... so we can't compare the archive with the source; instead we
          need to compare the current source to the new fingerprint: *)
       if newfp <> Os.fingerprint fspathFrom pathFrom sourceType then
-        raise (Util.Transient (Printf.sprintf
+        raise (Util.Transient (Printf.sprintf (f_
           "Current source file %s\n not same as transferred file.  \
-           Transfer aborted."
+           Transfer aborted.")
           (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
 
 let mcheckForChangesToSource =
@@ -229,9 +229,9 @@ let saveTempFileLocal (fspathTo, (pathTo, realPathTo, reason)) =
   begin try Os.rename "save temp" fspathTo pathTo fspathTo savepath with Util.Transient _ -> () end;
   Lwt.fail
     (Util.Transient
-       (Printf.sprintf
+       (Printf.sprintf (f_
         "The file %s was incorrectly transferred  (fingerprint mismatch in %s) \
-         -- temp file saved as %s"
+         -- temp file saved as %s")
         (Path.toString pathTo)
         reason
         (Fspath.toDebugString (Fspath.concat fspathTo savepath))))
@@ -487,7 +487,9 @@ let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
 
 let localFileContents fspathFrom pathFrom fspathTo pathTo desc ressLength ido =
   Util.convertUnixErrorsToTransient
-    "copying locally"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (s_ "copying locally")
     (fun () ->
       debug (fun () ->
         Util.msg "Copy.localFile %s / %s to %s / %s\n"
@@ -502,7 +504,7 @@ let localFileContents fspathFrom pathFrom fspathTo pathTo desc ressLength ido =
 
 let localFile
      fspathFrom pathFrom fspathTo pathTo realPathTo update desc ressLength ido =
-  Util.convertUnixErrorsToTransient "copying locally" (fun () ->
+  Util.convertUnixErrorsToTransient (s_ "copying locally") (fun () ->
     localFileContents fspathFrom pathFrom fspathTo pathTo desc ressLength ido;
     let (_, desc) = propsWithExtDataLocal fspathFrom (`Local pathFrom) desc in
     setFileinfo fspathTo pathTo realPathTo update desc)
@@ -544,7 +546,7 @@ let tryCopyMovedFile connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
               debug (fun () -> Util.msg "tryCopyMoveFile: success.\n");
               let msg =
                 Printf.sprintf
-                 "Shortcut: copied %s/%s from local file %s/%s\n"
+                 (f_ "Shortcut: copied %s/%s from local file %s/%s\n")
                  (Fspath.toPrintString fspathTo)
                  (Path.toString realPathTo)
                  (Fspath.toPrintString candidateFspath)
@@ -584,13 +586,13 @@ let tryCopyMovedFile connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
 let rsyncActivated =
   Prefs.createBool "rsync" true
     ~category:(`Advanced `Remote)
-    "activate the rsync transfer mode"
-    ("Unison uses the 'rsync algorithm' for 'diffs-only' transfer "
-     ^ "of updates to large files.  Setting this flag to false makes Unison "
-     ^ "use whole-file transfers instead.  Under normal circumstances, "
-     ^ "there is no reason to do this, but if you are having trouble with "
-     ^ "repeated 'rsync failure' errors, setting it to "
-     ^ "false should permit you to synchronize the offending files.")
+    (s_ "activate the rsync transfer mode")
+    (s_ "Unison uses the 'rsync algorithm' for 'diffs-only' transfer \
+     of updates to large files.  Setting this flag to false makes Unison \
+     use whole-file transfers instead.  Under normal circumstances, \
+     there is no reason to do this, but if you are having trouble with \
+     repeated 'rsync failure' errors, setting it to \
+     false should permit you to synchronize the offending files.")
 
 let decompressor = ref Remote.MsgIdMap.empty
 
@@ -600,7 +602,9 @@ let () = Remote.at_conn_close resetDecompressorState
 
 let processTransferInstruction conn (file_id, ti) =
   Util.convertUnixErrorsToTransient
-    "processing a transfer instruction"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (s_ "processing a transfer instruction")
     (fun () ->
        ignore ((fst (Remote.MsgIdMap.find file_id !decompressor)) ti))
 
@@ -656,7 +660,10 @@ let compress conn
     (fun e ->
        (* We cannot wrap the code above with the handler below,
           as the code is executed asynchronously. *)
-       Util.convertUnixErrorsToTransient "transferring file contents"
+       Util.convertUnixErrorsToTransient
+         (* TRANSLATORS: This is used as an error location in a message like
+            "Error in %s:" (where %s is the string to translate here). *)
+         (s_ "transferring file contents")
          (fun () -> raise e))
 
 let mdata = Umarshal.(sum3 unit Uutil.Filesize.m unit
@@ -679,7 +686,9 @@ let compressRemotely =
 
 let close_all infd outfd =
   Util.convertUnixErrorsToTransient
-    "closing files"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (s_ "closing files")
     (fun () ->
        begin match !infd with
          Some fd -> closeFileIn fd; infd := None
@@ -763,7 +772,9 @@ let transferFileContents
     let (bi, decompr) =
       if useRsync then
         Util.convertUnixErrorsToTransient
-          "preprocessing file"
+          (* TRANSLATORS: This is used as an error location in a message like
+             "Error in %s:" (where %s is the string to translate here). *)
+          (s_ "preprocessing file")
           (fun () ->
              let ifd = referenceFd fspathTo realPathTo fileKind infd in
              let (bi, blockSize) =
@@ -924,40 +935,40 @@ let copyprog =
   Prefs.createString "copyprog" "rsync --partial --inplace --compress"
     ~category:(`Advanced `General)
     ~deprecated:true
-    "external program for copying large files"
-    ("A string giving the name of an "
-     ^ "external program that can be used to copy large files efficiently  "
-     ^ "(plus command-line switches telling it to copy files in-place).  "
-     ^ "The default setting invokes {\\tt rsync} with appropriate "
-     ^ "options---most users should not need to change it.")
+    (s_ "external program for copying large files")
+    (s_ "A string giving the name of an \
+     external program that can be used to copy large files efficiently \
+     (plus command-line switches telling it to copy files in-place).  \
+     The default setting invokes {\\tt rsync} with appropriate \
+     options---most users should not need to change it.")
 
 let copyprogrest =
   Prefs.createString
     "copyprogrest" "rsync --partial --append-verify --compress"
     ~category:(`Advanced `General)
     ~deprecated:true
-    "variant of copyprog for resuming partial transfers"
-    ("A variant of {\\tt copyprog} that names an external program "
-     ^ "that should be used to continue the transfer of a large file "
-     ^ "that has already been partially transferred.  Typically, "
-     ^ "{\\tt copyprogrest} will just be {\\tt copyprog} "
-     ^ "with one extra option (e.g., {\\tt --partial}, for rsync).  "
-     ^ "The default setting invokes {\\tt rsync} with appropriate "
-     ^ "options---most users should not need to change it.")
+    (s_ "variant of copyprog for resuming partial transfers")
+    (s_ "A variant of {\\tt copyprog} that names an external program \
+     that should be used to continue the transfer of a large file \
+     that has already been partially transferred.  Typically, \
+     {\\tt copyprogrest} will just be {\\tt copyprog} \
+     with one extra option (e.g., {\\tt --partial}, for rsync).  \
+     The default setting invokes {\\tt rsync} with appropriate \
+     options---most users should not need to change it.")
 
 let copythreshold =
   Prefs.createInt "copythreshold" (-1)
     ~category:(`Advanced `General)
     ~deprecated:true
-    "use copyprog on files bigger than this (if >=0, in Kb)"
-    ("A number indicating above what filesize (in kilobytes) Unison should "
-     ^ "use the external "
-     ^ "copying utility specified by {\\tt copyprog}. Specifying 0 will cause "
-     ^ "{\\em all} copies to use the external program; "
-     ^ "a negative number will prevent any files from using it.  "
-     ^ "The default is -1.  "
-     ^ "See \\sectionref{speeding}{Making Unison Faster on Large Files} "
-     ^ "for more information.")
+    (s_ "use copyprog on files bigger than this (if >=0, in Kb)")
+    (s_ "A number indicating above what filesize (in kilobytes) Unison should \
+     use the external \
+     copying utility specified by {\\tt copyprog}. Specifying 0 will cause \
+     {\\em all} copies to use the external program; \
+     a negative number will prevent any files from using it.  \
+     The default is -1.  \
+     See \\sectionref{speeding}{Making Unison Faster on Large Files} \
+     for more information.")
 
 (* Pref copyquoterem removed since 2.53.3 *)
 let () = Prefs.markRemoved "copyquoterem"
@@ -966,8 +977,8 @@ let copymax =
   Prefs.createInt "copymax" 1
     ~category:(`Advanced `General)
     ~deprecated:true
-    "maximum number of simultaneous copyprog transfers"
-    ("A number indicating how many instances of the external copying utility \
+    (s_ "maximum number of simultaneous copyprog transfers")
+    (s_ "A number indicating how many instances of the external copying utility \
       Unison is allowed to run simultaneously (default to 1).")
 
 let formatConnectionInfo root =
@@ -1027,8 +1038,8 @@ let finishExternalTransferLocal connFrom
     info.Fileinfo.typ <> `FILE ||
     Props.length info.Fileinfo.desc <> Props.length desc
   then
-    raise (Util.Transient (Printf.sprintf
-      "External copy program did not create target file (or bad length): %s"
+    raise (Util.Transient (Printf.sprintf (f_
+      "External copy program did not create target file (or bad length): %s")
           (Path.toString pathTo)));
   transferResourceForkAndSetFileinfo
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
@@ -1101,7 +1112,7 @@ let transferFileLocal connFrom
        previous transfer).  So just make sure permissions are right. *)
     let msg =
       Printf.sprintf
-        "%s/%s has already been transferred\n"
+        (f_ "%s/%s has already been transferred\n")
         (Fspath.toDebugString fspathTo) (Path.toString realPathTo) in
     let len = Uutil.Filesize.add (Props.length desc) (Osx.ressLength ress) in
     Uutil.showProgress id len "alr";

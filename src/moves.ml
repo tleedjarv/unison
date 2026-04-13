@@ -34,21 +34,21 @@ let detectmoves =
     ~category:(`Advanced `Sync)
     ~local:true
     ~send:enabled
-    "optimize transfers by detecting renames and moves"
-    "When this preference is set, Unison will try to avoid transferring \
+    (s_ "optimize transfers by detecting renames and moves")
+    (s_ "When this preference is set, Unison will try to avoid transferring \
      file contents across the network, or making a local copy, by \
      recognizing when a file or a directory has been renamed or moved to \
      a new location.  This usually allows to propagate only the rename, \
      without transferring or copying any data.  The default value is \
      \\texttt{false}.\n\n\
      This feature is currently experimental and may change in incompatible \
-     ways in future versions."
+     ways in future versions.")
 
 let () = featMovesValid :=
   fun feats enabledThis ->
     if Prefs.read detectmoves
         && not (enabledThis && Features.mem "prevState2" feats) then
-      Some ("You have requested detection and propagation of moves/renames \
+      Some (s_ "You have requested detection and propagation of moves/renames \
         (the \"moves\" preference) but the server does not support this.")
     else None
 

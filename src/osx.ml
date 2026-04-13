@@ -33,15 +33,15 @@ let isMacOSX = isMacOSXPred ()
 let rsrcSync =
   Prefs.createBoolWithDefault "rsrc"
     ~category:(`Advanced `Sync)
-    "synchronize resource forks (true/false/default)"
-    "When set to {\\tt true}, this flag causes Unison to synchronize \
+    (s_ "synchronize resource forks (true/false/default)")
+    (s_ "When set to {\\tt true}, this flag causes Unison to synchronize \
      resource forks and HFS meta-data.  On filesystems that do not \
      natively support resource forks, this data is stored in \
      Carbon-compatible .\\_ AppleDouble files.  When the flag is set \
      to {\\tt false}, Unison will not synchronize these data.  \
-     Ordinarily, the flag is set to {\\tt default}, and these data are
-     automatically synchronized if either host is running OSX.  In \
-     rare circumstances it is useful to set the flag manually."
+     Ordinarily, the flag is set to {\\tt default}, and these data are \
+     automatically synchronized if either host is running macOS.  In \
+     rare circumstances it is useful to set the flag manually.")
 
 (* Defining this variable as a preference ensures that it will be propagated
    to the other host during initialization *)
@@ -122,8 +122,8 @@ let fail dataFspath dataPath doubleFspath msg =
   debug (fun () -> Util.msg "called 'fail'");
   raise (Util.Transient
            (Format.sprintf
-              "The AppleDouble Header file '%s' \
-               associated to data file %s is malformed: %s"
+              (f_ "The AppleDouble Header file '%s' \
+               associated to data file %s is malformed: %s")
               (Fspath.toPrintString doubleFspath)
               (Fspath.toPrintString (Fspath.concat dataFspath dataPath)) msg))
 
@@ -132,7 +132,7 @@ let readDouble dataFspath dataPath doubleFspath inch len =
   begin try
     really_input inch buf 0 len
   with End_of_file ->
-    fail dataFspath dataPath doubleFspath "truncated"
+    fail dataFspath dataPath doubleFspath (s_ "truncated")
   end;
   Bytes.to_string buf
 
@@ -156,12 +156,14 @@ let openDouble dataFspath dataPath =
   let inch =
     try Fs.open_in_bin doubleFspath with Sys_error _ -> raise Not_found in
   protect (fun () ->
-    Util.convertUnixErrorsToTransient "opening AppleDouble file" (fun () ->
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    Util.convertUnixErrorsToTransient (s_ "opening AppleDouble file") (fun () ->
       let header = readDouble dataFspath dataPath doubleFspath inch 26 in
       if String.sub header 0 4 <> doubleMagic then
-        fail dataFspath dataPath doubleFspath "bad magic number";
+        fail dataFspath dataPath doubleFspath (s_ "bad magic number");
       if String.sub header 4 4 <> doubleVersion then
-        fail dataFspath dataPath doubleFspath "bad version";
+        fail dataFspath dataPath doubleFspath (s_ "bad version");
       let numEntries = getInt2 header 24 in
       let entries = ref [] in
       for i = 1 to numEntries do
@@ -259,7 +261,9 @@ let getFileInfos dataFspath dataPath typ =
   if not (Prefs.read rsrc) then defaultInfos typ else
   match typ with
     (`FILE | `DIRECTORY) as typ ->
-      Util.convertUnixErrorsToTransient "getting file information" (fun () ->
+      (* TRANSLATORS: This is used as an error location in a message like
+         "Error in %s:" (where %s is the string to translate here). *)
+      Util.convertUnixErrorsToTransient (s_ "getting file information") (fun () ->
         try
           let (fInfo, rsrcLength) =
             getFileInfosInternal
@@ -308,7 +312,7 @@ let getFileInfos dataFspath dataPath typ =
                 try
                   let (ofs, len) = Safelist.assoc `FINFO entries in
                   if len < finfoLength then
-                    fail dataFspath dataPath doubleFspath "bad finder info";
+                    fail dataFspath dataPath doubleFspath (s_ "bad finder info");
                   readDoubleFromOffset
                     dataFspath dataPath doubleFspath inch ofs 32
                 with Not_found ->
@@ -317,7 +321,10 @@ let getFileInfos dataFspath dataPath typ =
             in
             close_in inch;
             let stats =
-              Util.convertUnixErrorsToTransient "stating AppleDouble file"
+              (* TRANSLATORS: This is used as an error location in a message
+                 like "Error in %s:" (where %s is the string to translate
+                 here). *)
+              Util.convertUnixErrorsToTransient (s_ "stating AppleDouble file")
                 (fun () -> Fs.stat doubleFspath) in
             { ressInfo =
                 if rsrcLength = 0L then NoRess else
@@ -354,7 +361,9 @@ let insertInfo fullInfo info =
 
 let setFileInfos dataFspath dataPath finfo =
   assert (finfo <> "");
-  Util.convertUnixErrorsToTransient "setting file information" (fun () ->
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  Util.convertUnixErrorsToTransient (s_ "setting file information") (fun () ->
     try
       let p = Fspath.toString (Fspath.concat dataFspath dataPath) in
       let (fullFinfo, _) = getFileInfosInternal p false in
@@ -369,7 +378,7 @@ let setFileInfos dataFspath dataPath finfo =
           let (ofs, len) = Safelist.assoc `FINFO entries in
           if len < finfoLength then begin
             close_in_noerr inch;
-            fail dataFspath dataPath doubleFspath "bad finder info"
+            fail dataFspath dataPath doubleFspath (s_ "bad finder info")
           end;
           let fullFinfo =
             protect
@@ -394,8 +403,8 @@ let setFileInfos dataFspath dataPath finfo =
           close_in_noerr inch;
           raise (Util.Transient
                    (Format.sprintf
-                      "Unable to set the file type and creator: \n\
-                       The AppleDouble file '%s' has no fileinfo entry."
+                      (f_ "Unable to set the file type and creator: \n\
+                       The AppleDouble file '%s' has no fileinfo entry.")
                       (Fspath.toPrintString doubleFspath)))
         end
       with Not_found ->
@@ -498,7 +507,9 @@ let ressDummy = NoRess
 (****)
 
 let openRessIn fspath path =
-  Util.convertUnixErrorsToTransient "reading resource fork" (fun () ->
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  Util.convertUnixErrorsToTransient (s_ "reading resource fork") (fun () ->
     try
       Unix.in_channel_of_descr
         (Fs.openfile
@@ -513,10 +524,12 @@ let openRessIn fspath path =
         inch
       with Not_found ->
         close_in_noerr inch;
-        raise (Util.Transient "No resource fork found"))
+        raise (Util.Transient (s_ "No resource fork found")))
 
 let openRessOut fspath path length =
-  Util.convertUnixErrorsToTransient "writing resource fork" (fun () ->
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  Util.convertUnixErrorsToTransient (s_ "writing resource fork") (fun () ->
     try
       let p = Fspath.concat fspath (ressPath path) in
       debug (fun () -> Util.msg "openRessOut %s\n" (Fspath.toString p));
