@@ -33,7 +33,9 @@ let ispseudo f = Util.startswith f pseudo_prefix
 let file fspath path =
   let f = Fspath.concat fspath path in
   Util.convertUnixErrorsToTransient
-    ("digesting " ^ Fspath.toPrintString f)
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (Printf.sprintf (f_ "digesting %s") (Fspath.toPrintString f))
     (fun () ->
        let ic = Fs.open_in_bin f in
        try
@@ -49,10 +51,12 @@ let maxLength = Uutil.Filesize.ofInt max_int
 let subfile path offset len =
   if len > maxLength then
     raise (Util.Transient
-             (Format.sprintf "File '%s' too big for fingerprinting"
+             (Format.sprintf (f_ "File '%s' too big for fingerprinting")
                 (Fspath.toPrintString path)));
   Util.convertUnixErrorsToTransient
-    "digesting subfile"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (s_ "digesting subfile")
     (fun () ->
        let inch = Fs.open_in_bin path in
        begin try
@@ -65,7 +69,7 @@ let subfile path offset len =
            close_in_noerr inch;
            raise (Util.Transient
                     (Format.sprintf
-                       "Error in digesting subfile '%s': truncated file"
+                       (f_ "Error in digesting subfile '%s': truncated file")
                        (Fspath.toPrintString path)))
        | e ->
            close_in_noerr inch;

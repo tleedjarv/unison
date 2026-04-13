@@ -72,9 +72,9 @@ let decodeInt int_buf i =
   let m = (b3 lsl 24) lor (b2 lsl 16) lor (b1 lsl 8) lor b0 in
   if Char.code (int_buf.{i + 4}) <> intHash m then
     raise (Util.Fatal
-             "Protocol error: corrupted message received;\n\
+             (s_ "Protocol error: corrupted message received;\n\
               if it happens to you in a repeatable way, \n\
-              please post a report on the unison-users mailing list.");
+              please post a report on the unison-users mailing list."));
   m
 
 (*************************************************************************)
@@ -96,9 +96,11 @@ let lostConnectionHandler ch =
   in
   ioCleanups := Safelist.filter aux !ioCleanups
 
+let lostConnectionExnStr = s_ "Lost connection with the server"
+
 let lostConnection ch =
   begin try lostConnectionHandler ch with _ -> () end;
-  Lwt.fail (Util.Fatal "Lost connection with the server")
+  Lwt.fail (Util.Fatal lostConnectionExnStr)
 
 let catchIoErrors ch th =
   Lwt.catch th
@@ -557,7 +559,7 @@ module ClientConn = struct
 
   let ofRoot root =
     try (findByRoot root).conn with
-    | Not_found -> raise (Util.Fatal "No connection with the server")
+    | Not_found -> raise (Util.Fatal (s_ "No connection with the server"))
 
   let ofRootOpt root =
     try Some (findByRoot root).conn with
@@ -732,14 +734,14 @@ let safeMarshal marshalPayload tag data rem =
               (Bytearray.to_string tag) start length);
   let len = l + length in
   if (len lsr 31) lsr 1 <> 0 then (* [encodeInt] can only encode 32 bits *)
-    raise (Util.Fatal
+    raise (Util.Fatal (s_
             "Protocol error: message data too big. This may be a bug or it\n\
              may be that your replicas are huge and the amount of updates\n\
              can't be handled by the current protocol implementation. If you\n\
              believe it is a bug then please consider reporting it.\n\
              Otherwise, try reducing the amount of updates by syncing the\n\
              replicas in smaller steps (using the \"path\" preference, for\n\
-             example). You may have to do this for the initial sync only.")
+             example). You may have to do this for the initial sync only."))
   else
     (encodeInt len :: (tag, 0, l) :: rem')
 
@@ -796,19 +798,19 @@ let makeMarshalingFunctions payloadMarshalingFunctions string =
 let sshCmd =
   Prefs.createString "sshcmd" "ssh"
     ~category:(`Advanced `Remote)
-    ("path to the ssh executable")
-    ("This preference can be used to explicitly set the name of the "
-     ^ "ssh executable (e.g., giving a full path name), if necessary.")
+    (s_ "path to the ssh executable")
+    (s_ "This preference can be used to explicitly set the name of the \
+     ssh executable (e.g., giving a full path name), if necessary.")
 
 let sshargs =
   Prefs.createString "sshargs" ""
     ~category:(`Advanced `Remote)
-    "other arguments (if any) for remote shell command"
-    ("The string value of this preference will be passed as additional "
-     ^ "arguments (besides the host name and the name of the Unison "
-     ^ "executable on the remote system) to the \\verb|ssh| "
-     ^ "command used to invoke the remote server. The backslash is an "
-     ^ "escape character."
+    (s_ "other arguments (if any) for remote shell command")
+    (s_ "The string value of this preference will be passed as additional \
+     arguments (besides the host name and the name of the Unison \
+     executable on the remote system) to the \\verb|ssh| \
+     command used to invoke the remote server. The backslash is an \
+     escape character."
      )
 
 (* rsh prefs removed since 2.52 *)
@@ -818,22 +820,22 @@ let () = Prefs.markRemoved "rshargs"
 let serverCmd =
   Prefs.createString "servercmd" ""
     ~category:(`Advanced `Remote)
-    ("name of " ^ Uutil.myName ^ " executable on remote server")
-    ("This preference can be used to explicitly set the name of the "
-     ^ "Unison executable on the remote server (e.g., giving a full "
-     ^ "path name), if necessary.")
+    (s_ "name of unison executable on remote server")
+    (s_ "This preference can be used to explicitly set the name of the \
+     Unison executable on the remote server (e.g., giving a full \
+     path name), if necessary.")
 
 let addversionno =
   Prefs.createBool "addversionno" false
     ~category:(`Advanced `Remote)
-    ("add version number to name of " ^ Uutil.myName ^ " on server")
-    ("When this flag is set to {\\tt true}, Unison "
-     ^ "will use \\texttt{unison-\\ARG{currentmajorversionnumber}} instead of "
-     ^ "just \\verb|unison| as the remote server command (note that the minor "
-     ^ "version number is dropped -- e.g., unison-2.51).  This allows "
-     ^ "multiple binaries for different versions of unison to coexist "
-     ^ "conveniently on the same server: whichever version is run "
-     ^ "on the client, the same version will be selected on the server.")
+    (s_ "add version number to name of unison on server")
+    (s_ "When this flag is set to {\\tt true}, Unison \
+     will use \\texttt{unison-\\ARG{currentmajorversionnumber}} instead of \
+     just \\verb|unison| as the remote server command (note that the minor \
+     version number is dropped -- e.g., unison-2.51).  This allows \
+     multiple binaries for different versions of unison to coexist \
+     conveniently on the same server: whichever version is run \
+     on the client, the same version will be selected on the server.")
 
 (**********************************************************************
                        CLIENT/SERVER PROTOCOLS
@@ -1174,10 +1176,10 @@ let streamingActivated =
   Prefs.createBool "stream" true
     ~category:(`Advanced `Remote)
     ~deprecated:true
-    ("use a streaming protocol for transferring file contents")
-    "When this preference is set, Unison will use an experimental \
+    (s_ "use a streaming protocol for transferring file contents")
+    (s_ "When this preference is set, Unison will use an experimental \
      streaming protocol for transferring file contents more efficiently. \
-     The default value is \\texttt{true}."
+     The default value is \\texttt{true}.")
 
 let registerStreamCmd
     (cmdName : string)
@@ -1387,36 +1389,36 @@ let handshakeFail err =
   Lwt.fail (Util.Fatal err)
 
 let handshakeError msg =
-  handshakeFail ("Received error from the server: \"" ^ msg ^ "\".")
+  handshakeFail (Printf.sprintf (f_ "Received error from the server: \"%s\".") msg)
 
 let handshakeUnknown msg =
-  handshakeFail ("Received unexpected header from the server: \""
-                 ^ String.escaped msg ^ "\".")
+  handshakeFail (Printf.sprintf
+    (f_ "Received unexpected header from the server: \"%s\".") (String.escaped msg))
 
 let parseVersion side s =
   let error e =
-    raise (Util.Transient
-            ("Unknown " ^ side ^ " RPC version: " ^ e
-             ^ ". Version received from " ^ side ^ ": \"" ^ String.escaped s
-             ^ "\". Supported RPC versions: " ^ rpcSupportedVersionStr))
+    raise (Util.Transient (Printf.sprintf
+            (f_ "Unknown %s RPC version: %s. Version received from %s: \"%s\". \
+              Supported RPC versions: %s")
+            side e side (String.escaped s) rpcSupportedVersionStr))
   in
   if s = "" then
-    error "invalid format"
+    error (s_ "invalid format")
   else
     match int_of_string s with
     | ver -> Some ver
-    | exception Failure _ -> error "parse error"
+    | exception Failure _ -> error (s_ "parse error")
 
 let parseServerVersions inp =
   let supported l = function
     | "" -> l
-    | v -> match parseVersion "server" v with
+    | v -> match parseVersion (s_ "server") v with
            | Some vi -> if verIsSupported vi then vi :: l else l
            | None -> l
   in
   try
     let vs = String.split_on_char ' ' inp in
-    if vs = [""] then ignore (parseVersion "server" ""); (* Trigger the error *)
+    if vs = [""] then ignore (parseVersion (s_ "server") ""); (* Trigger the error *)
     let intersect = Safelist.fold_left supported [] vs in
     Lwt.return (Safelist.rev (Safelist.sort compare intersect))
   with
@@ -1430,11 +1432,12 @@ let selectServerVersion conn =
   | Data versions ->
       parseServerVersions versions >>= function
       | [] ->
-          handshakeFail ("None of server's RPC versions are supported. "
-                         ^ "The server may be too old or too recent. "
-                         ^ "Versions received from server: \""
-                         ^ String.escaped versions ^ "\". "
-                         ^ "Supported RPC versions: " ^ rpcSupportedVersionStr)
+          handshakeFail (Printf.sprintf
+            (f_ "None of server's RPC versions are supported. \
+                 The server may be too old or too recent. \
+                 Versions received from server: \"%s\". \
+                 Supported RPC versions: %s")
+                (String.escaped versions) rpcSupportedVersionStr)
       | ver :: _ ->
           setConnectionVersion conn ver;
           debug (fun () -> Util.msg "Selected RPC version: %i\n" ver);
@@ -1448,9 +1451,9 @@ let checkServerVersion conn header =
   if header = compatConnectionHeader || header = compat248ConnectionHeader then begin
     Lwt.fail
       (Util.Fatal
-        ("The server runs an old and unsupported Unison version.\n\
-          Version received from server: " ^ header ^ "\n\
-          Please see the documentation about upgrading."))
+        ((s_ "The server runs an old and unsupported Unison version.\n\
+          Version received from server: ") ^ header ^ "\n" ^
+          (s_ "Please see the documentation about upgrading.")))
   end else
     selectServerVersion conn
 
@@ -1471,18 +1474,19 @@ let rec checkHeaderRec conn buffer pos len connectionHeader =
         String.sub connectionHeader 0 pos ^ Bytearray.to_string buffer in
       let rest = peekWithoutBlocking conn.inputBuffer in
       Lwt.fail
-        (Util.Fatal
-           ("Received unexpected header from the server:\n \
-             expected \""
-           ^ String.escaped (* (String.sub connectionHeader 0 (pos + 1)) *)
-               connectionHeader
-           ^ "\" but received \"" ^ String.escaped (prefix ^ Bytes.to_string rest) ^ "\", \n"
-           ^ "which differs at \"" ^ String.escaped prefix ^ "\".\n"
-           ^ "This can happen because you have different versions of Unison\n"
-           ^ "installed on the client and server machines, or because\n"
-           ^ "your connection is failing and somebody is printing an error\n"
-           ^ "message, or because your remote login shell is printing\n"
-           ^ "something itself before starting Unison."))
+        (Util.Fatal (Printf.sprintf
+           (f_ "Received unexpected header from the server:\n\
+             expected \"%s\" but received \"%s\",\n\
+             which differs at \"%s\".\n\
+             This can happen because you have different versions of Unison\n\
+             installed on the client and server machines, or because\n\
+             your connection is failing and somebody is printing an error\n\
+             message, or because your remote login shell is printing\n\
+             something itself before starting Unison.")
+           (String.escaped (* (String.sub connectionHeader 0 (pos + 1)) *)
+               connectionHeader)
+           (String.escaped (prefix ^ Bytes.to_string rest))
+           (String.escaped prefix)))
     else
     if not chOk && compatChOk then
       (* We make use of the fact that that the new header is almost a prefix
@@ -1588,11 +1592,11 @@ let halfduplex =
   Prefs.createBool "halfduplex" false
     ~category:(`Advanced `Remote)
     ~deprecated:true
-    "force half-duplex communication with the server"
-    "When this flag is set to {\\tt true}, Unison network communication \
+    (s_ "force half-duplex communication with the server")
+    (s_ "When this flag is set to {\\tt true}, Unison network communication \
      is forced to be half duplex (the client and the server never \
      simultaneously emit data).  If you experience unstabilities with \
-     your network link, this may help."
+     your network link, this may help.")
 
 let negociateFlowControlLocal conn () =
   disableFlowControl conn.outputQueue;
@@ -1624,7 +1628,7 @@ let initConnection ?(connReady=fun () -> ()) ?cleanup in_ch out_ch =
   let with_timeout t =
     Lwt.choose [t;
       Lwt_unix.sleep 120. >>= fun () ->
-      Lwt.fail (Util.Fatal "Timed out negotiating connection with the server")]
+      Lwt.fail (Util.Fatal (s_ "Timed out negotiating connection with the server"))]
   in
   close_on_fail (with_timeout (
     peekWithBlocking conn.inputBuffer >>= fun _ ->
@@ -1713,7 +1717,7 @@ let buildSocket host port kind ?(err="") ai =
                          (Unix.error_message error)
                    | `Bind when ai.Unix.ai_family <> Unix.PF_UNIX ->
                        Printf.sprintf
-                         "Can't bind socket to port %s at address [%s]: %s\n"
+                         (f_ "Can't bind socket to port %s at address [%s]: %s\n")
                          port
                          (match ai.Unix.ai_addr with
                             Unix.ADDR_INET (addr, _) ->
@@ -1723,7 +1727,7 @@ let buildSocket host port kind ?(err="") ai =
                          (Unix.error_message error)
                    | `Bind (* Unix.PF_UNIX *) ->
                        Printf.sprintf
-                         "Can't bind socket to path '%s': %s\n"
+                         (f_ "Can't bind socket to path '%s': %s\n")
                          port
                          (Unix.error_message error)
                  in
@@ -1746,7 +1750,7 @@ let buildConnectSocketUnix path =
   (* Unix domain socket path from [Clroot] is enclosed in curly braces.
      Extract the real path. *)
   let path = String.sub path 1 ((String.length path) - 2) in
-  let err = "Can't connect to Unix domain socket on path " in
+  let err = s_ "Can't connect to Unix domain socket on path " in
   buildSocket "" path `Connect ~err (makeUnixSocketAi path) >>= function
   | None ->
       Lwt.fail (Util.Fatal (err ^ path))
@@ -1756,7 +1760,7 @@ let buildConnectSocketUnix path =
 let buildConnectSocket host port =
   let isHost = String.length host > 0 && host.[0] <> '{' in
   if not isHost then buildConnectSocketUnix host else
-  let err = "Failed to connect to the server on host " in
+  let err = s_ "Failed to connect to the server on host " in
   let attemptCreation ai = buildSocket host port `Connect ~err ai in
   let options = [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ] in
   findFirst attemptCreation (Unix.getaddrinfo host port options) >>= fun res ->
@@ -1785,7 +1789,7 @@ let buildListenSocketUnix path =
   buildSocket "" path `Bind (makeUnixSocketAi path) >>= function
   | None ->
       Lwt.fail (Util.Fatal
-        (Printf.sprintf "Can't bind Unix domain socket on path %s" path))
+        (Printf.sprintf (f_ "Can't bind Unix domain socket on path %s") path))
   | Some x ->
       postponeUnixSocketCleanup path;
       Lwt.return [x]
@@ -1800,7 +1804,7 @@ let buildListenSocket hosts port =
   |> Lwt_util.map (buildSocket "" port `Bind) >>= fun res ->
   match Safelist.filter (fun x -> x <> None) res with
   | [] ->
-      Lwt.fail (Util.Fatal (Printf.sprintf "Can't bind socket to port %s" port))
+      Lwt.fail (Util.Fatal (Printf.sprintf (f_ "Can't bind socket to port %s") port))
   | s ->
       Lwt.return (Safelist.map (function None -> assert false | Some x -> x) s)
 
@@ -1851,7 +1855,9 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
   debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
            shellCmd (String.concat ", " args));
   let (term, termPid) =
-    Util.convertUnixErrorsToFatal "starting shell connection" (fun () ->
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    Util.convertUnixErrorsToFatal (s_ "starting shell connection") (fun () ->
     match termInteract with
     | None ->
         (* Signals generated by the terminal from user input are sent to all
@@ -2157,13 +2163,13 @@ let checkClientVersion conn () =
   let error = sendHandshakeErr conn in
   receiveHandshakeData conn rpcVersionTag >>= function
   | Error msg ->
-      error ("Could not negotiate RPC version. "
-             ^ "Received unexpected error from the client: \"" ^ msg ^ "\"")
+      error (Printf.sprintf (f_ "Could not negotiate RPC version. \
+               Received unexpected error from the client: \"%s\"") msg)
   | Unknown fromClient ->
-      error ("Could not negotiate RPC version. "
-             ^ "Received unexpected header from the client: \""
-             ^ String.escaped (fromClient
-             ^ Bytes.to_string (peekWithoutBlocking conn.inputBuffer)) ^ "\"")
+      error (Printf.sprintf (f_ "Could not negotiate RPC version. \
+               Received unexpected header from the client: \"%s\"")
+               (String.escaped (fromClient
+                 ^ Bytes.to_string (peekWithoutBlocking conn.inputBuffer))))
   | Data buf ->
       match parseVersion "client" buf with
       | Some clientVer ->
@@ -2171,10 +2177,10 @@ let checkClientVersion conn () =
             setConnectionVersion conn clientVer;
             reply Ok
           end else
-            error ("Client RPC version not supported. "
-                   ^ "Version received from client: \""
-                   ^ string_of_int clientVer ^ "\". "
-                   ^ "Supported RPC versions: " ^ rpcSupportedVersionStr)
+            error (Printf.sprintf (f_ "Client RPC version not supported. \
+                     Version received from client: \"%d\". \
+                     Supported RPC versions: %s")
+                     clientVer rpcSupportedVersionStr)
       | None -> Lwt.return ()
       | exception Util.Transient e -> error e
 
@@ -2223,7 +2229,7 @@ let commandLoop in_ch out_ch =
        Lwt.wait))
     (fun e ->
        match e with
-         Util.Fatal "Lost connection with the server" ->
+       | Util.Fatal s when s = lostConnectionExnStr ->
            debug (fun () -> Util.msg "Connection closed by the client\n");
            (* We prevent new writes and wait for any current write to
               terminate.  As we don't have a good way to wait for the
@@ -2242,15 +2248,15 @@ let commandLoop in_ch out_ch =
 let killServer =
   Prefs.createBool "killserver" false
     ~category:(`Advanced `Remote)
-    "kill server when done (even when using sockets)"
-    ("When set to \\verb|true|, this flag causes Unison to kill the remote "
-     ^ "server process when the synchronization is finished.  This behavior "
-     ^ "is the default for \\verb|ssh| connections, so this preference is not "
-     ^ "normally needed when running over \\verb|ssh|; it is provided so "
-     ^ "that socket-mode servers can be killed off after a single run of "
-     ^ "Unison, rather than waiting to accept future connections.  (Some "
-     ^ "users prefer to start a remote socket server for each run of Unison, "
-     ^ "rather than leaving one running all the time.)")
+    (s_ "kill server when done (even when using sockets)")
+    (s_ "When set to \\verb|true|, this flag causes Unison to kill the remote \
+     server process when the synchronization is finished.  This behavior \
+     is the default for \\verb|ssh| connections, so this preference is not \
+     normally needed when running over \\verb|ssh|; it is provided so \
+     that socket-mode servers can be killed off after a single run of \
+     Unison, rather than waiting to accept future connections.  (Some \
+     users prefer to start a remote socket server for each run of Unison, \
+     rather than leaving one running all the time.)")
 
 (* For backward compatibility *)
 let _ = Prefs.alias killServer "killServer"
@@ -2310,7 +2316,7 @@ let waitOnPort hosts port =
          begin try
            (* Accept a connection *)
            Lwt_unix.run (commandLoop connected connected)
-         with Util.Fatal "Lost connection with the server" -> () end;
+         with Util.Fatal s when s = lostConnectionExnStr -> () end;
          (* The client has closed its end of the connection *)
          if not (Prefs.read killServer) then handleClients ()
        and doCleanup socket =
@@ -2333,12 +2339,14 @@ let beAServer () =
   begin try
     let home = System.getenv "HOME" in
     Util.convertUnixErrorsToFatal
-      "changing working directory"
+      (* TRANSLATORS: This is used as an error location in a message like
+         "Error in %s:" (where %s is the string to translate here). *)
+      (s_ "changing working directory")
       (fun () -> System.chdir home)
   with Not_found ->
     Util.msg
-      "Environment variable HOME unbound: \
-       executing server in current directory\n"
+      (f_ "Environment variable HOME unbound: \
+       executing server in current directory\n")
   end;
   Lwt_unix.run
     (commandLoop

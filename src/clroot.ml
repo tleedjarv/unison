@@ -82,15 +82,15 @@ let getProtocolSlashSlash s =
         "file" -> File
       | "rsh" ->
           raise (Invalid_argument
-                  (Printf.sprintf "protocol rsh has been deprecated, use ssh instead (optionally specifying a different sshcmd preference)"))
+                  (s_ "protocol rsh has been deprecated, use ssh instead (optionally specifying a different sshcmd preference)"))
       | "socket" -> Socket
       | "ssh" -> Ssh
       | "unison" ->
           raise(Invalid_argument
-                  (Printf.sprintf "protocol unison has been deprecated, use file, ssh, or socket instead" ))
+                  (s_ "protocol unison has been deprecated, use file, ssh, or socket instead" ))
       | _ ->
           raise(Invalid_argument
-                  (Printf.sprintf "\"%s\": unrecognized protocol %s" s protocolName)) in
+                  (Printf.sprintf (f_ "\"%s\": unrecognized protocol %s") s protocolName)) in
     Some(protocol,remainder)
   else if Str.string_match slashSlashRegexp s 0
   then Some(File,String.sub s 2 (String.length s - 2))
@@ -101,7 +101,7 @@ let getProtocolSlashSlash s =
       "file:" | "ssh:" | "socket:" ->
         raise(Util.Fatal
                 (Printf.sprintf
-                   "ill-formed root specification \"%s\" (%s must be followed by //)"
+                   (f_ "ill-formed root specification \"%s\" (%s must be followed by //)")
                    s matched))
     | _ -> None
   else None
@@ -167,7 +167,7 @@ let parseUri s =
           else Some(String.sub s3 1 (len-1))
         else
           raise(Util.Fatal
-                  (Printf.sprintf "ill-formed root specification %s" s)) in
+                  (Printf.sprintf (f_ "ill-formed root specification %s") s)) in
       (protocol,userOpt,hostOpt,portOpt,pathOpt)
 
 let parseHostPort s =
@@ -175,7 +175,7 @@ let parseHostPort s =
   let (portOpt, s2) = getPort s1 in
   if String.length s2 > 0 then
     raise (Util.Transient
-              (Printf.sprintf "ill-formed host specification %s" s));
+              (Printf.sprintf (f_ "ill-formed host specification %s") s));
   ((match hostOpt with Some h -> h | None -> ""), portOpt)
 
 (* These should succeed *)
@@ -247,9 +247,9 @@ let parseRoot string =
     | _,Some _,None,None
     | Socket, _, None, None
     | Ssh,_,None,_ ->
-        illegal2 "missing host"
+        illegal2 (s_ "missing host")
     | File,_,_,Some _ ->
-        illegal2 "ill-formed (cannot use a port number with file)"
+        illegal2 (s_ "ill-formed (cannot use a port number with file)")
     | File,_,Some h,None ->
         let prefix = "//"^h^"/" in
         (match path with
@@ -262,11 +262,11 @@ let parseRoot string =
     | Socket, None, Some h, None when h.[0] = '{' ->
         ConnectBySocket (h, "", path)
     | Socket,Some _,_,_ ->
-        illegal2 "ill-formed (cannot use a user with socket)"
+        illegal2 (s_ "ill-formed (cannot use a user with socket)")
     | Socket,_,_,None ->
-        illegal2 "ill-formed (must give a port number with socket)"
+        illegal2 (s_ "ill-formed (must give a port number with socket)")
     | Socket, _, Some _, Some _ ->
-        illegal2 "ill-formed (must not give a port number with Unix domain socket)"
+        illegal2 (s_ "ill-formed (must not give a port number with Unix domain socket)")
     | Ssh,_,Some h,_ ->
         ConnectByShell("ssh",h,user,port,path) in
   clroot

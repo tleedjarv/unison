@@ -154,7 +154,7 @@ let fromString str =
   let str = if Sys.win32 || Sys.cygwin then Fileutil.backslashes2forwardslashes str else str in
   if is_absolute str then
     raise (Util.Transient
-             (Printf.sprintf "The path '%s' is not a relative path" str));
+             (Printf.sprintf (f_ "The path '%s' is not a relative path") str));
   let str = Fileutil.removeTrailingSlashes str in
   if str = "" then empty else
   let rec loop p str =
@@ -164,8 +164,8 @@ let fromString str =
       if name1 = ".." then
         raise (Util.Transient
                  (Printf.sprintf
-                    "Reference to parent directory '..' not allowed \
-                     in path '%s'" str0));
+                    (f_ "Reference to parent directory '..' not allowed \
+                     in path '%s'") str0));
       let str_res =
         String.sub str (pos + 1) (String.length str - pos - 1) in
       if pos = 0 || name1 = "." then begin
@@ -177,8 +177,8 @@ let fromString str =
         if str = ".." then
           raise (Util.Transient
                    (Printf.sprintf
-                      "Reference to parent directory '..' not allowed \
-                       in path '%s'" str0));
+                      (f_ "Reference to parent directory '..' not allowed \
+                       in path '%s'") str0));
         if str = "." then p else child p (Name.fromString str)
     | Invalid_argument _ ->
         raise(Invalid_argument "Path.fromString") in
@@ -217,8 +217,8 @@ let addPrefixToFinalName path prefix =
 (* Pref controlling whether symlinks are followed. *)
 let followPred = Pred.create "follow"
     ~category:(`Advanced `Sync)
-    ("Including the preference \\texttt{-follow \\ARG{pathspec}} causes Unison to \
-      treat symbolic links matching \\ARG{pathspec} as `invisible' and \
+    (s_ "Including the preference \\texttt{-follow \\ARG{pathspec}} causes Unison to \
+      treat symbolic links matching \\ARG{pathspec} as 'invisible' and \
       behave as if the object pointed to by the link had appeared literally \
       at this position in the replica.  See \
       \\sectionref{symlinks}{Symbolic Links} for more details. \

@@ -173,17 +173,19 @@ end
 let useWatcher =
   Prefs.createBool "watch" false
     ~category:(`Advanced `General)
-    "when set, use a file watcher process to detect changes"
-    "Unison uses a file watcher process, when available, to detect filesystem \
+    (s_ "when set, use a file watcher process to detect changes")
+    (s_ "Unison uses a file watcher process, when available, to detect filesystem \
      changes; this is used to speed up update detection. Setting this flag to \
-     false disables the use of this process."
+     false disables the use of this process.")
 
 let printf o fmt =
   Printf.ksprintf
     (fun s ->
        debugverbose (fun () -> Util.msg "<< %s" s);
        Util.convertUnixErrorsToFatal
-         "sending command to filesystem watcher"
+          (* TRANSLATORS: This is used as an error location in a message like
+             "Error in %s:" (where %s is the string to translate here). *)
+         (s_ "sending command to filesystem watcher")
          (fun () -> Lwt_unix.run (really_write_substring o s 0 (String.length s))))
     fmt
 
@@ -197,7 +199,7 @@ let read_line i =
       if !start = !last then begin
         Lwt_unix.read i buf 0 160 >>= fun l ->
         if l = 0 then
-          raise (Util.Fatal "Filesystem watcher died unexpectively");
+          raise (Util.Fatal (s_ "Filesystem watcher died unexpectively"));
         start := 0; last := l;
         Lwt.return ()
       end else
@@ -302,7 +304,7 @@ let safeClose fd = try Lwt_unix.close fd with Unix.Unix_error _ -> ()
 let currentConnection () =
   match !conn with
     Some c -> c
-  | None   -> raise (Util.Fatal ("File monitoring helper program not running"))
+  | None   -> raise (Util.Fatal (s_ "File monitoring helper program not running"))
 
 let closeConnection () =
   match !conn with
@@ -316,7 +318,9 @@ let startProcess () =
     let w = Lazy.force watcher in
     let (i1,o1) = Lwt_unix.pipe_out ~cloexec:true () in
     let (i2,o2) = Lwt_unix.pipe_in ~cloexec:true () in
-    let pid = Util.convertUnixErrorsToFatal "starting filesystem watcher"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    let pid = Util.convertUnixErrorsToFatal (s_ "starting filesystem watcher")
       (fun () -> System.create_process w [|w|] i1 o2 Unix.stderr) in
     Unix.close i1; Unix.close o2;
     let c =
@@ -357,15 +361,16 @@ let rec readLine () =
 let badResponse cmd args expected =
   closeConnection ();
   if cmd = "ERROR" then
-    raise (Util.Fatal ("Filesystem watcher error: " ^ (unquote args) ^ "\n\
-                        The watcher can be disabled by setting preference \
-                        'watch' to false"))
+    raise (Util.Fatal (Printf.sprintf
+        (f_ "Filesystem watcher error: %s\n\
+            The watcher can be disabled by setting preference \
+            'watch' to false") (unquote args)))
   else
     raise
       (Util.Fatal
-         (Format.sprintf
-            "Unexpected response '%s %s' from the filesystem watcher \
-             (expected %s)" cmd args expected))
+         (Printf.sprintf
+            (f_ "Unexpected response '%s %s' from the filesystem watcher \
+             (expected %s)") cmd args expected))
 
 let readAck () =
   let (cmd, args) = split_on_space (readLine ()) in
@@ -471,4 +476,4 @@ let getChanges hash =
     emitCmd "CHANGES %s\n" (quote hash);
     parseChanges []
   end else
-    raise (Util.Fatal "No file monitoring helper program found")
+    raise (Util.Fatal (s_ "No file monitoring helper program found"))

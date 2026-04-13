@@ -113,7 +113,7 @@ let format_exc e =
             Unix.EUNKNOWNERR n -> Format.sprintf " (code %d)" n
         | _                    -> "")
   | _ ->
-     Format.sprintf "uncaugth exception %s@." (Printexc.to_string e)
+     Printf.sprintf (f_ "uncaugth exception %s\n") (Printexc.to_string e)
 
 (****)
 
@@ -490,7 +490,7 @@ let watch_path path file follow =
   with
   | Already_lost ->
       if is_root file then
-        error (Format.sprintf "Path '%s' does not exist" path)
+        error (Format.sprintf (f_ "Path '%s' does not exist") path)
       else
         signal_change 0. file None `DEL
         (* Most likely cause: A subdir was deleted during the scan.
@@ -622,7 +622,7 @@ Lwt_unix.run
             Lwt.return ()
         | _ ->
             if !debug then Format.eprintf "%s@." (format_exc e);
-            error ("error while communicating with Unison: " ^ format_exc e)))
+            error (s_ "error while communicating with Unison: " ^ format_exc e)))
 
 end
 end

@@ -49,22 +49,22 @@ end
 let auto =
   Prefs.createBool "auto" false
     ~category:(`Basic `Syncprocess_CLI)
-    "automatically accept default (nonconflicting) actions"
-    ("When set to {\\tt true}, this flag causes the user "
-     ^ "interface to skip asking for confirmations on "
-     ^ "non-conflicting changes.  (More precisely, when the user interface "
-     ^ "is done setting the propagation direction for one entry and is about "
-     ^ "to move to the next, it will skip over all non-conflicting entries "
-     ^ "and go directly to the next conflict.)" )
+    (s_ "automatically accept default (nonconflicting) actions")
+    (s_ "When set to {\\tt true}, this flag causes the user \
+     interface to skip asking for confirmations on \
+     non-conflicting changes.  (More precisely, when the user interface \
+     is done setting the propagation direction for one entry and is about \
+     to move to the next, it will skip over all non-conflicting entries \
+     and go directly to the next conflict.)" )
 
 (* This has to be here rather than in uigtk.ml, because it is part of what
    gets sent to the server at startup *)
 let mainWindowHeight =
   Prefs.createInt "height" 15
     ~category:(`Advanced `GUI)
-    "height (in lines) of main window in graphical interface"
-    ("Used to set the height (in lines) of the main window in the graphical "
-     ^ "user interface.")
+    (s_ "height (in lines) of main window in graphical interface")
+    (s_ "Used to set the height (in lines) of the main window in the graphical \
+     user interface.")
 
 let expert =
   Prefs.createBool "expert" false
@@ -74,18 +74,18 @@ let expert =
 let profileLabel =
   Prefs.createString "label" ""
     ~category:(`Advanced `General)
-    "provide a descriptive string label for this profile"
-    ("Used in a profile to provide a descriptive string documenting its "
-     ^ "settings.  (This is useful for users that switch between several "
-     ^ "profiles, especially using the `fast switch' feature of the "
-     ^ "graphical user interface.)")
+    (s_ "provide a descriptive string label for this profile")
+    (s_ "Used in a profile to provide a descriptive string documenting its \
+     settings.  (This is useful for users that switch between several \
+     profiles, especially using the 'fast switch' feature of the \
+     graphical user interface.)")
 
 let profileKey =
   Prefs.createString "key" ""
     ~category:(`Advanced `General)
-    "define a keyboard shortcut for this profile (in some UIs)"
-    ("Used in a profile to define a numeric key (0-9) that can be used in "
-     ^ "the user interface to switch immediately to this profile.")
+    (s_ "define a keyboard shortcut for this profile (in some UIs)")
+    (s_ "Used in a profile to define a numeric key (0-9) that can be used in \
+     the user interface to switch immediately to this profile.")
 (* This preference is not actually referred to in the code anywhere, since
    the keyboard shortcuts are constructed by a separate scan of the preference
    file in uigtk.ml, but it must be present to prevent the preferences module
@@ -94,20 +94,22 @@ let profileKey =
 let contactquietly =
   Prefs.createBool "contactquietly" false
     ~category:(`Advanced `General)
-    "suppress the 'contacting server' message during startup"
-    ("If this flag is set, Unison will skip displaying the "
-     ^ "`Contacting server' message (which some users find annoying) "
-     ^ "during startup.")
+    (s_ "suppress the 'contacting server' message during startup")
+    (s_ "If this flag is set, Unison will skip displaying the \
+     'Contacting server' message (which some users find annoying) \
+     during startup.")
 
 let contactingServerMsg () =
-  Printf.sprintf "Unison %s: Contacting server..." Uutil.myVersion 
+  Printf.sprintf (f_ "Unison %s: Contacting server...") Uutil.myVersion 
 
 let repeat =
   let parseRepeat s =
     let parseTime ts =
       try int_of_string ts with Failure _ ->
-        raise (Prefs.IllegalValue ("Value of 'repeat' preference ("
-          ^ s ^ ") should be either a number, 'watch' or 'watch+<number>'"))
+        raise (Prefs.IllegalValue (Printf.sprintf
+          (* TRANSLATORS: Don't translate the word 'watch'. *)
+          (f_ "Value of 'repeat' preference (%s) should be either a number, \
+            'watch' or 'watch+<number>'") s))
     in
     let nonBlankLower x =
       match String.trim x with "" -> None | s -> Some (String.lowercase_ascii s)
@@ -129,16 +131,16 @@ let repeat =
   in
   Prefs.create "repeat" `NoRepeat
     ~category:(`Advanced `Syncprocess_CLI)
-    "synchronize repeatedly (text interface only)"
-    ("Setting this preference causes the text-mode interface to synchronize "
-     ^ "repeatedly, rather than doing it just once and stopping.  If the "
-     ^ "argument is a number, Unison will pause for that many seconds before "
-     ^ "beginning again. When the argument is \\verb|watch|, Unison relies on "
-     ^ "an external file monitoring process to synchronize whenever a change "
-     ^ "happens.  You can combine the two with a \\verb|+| character to use "
-     ^ "file monitoring and also do a full scan every specified number of "
-     ^ "seconds.  For example, \\verb|watch+3600| will react to changes "
-     ^ "immediately and additionally do a full scan every hour.")
+    (s_ "synchronize repeatedly (text interface only)")
+    (s_ "Setting this preference causes the text-mode interface to synchronize \
+     repeatedly, rather than doing it just once and stopping.  If the \
+     argument is a number, Unison will pause for that many seconds before \
+     beginning again. When the argument is \\verb|watch|, Unison relies on \
+     an external file monitoring process to synchronize whenever a change \
+     happens.  You can combine the two with a \\verb|+| character to use \
+     file monitoring and also do a full scan every specified number of \
+     seconds.  For example, \\verb|watch+3600| will react to changes \
+     immediately and additionally do a full scan every hour.")
     (fun _ -> parseRepeat)
     (fun r -> [externRepeat r])
     Umarshal.(sum1 string externRepeat parseRepeat)
@@ -148,41 +150,41 @@ let repeatWatcher () =
 let retry =
   Prefs.createInt "retry" 0
     ~category:(`Advanced `Syncprocess_CLI)
-    "re-try failed synchronizations N times (text ui only)"
-    ("Setting this preference causes the text-mode interface to try again "
-     ^ "to synchronize "
-     ^ "updated paths where synchronization fails.  Each such path will be "
-     ^ "tried N times."
+    (s_ "re-try failed synchronizations N times (text ui only)")
+    (s_ "Setting this preference causes the text-mode interface to try again \
+     to synchronize \
+     updated paths where synchronization fails.  Each such path will be \
+     tried N times."
     )
 
 let confirmmerge =
   Prefs.createBool "confirmmerge" false
     ~category:(`Advanced `Syncprocess)
-    "ask for confirmation before committing results of a merge"
-    ("Setting this preference causes both the text and graphical interfaces"
-     ^ " to ask the user if the results of a merge command may be committed "
-     ^ " to the replica or not. Since the merge command works on temporary files,"
-     ^ " the user can then cancel all the effects of applying the merge if it"
-     ^ " turns out that the result is not satisfactory.  In "
-     ^ " batch-mode, this preference has no effect.  Default is false.")
+    (s_ "ask for confirmation before committing results of a merge")
+    (s_ "Setting this preference causes both the text and graphical interfaces \
+     to ask the user if the results of a merge command may be committed \
+     to the replica or not. Since the merge command works on temporary files, \
+     the user can then cancel all the effects of applying the merge if it \
+     turns out that the result is not satisfactory.  In \
+     batch-mode, this preference has no effect.  Default is false.")
 
 let runTestsPrefName = "selftest"
 let runtests =
   Prefs.createBool runTestsPrefName false
     ~category:`Expert
     ~cli_only:true
-    "run internal tests and exit"
-   ("Run internal tests and exit.  This option is mostly for developers and must be used "
-  ^ "carefully: in particular, "
-  ^ "it will delete the contents of both roots, so that it can install its own files "
-  ^ "for testing.  This flag only makes sense on the command line.  When it is "
-  ^ "provided, no preference file is read: all preferences must be specified on the"
-  ^ "command line.  Also, since the self-test procedure involves overwriting the roots "
-  ^ "and backup directory, the names of the roots and of the backupdir preference "
-  ^ "must include the string "
-  ^ "\"test\" or else the tests will be aborted.  (If these are not given "
-  ^ "on the command line, dummy "
-  ^ "subdirectories in the current directory will be created automatically.)")
+    (s_ "run internal tests and exit")
+   (s_ "Run internal tests and exit.  This option is mostly for developers and must be used \
+     carefully: in particular, \
+     it will delete the contents of both roots, so that it can install its own files \
+     for testing.  This flag only makes sense on the command line.  When it is \
+     provided, no preference file is read: all preferences must be specified on the \
+     command line.  Also, since the self-test procedure involves overwriting the roots \
+     and backup directory, the names of the roots and of the backupdir preference \
+     must include the string \
+     \"test\" or else the tests will be aborted.  (If these are not given \
+     on the command line, dummy \
+     subdirectories in the current directory will be created automatically.)")
 
 (* This ref is set to Test.test during initialization, avoiding a circular
    dependency *)
@@ -219,8 +221,8 @@ let prevProps newprops ui =
 
 let overwriteWarning = function
   | {status = `MovedOut (_, _, {typ; _}); _} when typ <> `ABSENT ->
-      " <will overwrite a " ^ Fileinfo.type2string typ
-      ^ " in the other replica>"
+      Printf.sprintf (f_ " <will overwrite a %s in the other replica>")
+        (Fileinfo.type2string typ)
   | _ -> ""
 
 let replicaContentDesc rc =
@@ -231,39 +233,39 @@ let replicaContent2string rc sep =
   let m s s2 rc = s ^ sep ^ replicaContentDesc rc ^ " " ^ s2 in
   match rc.typ, rc.status with
     `ABSENT, `Unchanged ->
-      "absent"
+      s_ "absent"
   | _, `Unchanged ->
-      "unchanged "
-     ^(Util.padto 7 (Util.truncateString (Fileinfo.type2string rc.typ) 7))
+      Printf.sprintf (f_ "unchanged %s")
+        (Util.padto 7 (Util.truncateString (Fileinfo.type2string rc.typ) 7))
      ^ sep
      ^ replicaContentDesc rc
-  | `ABSENT, `Deleted -> "deleted"
+  | `ABSENT, `Deleted -> s_ "deleted"
   | `FILE, `Created ->
-     d (choose "new file         " "file             ")
+     d (choose (s_ "new file         ") (s_ "file             "))
   | `FILE, `Modified ->
-     d "changed file     "
+     d (s_ "changed file     ")
   | `FILE, `PropsChanged ->
-     d "changed props    "
+     d (s_ "changed props    ")
   | `FILE, `MovedOut (n, p, _) ->
-     m "moved/renamed fil" ("||--> new name: " ^ (Path.toString n) ^
+     m (s_ "moved/renamed fil") ("||--> " ^ (s_ "new name") ^ ": " ^ (Path.toString n) ^
        overwriteWarning rc) p
   | `FILE, `MovedIn (n, _, _) ->
-     m "moved/renamed fil" ("||<-- previous name: " ^ (Path.toString n)) rc
+     m (s_ "moved/renamed fil") ("||<-- " ^ (s_ "previous name") ^ ": " ^ (Path.toString n)) rc
   | `SYMLINK, `Created ->
-     d (choose "new symlink      " "symlink          ")
+     d (choose (s_ "new symlink      ") (s_ "symlink          "))
   | `SYMLINK, `Modified ->
-     d "changed symlink  "
+     d (s_ "changed symlink  ")
   | `DIRECTORY, `Created ->
-     d (choose "new dir          " "dir              ")
+     d (choose (s_ "new dir          ") (s_ "dir              "))
   | `DIRECTORY, `Modified ->
-     d "changed dir      "
+     d (s_ "changed dir      ")
   | `DIRECTORY, `PropsChanged ->
-     d "dir props changed"
+     d (s_ "dir props changed")
   | `DIRECTORY, `MovedOut (n, p, _) ->
-     m "moved/renamed dir" ("||--> new name: " ^ (Path.toString n) ^
+     m (s_ "moved/renamed dir") ("||--> " ^ (s_ "new name") ^ ": " ^ (Path.toString n) ^
        overwriteWarning rc) p
   | `DIRECTORY, `MovedIn (n, _, _) ->
-     m "moved/renamed dir" ("||<-- previous name: " ^ (Path.toString n)) rc
+     m (s_ "moved/renamed dir") ("||<-- " ^ (s_ "previous name") ^ ": " ^ (Path.toString n)) rc
 
   (* Some cases that can't happen... *)
   | `ABSENT, (`Created | `Modified | `PropsChanged | `MovedOut _ | `MovedIn _)
@@ -274,19 +276,19 @@ let replicaContent2string rc sep =
 let replicaContent2shortString rc =
   match rc.typ, rc.status with
     _, `Unchanged             -> "        "
-  | `ABSENT, `Deleted         -> "deleted "
-  | `FILE, `Created           -> choose "new file" "file    "
-  | `FILE, `Modified          -> "changed "
-  | `FILE, `PropsChanged      -> "props   "
-  | `FILE, `MovedOut _        -> "renamed "
-  | `FILE, `MovedIn _         -> "renamed "
-  | `SYMLINK, `Created        -> choose "new link" "link    "
-  | `SYMLINK, `Modified       -> "chgd lnk"
-  | `DIRECTORY, `Created      -> choose "new dir " "dir     "
-  | `DIRECTORY, `Modified     -> "chgd dir"
-  | `DIRECTORY, `PropsChanged -> "props   "
-  | `DIRECTORY, `MovedOut _   -> "rnmd dir"
-  | `DIRECTORY, `MovedIn _    -> "rnmd dir"
+  | `ABSENT, `Deleted         -> s_ "deleted "
+  | `FILE, `Created           -> choose (s_ "new file") (s_ "file    ")
+  | `FILE, `Modified          -> s_ "changed "
+  | `FILE, `PropsChanged      -> s_ "props   "
+  | `FILE, `MovedOut _        -> s_ "renamed "
+  | `FILE, `MovedIn _         -> s_ "renamed "
+  | `SYMLINK, `Created        -> choose (s_ "new link") (s_ "link    ")
+  | `SYMLINK, `Modified       -> s_ "chgd lnk"
+  | `DIRECTORY, `Created      -> choose (s_ "new dir ") (s_ "dir     ")
+  | `DIRECTORY, `Modified     -> s_ "chgd dir"
+  | `DIRECTORY, `PropsChanged -> s_ "props   "
+  | `DIRECTORY, `MovedOut _   -> s_ "rnmd dir"
+  | `DIRECTORY, `MovedIn _    -> s_ "rnmd dir"
   (* Cases that can't happen... *)
   | `ABSENT, (`Created | `Modified | `PropsChanged | `MovedOut _ | `MovedIn _)
   | `SYMLINK, (`PropsChanged | `MovedOut _ | `MovedIn _)
@@ -298,15 +300,15 @@ let roots2niceStrings length = function
     let name1, name2 = Fspath.differentSuffix fspath1 fspath2 in
     (Util.truncateString name1 length, Util.truncateString name2 length)
  | (Local,fspath1), (Remote host, fspath2) ->
-    (Util.truncateString "local" length, Util.truncateString host length)
+    (Util.truncateString (s_ "local") length, Util.truncateString host length)
  | (Remote host, fspath1), (Local,fspath2) ->
-    (Util.truncateString host length, Util.truncateString "local" length)
+    (Util.truncateString host length, Util.truncateString (s_ "local") length)
  | _ -> assert false  (* BOGUS? *)
 
 let details2string theRi sep =
   match theRi.replicas with
     Problem s ->
-      Printf.sprintf "Error: %s\n" s
+      Printf.sprintf (f_ "Error: %s\n") s
   | Different {rc1 = rc1; rc2 = rc2} ->
       let root1str, root2str =
         roots2niceStrings 12 (Globals.roots()) in
@@ -349,7 +351,7 @@ let direction2action partial dir =
 
 let action2niceString action =
   match action with
-    AError      -> "error"
+    AError      -> s_ "error"
   | ASkip _     -> "<-?->"
   | ALtoR false -> "---->"
   | ALtoR true  -> "--?->"
@@ -370,10 +372,10 @@ let reconItem2stringList oldPath theRI =
             ""
         | ({status = `MovedOut (n, _, _); _} as rc), _
         | _, ({status = `MovedOut (n, _, _); _} as rc) ->
-            " (--> new name: " ^ Path.toString n ^ ")" ^ overwriteWarning rc
+            " (--> " ^ (s_ "new name") ^ ": " ^ Path.toString n ^ ")" ^ overwriteWarning rc
         | {status = `MovedIn (n, _, _); _}, _
         | _, {status = `MovedIn (n, _, _); _} ->
-            " (<-- previous name: " ^ Path.toString n ^ ")"
+            " (<-- " ^ (s_ "previous name") ^ ": " ^ Path.toString n ^ ")"
         | _ -> ""
       in
       (replicaContent2shortString diff.rc1,
@@ -387,26 +389,30 @@ let reconItem2string oldPath theRI status =
 
 let exn2string e =
   match e with
-     Sys.Break      -> "Terminated!"
+   | Sys.Break      -> s_ "Terminated!"
    | Util.Fatal s   -> s
    | Util.Transient s -> s
    | Unix.Unix_error (err, fun_name, arg) ->
-       Printf.sprintf "Uncaught unix error (please report a bug): %s failed%s: %s%s\n%s"
+       Printf.sprintf
+         (* TRANSLATORS: The first %s is a function name. The second %s is
+            either empty or the phrase " on \"%s\"" (translated separately)
+            where %s is the argument to the function. *)
+         (f_ "Uncaught unix error (please report a bug): %s failed%s: %s%s\n%s")
          fun_name
-         (if String.length arg > 0 then Format.sprintf " on \"%s\"" arg else "")
+         (if String.length arg > 0 then Format.sprintf (f_ " on \"%s\"") arg else "")
          (Unix.error_message err)
          (match err with
-            Unix.EUNKNOWNERR n -> Format.sprintf " (code %d)" n
+            Unix.EUNKNOWNERR n -> Format.sprintf (f_ " (code %d)") n
           | _                  -> "")
          (Printexc.get_backtrace ())
    | Stack_overflow ->
-       "Stack overflow. This could indicate a programming error.\n\n\
-         Technical information in case you need to report a bug:\n"
+       (s_ "Stack overflow. This could indicate a programming error.\n\n\
+         Technical information in case you need to report a bug:\n")
        ^ (Printexc.get_backtrace ())
    | Invalid_argument s ->
-       Printf.sprintf "Invalid argument (please report a bug): %s\n%s"
+       Printf.sprintf (f_ "Invalid argument (please report a bug): %s\n%s")
          s (Printexc.get_backtrace ())
-   | other -> Printf.sprintf "Uncaught exception (please report a bug): %s\n%s"
+   | other -> Printf.sprintf (f_ "Uncaught exception (please report a bug): %s\n%s")
        (Printexc.to_string other) (Printexc.get_backtrace ())
 
 (* precondition: uc = File (Updates(_, ..) on both sides *)
@@ -414,7 +420,7 @@ let showDiffs ri printer errprinter id =
   match ri.replicas with
     Problem _ ->
       errprinter
-        "Can't diff files: there was a problem during update detection"
+        (s_ "Can't diff files: there was a problem during update detection")
   | Different {rc1 = {typ = `FILE; status = st1; ui = ui1};
                rc2 = {typ = `FILE; status = st2; ui = ui2}} ->
       let (root1,root2) = Globals.roots() in
@@ -428,7 +434,7 @@ let showDiffs ri printer errprinter id =
         with Util.Transient e -> errprinter e
       end
   | Different _ ->
-      errprinter "Can't diff: path doesn't refer to a file in both replicas"
+      errprinter (s_ "Can't diff: path doesn't refer to a file in both replicas")
 
 
 exception Synch_props of Common.reconItem
@@ -439,15 +445,15 @@ exception Synch_props of Common.reconItem
 
 let dangerousPathMsg dangerousPaths =
   if dangerousPaths = [Path.empty] then
-    "The root of one of the replicas has been completely emptied.\n\
+    s_ "The root of one of the replicas has been completely emptied.\n\
      Unison may delete everything in the other replica.  (Set the \n\
      'confirmbigdel' preference to false to disable this check.)\n"
   else
     Printf.sprintf
-      "The following paths have been completely emptied in one replica:\n  \
+      (f_ "The following paths have been completely emptied in one replica:\n  \
        %s\n\
        Unison may delete everything below these paths in the other replica.\n
-       (Set the 'confirmbigdel' preference to false to disable this check.)\n"
+       (Set the 'confirmbigdel' preference to false to disable this check.)\n")
       (String.concat "\n  "
          (Safelist.map (fun p -> "'" ^ (Path.toString p) ^ "'")
             dangerousPaths))
@@ -504,7 +510,7 @@ let ignoreExt path =
 
 let addIgnorePattern theRegExp =
   if theRegExp = "Path " then
-    raise (Util.Transient "Can't ignore the root path!");
+    raise (Util.Transient (s_ "Can't ignore the root path!"));
   Globals.addRegexpToIgnore theRegExp;
   let r = Prefs.add "ignore" theRegExp in
   Trace.status r;
@@ -804,19 +810,19 @@ let transportItems items pRiThisRound makeAction =
  **********************************************************************)
 
 let coreUsageMsg =
-   "Usage: " ^ Uutil.myName
- ^ " [options]\n"
- ^ "    or " ^ Uutil.myName
- ^ " root1 root2 [options]\n"
- ^ "    or " ^ Uutil.myName
- ^ " profilename [options]\n"
+  Printf.sprintf (f_
+    "Usage: %s [options]\n\
+  \032   or %s root1 root2 [options]\n\
+  \032   or %s profilename [options]\n")
+    Uutil.myName Uutil.myName Uutil.myName
 
 let shortUsageMsg =
-     coreUsageMsg ^ "\n"
-   ^ "For a list of options, type \"" ^ Uutil.myName ^ " -help\".\n"
-   ^ "For a tutorial on basic usage, type \"" ^ Uutil.myName
-   ^ " -doc tutorial\".\n"
-   ^ "For other documentation, type \"" ^ Uutil.myName ^ " -doc topics\".\n"
+  coreUsageMsg ^ "\n" ^
+  (Printf.sprintf (f_
+    "For a list of options, type \"%s -help\".\n\
+     For a tutorial on basic usage, type \"%s -doc tutorial\".\n\
+     For other documentation, type \"%s -doc topics\".\n")
+    Uutil.myName Uutil.myName Uutil.myName)
 
 let usageMsg = coreUsageMsg
 
@@ -880,19 +886,18 @@ let provideProfileKey filename k profile info =
         None -> profileKeymap.(i) <- Some(profile,info)
       | Some(otherProfile,_) ->
           raise (Util.Fatal
-            ("Error scanning profile "^
-                filename ^":\n"
-             ^ "shortcut key "^k^" is already bound to profile "
-             ^ otherProfile))
+            (Printf.sprintf (f_ "Error scanning profile %s:\n\
+               shortcut key %s is already bound to profile %s")
+               filename k otherProfile))
     else
       raise (Util.Fatal
-        ("Error scanning profile "^ filename ^":\n"
-         ^ "Value of 'key' preference must be a single digit (0-9), "
-         ^ "not " ^ k))
+        (Printf.sprintf (f_ "Error scanning profile %s:\n\
+           Value of 'key' preference must be a single digit (0-9), \
+           not %s") filename k))
   with Failure _ -> raise (Util.Fatal
-    ("Error scanning profile "^ filename ^":\n"
-     ^ "Value of 'key' preference must be a single digit (0-9), "
-     ^ "not " ^ k))
+    (Printf.sprintf (f_ "Error scanning profile %s:\n\
+       Value of 'key' preference must be a single digit (0-9), \
+       not %s") filename k))
 
 let profilesAndRoots = ref []
 
@@ -907,10 +912,8 @@ let scanProfiles () =
           let prefs =
             try Some (Prefs.readAFile f) with
             | Util.Fatal s -> begin
-                Util.warn ("Error when reading list of profiles.\n"
-                         ^ "Skipping file with error: "
-                         ^ filename
-                         ^ "\n\n" ^ s);
+                Util.warn (Printf.sprintf (f_ "Error when reading list of profiles.\n\
+                             Skipping file with error: %s\n\n%s") filename s);
                 None end in
           match prefs with
           | None -> None
@@ -959,7 +962,7 @@ let initRoots displayWaitMessage termInteract =
   if
     hasRemote && not (Prefs.read contactquietly || Prefs.read Trace.terse)
   then
-    Trace.status (Printf.sprintf "Connected [%s]\n"
+    Trace.status (Printf.sprintf (f_ "Connected [%s]\n")
       (Util.replacesubstring (Update.getRootsName()) ", " " -> "));
 
   debug (fun() ->
@@ -1038,7 +1041,7 @@ let initPrefs ~profileName ~promptForRoots ?(prepDebug = fun () -> ()) () =
 
     (* Now check again that the -selftest flag has not been set, and barf otherwise *)
     if Prefs.read runtests then raise (Util.Fatal
-      "The 'test' flag should only be given on the command line")
+      (s_ "The 'test' flag should only be given on the command line"))
   end;
 
   if Prefs.read Trace.debugmods <> [] then prepDebug ();
@@ -1078,7 +1081,7 @@ let initPrefs ~profileName ~promptForRoots ?(prepDebug = fun () -> ()) () =
   if Globals.rawRoots() = [] then begin
     (* Ask the user for the roots *)
     match promptForRoots () with
-    | None -> raise (Util.Fatal "no roots given on command line or in profile")
+    | None -> raise (Util.Fatal (s_ "no roots given on command line or in profile"))
     | Some (r1, r2) ->
         begin
           (* Remember them for this run, ordering them so that the first
@@ -1099,7 +1102,7 @@ let initPrefs ~profileName ~promptForRoots ?(prepDebug = fun () -> ()) () =
   let parsedRoots =
     try Globals.parsedClRawRoots () with
     | Invalid_argument s | Util.Fatal s | Prefs.IllegalValue s ->
-        raise (Util.Fatal ("There's a problem with one of the roots:\n" ^ s))
+        raise (Util.Fatal (s_ "There's a problem with one of the roots:\n" ^ s))
   in
 
   (* Check to be sure that there is at most one remote root *)
@@ -1110,7 +1113,7 @@ let initPrefs ~profileName ~promptForRoots ?(prepDebug = fun () -> ()) () =
       0
       parsedRoots in
       if numRemote > 1 then
-        raise(Util.Fatal "cannot synchronize more than one remote root");
+        raise(Util.Fatal (s_ "cannot synchronize more than one remote root"));
 
   Recon.checkThatPreferredRootIsValid();
 
@@ -1143,11 +1146,11 @@ let testServer =
   Prefs.createBool "testserver" false
     ~category:(`Advanced `Remote)
     ~cli_only:true
-    "exit immediately after the connection to the server"
-    ("Setting this flag on the command line causes Unison to attempt to "
-     ^ "connect to the remote server and, if successful, print a message "
-     ^ "and immediately exit.  Useful for debugging installation problems. "
-     ^ "Should not be set in preference files.")
+    (s_ "exit immediately after the connection to the server")
+    (s_ "Setting this flag on the command line causes Unison to attempt to \
+     connect to the remote server and, if successful, print a message \
+     and immediately exit.  Useful for debugging installation problems. \
+     Should not be set in preference files.")
 
 (* For backward compatibility *)
 let _ = Prefs.alias testServer "testServer"
@@ -1174,8 +1177,7 @@ let uiInitClRootsAndProfile ?(prepDebug = fun () -> ()) () =
       | [root2;root1;profile] ->
           Ok (cmdLineRawRoots := [root1;root2]; Some profile)
       | _ ->
-          Error (Printf.sprintf
-                   "%s was invoked incorrectly (too many roots)" Uutil.myName)
+          Error (s_ "Unison was invoked incorrectly (too many roots)")
     with Not_found -> Ok None
   end with
   | Error _ as e -> e
@@ -1206,7 +1208,7 @@ let uiInitClRootsAndProfile ?(prepDebug = fun () -> ()) () =
           let f = Prefs.profilePathname n in
           if not (System.file_exists f)
           then Error (Printf.sprintf
-                        "Profile '%s' does not exist (looking for file %s)"
+                        (f_ "Profile '%s' does not exist (looking for file %s)")
                         n f)
           else Ok (Some n)
 

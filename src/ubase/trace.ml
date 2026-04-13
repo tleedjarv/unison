@@ -31,20 +31,21 @@ let redirect x = (traceprinter := x)
 let debugmods =
   Prefs.createStringList "debug"
     ~category:`Expert
-    "debug module xxx ('all' -> everything, 'verbose' -> more)"
-    ("This preference is used to make Unison print various sorts of "
-     ^ "information about what it is doing internally on the standard "
-     ^ "error stream.  It can be used many times, each time with the name "
-     ^ "of a module for which debugging information should be printed.  "
-     ^ "Possible arguments for \\verb|debug| can be found "
-     ^ "by looking for calls to \\verb|Util.debug| in the "
-     ^ "sources (using, e.g., \\verb|grep|).  "
-     ^ "Setting \\verb|-debug all| causes information from {\\em all} "
-     ^ "modules to be printed (this mode of usage is the first one to try, "
-     ^ "if you are trying to understand something that Unison seems to be "
-     ^ "doing wrong); \\verb|-debug verbose| turns on some additional "
-     ^ "debugging output from some modules (e.g., it will show exactly "
-     ^ "what bytes are being sent across the network).")
+    (* TRANSLATORS: Do not translate 'all' and 'verbose'. *)
+    (s_ "debug module xxx ('all' -> everything, 'verbose' -> more)")
+    (s_ "This preference is used to make Unison print various sorts of \
+     information about what it is doing internally on the standard \
+     error stream.  It can be used many times, each time with the name \
+     of a module for which debugging information should be printed.  \
+     Possible arguments for \\verb|debug| can be found \
+     by looking for calls to \\verb|Util.debug| in the \
+     sources (using, e.g., \\verb|grep|).  \
+     Setting \\verb|-debug all| causes information from {\\em all} \
+     modules to be printed (this mode of usage is the first one to try, \
+     if you are trying to understand something that Unison seems to be \
+     doing wrong); \\verb|-debug verbose| turns on some additional \
+     debugging output from some modules (e.g., it will show exactly \
+     what bytes are being sent across the network).")
 
 let debugtimes =
   Prefs.createBool "debugtimes" false
@@ -110,20 +111,20 @@ let _ = Util.debugPrinter := Some(debug)
 let logging =
   Prefs.createBool "log" true
     ~category:(`Advanced `General)
-    "record actions in logfile"
-    "When this flag is set, Unison will log all changes to the filesystems
-     on a file."
+    (s_ "record actions in logfile")
+    (s_ "When this flag is set, Unison will log all changes to the filesystems \
+     on a file.")
 
 let logfile =
   Prefs.createString "logfile"
     "unison.log"
     ~category:(`Advanced `General)
-    "logfile name"
-    "By default, logging messages will be appended to the file
-     \\verb|unison.log| in your .unison directory.  Set this preference if
-     you prefer another file.  It can be a path relative to your .unison directory.
-     Sending SIGUSR1 will close the logfile; the logfile will be re-opened (and
-     created, if needed) automatically, to allow for log rotation."
+    (s_ "logfile name")
+    (s_ "By default, logging messages will be appended to the file \
+     \\verb|unison.log| in your .unison directory.  Set this preference if \
+     you prefer another file.  It can be a path relative to your .unison directory. \
+     Sending SIGUSR1 will close the logfile; the logfile will be re-opened (and \
+     created, if needed) automatically, to allow for log rotation.")
 
 let logch = ref None
 
@@ -191,9 +192,9 @@ let writeLog s stripColor =
 let terse =
   Prefs.createBool "terse" false
     ~category:(`Basic `Syncprocess_CLI)
-    "suppress status messages"
-    ("When this preference is set to {\\tt true}, the user "
-     ^ "interface will not print status messages.")
+    (s_ "suppress status messages")
+    (s_ "When this preference is set to {\\tt true}, the user \
+     interface will not print status messages.")
 
 type msgtype = Msg | StatusMajor | StatusMinor | Log | LogColor
 type msg = msgtype * string

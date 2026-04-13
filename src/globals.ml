@@ -27,19 +27,19 @@ let debug = Trace.debug "globals"
 let rawroots =
   Prefs.createStringList "root"
     ~category:(`Basic `Sync)
-    "root of a replica (should be used exactly twice)"
-    ("Each use of this preference names the root of one of the replicas "
-     ^ "for Unison to synchronize.  Exactly two roots are needed, so normal "
-     ^ "modes of usage are either to give two values for \\verb|root| in the "
-     ^ "profile, or to give no values in the profile and provide two "
-     ^ "on the command line.  "
-     ^ "Details of the syntax of roots can be found in "
-     ^ "\\sectionref{roots}{Roots}.\n\n"
-     ^ "The two roots can be given in either order; Unison will sort them "
-     ^ "into a canonical order before doing anything else.  It also tries to "
-     ^ "`canonize' the machine names and paths that appear in the roots, so "
-     ^ "that, if Unison is invoked later with a slightly different name "
-     ^ "for the same root, it will be able to locate the correct archives.")
+    (s_ "root of a replica (should be used exactly twice)")
+    (s_ "Each use of this preference names the root of one of the replicas \
+     for Unison to synchronize.  Exactly two roots are needed, so normal \
+     modes of usage are either to give two values for \\verb|root| in the \
+     profile, or to give no values in the profile and provide two \
+     on the command line.  \
+     Details of the syntax of roots can be found in \
+     \\sectionref{roots}{Roots}.\n\n\
+     The two roots can be given in either order; Unison will sort them \
+     into a canonical order before doing anything else.  It also tries to \
+     'canonize' the machine names and paths that appear in the roots, so \
+     that, if Unison is invoked later with a slightly different name \
+     for the same root, it will be able to locate the correct archives.")
 
 let setRawRoots l = Prefs.set rawroots (Safelist.rev l)
 
@@ -55,9 +55,9 @@ let parsedClRawRoots () =
             parsedClrootCache := (key, x) :: !parsedClrootCache; x
 
 let wrongNumRootsExn roots =
-  Util.Fatal (Printf.sprintf "Wrong number of roots: \
+  Util.Fatal (Printf.sprintf (f_ "Wrong number of roots: \
     2 expected, but %d provided (%s)\n(Maybe you specified \
-    roots both on the command line and in the profile?)"
+    roots both on the command line and in the profile?)")
     (Safelist.length roots)
     (String.concat ", " roots))
 
@@ -85,8 +85,8 @@ let installRoots termInteract =
   let () = match roots' with
            | [r1; r2] when r1 = r2 ->
                raise (Util.Fatal (Printf.sprintf
-                   ("That's no good, the roots appear to be the same! Here's "
-                 ^^ "what I found:\nFirst root: %s\nSecond root: %s")
+                   (f_ "That's no good, the roots appear to be the same! Here's \
+                     what I found:\nFirst root: %s\nSecond root: %s")
                    (Common.root2string r1) (Common.root2string r2)))
            | _ -> ()
   in
@@ -158,14 +158,14 @@ let allRootsMapWithWaitingAction f wa =
 let paths =
   Prefs.create "path" []
     ~category:(`Basic `Sync)
-    "path to synchronize"
-    ("When no \\verb|path| preference is given, Unison will simply synchronize "
-     ^ "the two entire replicas, beginning from the given pair of roots.  "
-     ^ "If one or more \\verb|path| preferences are given, then Unison will "
-     ^ "synchronize only these paths and their children.  (This is useful "
-     ^ "for doing a fast sync of just one directory, for example.)  "
-     ^ "Note that {\\tt path} preferences are interpreted literally---they "
-     ^ "are not regular expressions.")
+    (s_ "path to synchronize")
+    (s_ "When no \\verb|path| preference is given, Unison will simply synchronize \
+     the two entire replicas, beginning from the given pair of roots.  \
+     If one or more \\verb|path| preferences are given, then Unison will \
+     synchronize only these paths and their children.  (This is useful \
+     for doing a fast sync of just one directory, for example.)  \
+     Note that {\\tt path} preferences are interpreted literally---they \
+     are not regular expressions.")
     (fun oldpaths string -> Safelist.append oldpaths [Path.fromString string])
     (fun l -> Safelist.map Path.toString l)
     Umarshal.(list Path.m)
@@ -181,9 +181,9 @@ let globPath lr p =
       debug (fun() -> Util.msg "Expanding path %s\n" (Path.toString p));
       match lr with
         None -> raise (Util.Fatal (Printf.sprintf
-                  "Path %s ends with *, %s"
-                  (Path.toString p)
-                  "but first root (after canonizing) is non-local"))
+                  (f_ "Path %s ends with *, \
+                   but first root (after canonizing) is non-local")
+                  (Path.toString p)))
       | Some lrfspath ->
           Safelist.map (fun c -> Path.makeGlobal (Path.child parent c))
             (Os.childrenOf lrfspath parent)
@@ -224,63 +224,63 @@ let propagatePrefs () =
 let batch =
   Prefs.createBool "batch" false
     ~category:(`Basic `Syncprocess)
-    "batch mode: ask no questions at all"
-    ("When this is set to {\\tt true}, the user "
-     ^ "interface will ask no questions at all.  Non-conflicting changes "
-     ^ "will be propagated; conflicts will be skipped.")
+    (s_ "batch mode: ask no questions at all")
+    (s_ "When this is set to {\\tt true}, the user \
+     interface will ask no questions at all.  Non-conflicting changes \
+     will be propagated; conflicts will be skipped.")
 
 let confirmBigDeletes =
   Prefs.createBool "confirmbigdel" true
     ~category:(`Advanced `Syncprocess)
-    "ask about whole-replica (or path) deletes"
-    ("When this is set to {\\tt true}, Unison will request an extra confirmation if it appears "
-     ^ "that the entire replica has been deleted, before propagating the change.  If the {\\tt batch} "
-     ^ "flag is also set, synchronization will be aborted.  When the {\\tt path} preference is used, "
-     ^ "the same confirmation will be requested for top-level paths.  (At the moment, this flag only "
-     ^ "affects the text user interface.)  See also the {\\tt mountpoint} preference.")
+    (s_ "ask about whole-replica (or path) deletes")
+    (s_ "When this is set to {\\tt true}, Unison will request an extra confirmation if it appears \
+     that the entire replica has been deleted, before propagating the change.  If the {\\tt batch} \
+     flag is also set, synchronization will be aborted.  When the {\\tt path} preference is used, \
+     the same confirmation will be requested for top-level paths.  (At the moment, this flag only \
+     affects the text user interface.)  See also the {\\tt mountpoint} preference.")
 
 let () = Prefs.alias confirmBigDeletes "confirmbigdeletes"
 
 let ignorePred =
   Pred.create "ignore"
     ~category:(`Basic `Sync)
-    ("Including the preference \\texttt{-ignore \\ARG{pathspec}} causes Unison to "
-     ^ "completely ignore paths that match \\ARG{pathspec} (as well as their "
-     ^ "children).  This is useful for avoiding synchronizing temporary "
-     ^ "files, object files, etc. The syntax of \\ARG{pathspec} is "
-     ^ "described in \\sectionref{pathspec}{Path Specification}, and further "
-     ^ "details on ignoring paths is found in"
-     ^ " \\sectionref{ignore}{Ignoring Paths}.")
+    (s_ "Including the preference \\texttt{-ignore \\ARG{pathspec}} causes Unison to \
+     completely ignore paths that match \\ARG{pathspec} (as well as their \
+     children).  This is useful for avoiding synchronizing temporary \
+     files, object files, etc. The syntax of \\ARG{pathspec} is \
+     described in \\sectionref{pathspec}{Path Specification}, and further \
+     details on ignoring paths is found in \
+     \\sectionref{ignore}{Ignoring Paths}.")
 
 let ignorenotPred =
   Pred.create "ignorenot"
     ~category:(`Basic `Sync)
-    ("This preference overrides the preference \\texttt{ignore}.
-      It gives a list of patterns
-     (in the same format as
-     \\verb|ignore|) for paths that should definitely {\\em not} be ignored,
-     whether or not they happen to match one of the \\verb|ignore| patterns.
-     \\par Note that the semantics of {\\tt ignore} and {\\tt ignorenot} is a
-     little counter-intuitive.  When detecting updates, Unison examines
-     paths in depth-first order, starting from the roots of the replicas
-     and working downwards.  Before examining each path, it checks whether
-     it matches {\\tt ignore} and does not match {\\tt ignorenot}; in this case
-     it skips this path {\\em and all its descendants}.  This means that,
-     if some parent of a given path matches an {\\tt ignore} pattern, then
-     it will be skipped even if the path itself matches an {\\tt ignorenot}
-     pattern.  In particular, putting {\\tt ignore = Path *} in your profile
-     and then using {\\tt ignorenot} to select particular paths to be
-     synchronized will not work.  Instead, you should use the {\\tt path}
+    (s_ "This preference overrides the preference \\texttt{ignore}. \
+     It gives a list of patterns \
+     (in the same format as \
+     \\verb|ignore|) for paths that should definitely {\\em not} be ignored, \
+     whether or not they happen to match one of the \\verb|ignore| patterns. \
+     \\par Note that the semantics of {\\tt ignore} and {\\tt ignorenot} is a \
+     little counter-intuitive.  When detecting updates, Unison examines \
+     paths in depth-first order, starting from the roots of the replicas \
+     and working downwards.  Before examining each path, it checks whether \
+     it matches {\\tt ignore} and does not match {\\tt ignorenot}; in this case \
+     it skips this path {\\em and all its descendants}.  This means that, \
+     if some parent of a given path matches an {\\tt ignore} pattern, then \
+     it will be skipped even if the path itself matches an {\\tt ignorenot} \
+     pattern.  In particular, putting {\\tt ignore = Path *} in your profile \
+     and then using {\\tt ignorenot} to select particular paths to be \
+     synchronized will not work.  Instead, you should use the {\\tt path} \
      preference to choose particular paths to synchronize.")
 
 let atomic = Pred.create "atomic"
   ~category:(`Advanced `Sync)
   ~local:true
-  ("This preference specifies paths for directories whose "
-   ^ "contents will be considered as a group rather than individually when "
-   ^ "they are both modified.  "
-   ^ "The backups are also made atomically in this case.  The option "
-   ^ "\\texttt{backupcurr} however has no effect on atomic directories.")
+  (s_ "This preference specifies paths for directories whose \
+   contents will be considered as a group rather than individually when \
+   they are both modified.  \
+   The backups are also made atomically in this case.  The option \
+   \\texttt{backupcurr} however has no effect on atomic directories.")
 
 let shouldIgnore p =
   let p = Path.toString p in
@@ -294,13 +294,13 @@ let addRegexpToIgnore re =
 let merge =
   Pred.create "merge"
     ~category:(`Advanced `Sync)
-    ("This preference can be used to run a merge program which will create "
-     ^ "a new version for each of the files and the backup, "
-     ^ "with the last backup and both replicas. "
-     ^ "The syntax of \\ARG{pathspec -> cmd} is "
-     ^ "described in \\sectionref{pathspec}{Path Specification}, and further "
-     ^ "details on Merging functions are present in "
-     ^ "\\sectionref{merge}{Merging Conflicting Versions}.")
+    (s_ "This preference can be used to run a merge program which will create \
+     a new version for each of the files and the backup, \
+     with the last backup and both replicas. \
+     The syntax of \\ARG{pathspec -> cmd} is \
+     described in \\sectionref{pathspec}{Path Specification}, and further \
+     details on Merging functions are present in \
+     \\sectionref{merge}{Merging Conflicting Versions}.")
 
 let shouldMerge p = Pred.test merge (Path.toString p)
 
@@ -320,8 +320,8 @@ let fatFilesystem =
   Prefs.createBool "fat" false
     ~category:(`Advanced `Syncprocess)
     ~local:true
-    "use appropriate options for FAT filesystems"
-    ("When this is set to {\\tt true}, Unison will use appropriate options \
+    (s_ "use appropriate options for FAT filesystems")
+    (s_ "When this is set to {\\tt true}, Unison will use appropriate options \
       to synchronize efficiently and without error a replica located on a \
       FAT filesystem on a non-Windows machine: \
       do not synchronize permissions ({\\tt perms = 0}); \

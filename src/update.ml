@@ -26,12 +26,12 @@ let debugignore = Trace.debug "ignore"
 let ignoreArchives =
   Prefs.createBool "ignorearchives" false
     ~category:(`Advanced `Archive)
-    "ignore existing archive files"
-    ("When this preference is set, Unison will ignore any existing "
-     ^ "archive files and behave as though it were being run for the first "
-     ^ "time on these replicas.  It is "
-     ^ "not a good idea to set this option in a profile: it is intended for "
-     ^ "command-line use.")
+    (s_ "ignore existing archive files")
+    (s_ "When this preference is set, Unison will ignore any existing \
+     archive files and behave as though it were being run for the first \
+     time on these replicas.  It is \
+     not a good idea to set this option in a profile: it is intended for \
+     command-line use.")
 
 (*****************************************************************************)
 (*                             ARCHIVE DATATYPE                              *)
@@ -129,10 +129,10 @@ let foundArchives = ref true
 let rootAliases : string list Prefs.t =
   Prefs.createStringList "rootalias"
     ~category:(`Advanced `General)
-   "register alias for canonical root names"
-   ("When calculating the name of the archive files for a given pair of roots,"
-   ^ " Unison replaces any roots matching the left-hand side of any rootalias"
-   ^ " rule by the corresponding right-hand side.")
+   (s_ "register alias for canonical root names")
+   (s_ "When calculating the name of the archive files for a given pair of roots, \
+     Unison replaces any roots matching the left-hand side of any rootalias \
+     rule by the corresponding right-hand side.")
 
 (* [root2stringOrAlias root] returns the string form of [root], taking into
    account the preference [rootAliases], whose items are of the form `<a> ->
@@ -144,11 +144,11 @@ let root2stringOrAlias (root: Common.root): string =
       (fun s -> match Util.splitIntoWordsByString s " -> " with
         [n;n'] -> (Util.trimWhitespace n, Util.trimWhitespace n')
       | _ -> raise (Util.Fatal (Printf.sprintf
-                                  "rootalias %s should be two strings separated by ' -> '" s)))
+                                  (f_ "rootalias %s should be two strings separated by ' -> '") s)))
       (Prefs.read rootAliases) in
   let r' = try Safelist.assoc r aliases with Not_found -> r in
   if r<>r' then debugalias (fun()->
-    Util.msg "Canonical root name %s is aliased to %s\n" r r');
+    Util.msg (f_ "Canonical root name %s is aliased to %s\n") r r');
   r'
 
 (* (Called from the UI startup sequence...) `normalize' root names,
@@ -193,10 +193,10 @@ let marchiveVersion = Umarshal.(sum5 unit unit unit unit unit
 let showArchiveName =
   Prefs.createBool "showarchive" false
     ~category:(`Advanced `General)
-    "show 'true names' (for rootalias) of roots and archive"
-    ("When this preference is set, Unison will print out the 'true names'"
-     ^ "of the roots, in the same form as is expected by the {\\tt rootalias} "
-     ^ "preference.")
+    (s_ "show 'true names' (for rootalias) of roots and archive")
+    (s_ "When this preference is set, Unison will print out the 'true names' \
+     of the roots, in the same form as is expected by the {\\tt rootalias} \
+     preference.")
 
 let _ = Prefs.alias showArchiveName "showArchiveName"
 
@@ -210,7 +210,7 @@ let archiveHash fspath =
   let d = Digest.MD5.to_hex (Digest.MD5.string n) in
   debugverbose (fun()-> Util.msg "Archive name is %s; hashcode is %s\n" n d);
   if Prefs.read showArchiveName then
-    Util.msg "Archive name is %s; hashcode is %s\n" n d;
+    Util.msg (f_ "Archive name is %s; hashcode is %s\n") n d;
   d
 
 (* We include the hash part of the archive name in the names of temp files
@@ -255,16 +255,16 @@ let rec checkArchive
             List.fold_right (fun n p -> Path.child p n) path Path.empty in
           raise
             (Util.Fatal (Printf.sprintf
-                           "Corrupted archive: \
-                            the file %s occurs twice in path %s"
+                           (f_ "Corrupted archive: \
+                            the file %s occurs twice in path %s")
                            (Name.toString nm) (Path.toString path)));
       | `Invalid (nm, nm') ->
           let path =
             List.fold_right (fun n p -> Path.child p n) path Path.empty in
           raise
             (Util.Fatal (Printf.sprintf
-                           "Corrupted archive: the files %s and %s are not \
-                            correctly ordered in directory %s"
+                           (f_ "Corrupted archive: the files %s and %s are not \
+                            correctly ordered in directory %s")
                            (Name.toString nm) (Name.toString nm')
                            (Path.toString path)));
       end;
@@ -331,7 +331,9 @@ let loadArchiveLocal fspath (thisRoot: string) :
     (archive * int * string * Proplist.t) option =
   debug (fun() ->
     Util.msg "Loading archive from %s\n" (System.fspathToDebugString fspath));
-  Util.convertUnixErrorsToFatal "loading archive" (fun () ->
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  Util.convertUnixErrorsToFatal (s_ "loading archive") (fun () ->
     if System.file_exists fspath then
       let c = System.open_in_bin fspath in
       let close_on_error f =
@@ -343,9 +345,9 @@ let loadArchiveLocal fspath (thisRoot: string) :
       if header<>formatString then begin
         Util.warn
           (Printf.sprintf
-             "Archive format mismatch: found\n '%s'\n\
+             (f_ "Archive format mismatch: found\n '%s'\n\
               but expected\n '%s'.\n\
-              I will delete the old archive and start from scratch.\n"
+              I will delete the old archive and start from scratch.\n")
              header formatString);
         None
       end else
@@ -354,9 +356,9 @@ let loadArchiveLocal fspath (thisRoot: string) :
       if roots <> verboseArchiveName thisRoot then begin
         Util.warn
           (Printf.sprintf
-             "Archive mismatch: found\n '%s'\n\
+             (f_ "Archive mismatch: found\n '%s'\n\
               but expected\n '%s'.\n\
-              I will delete the old archive and start from scratch.\n"
+              I will delete the old archive and start from scratch.\n")
              roots (verboseArchiveName thisRoot));
         None
       end else
@@ -369,15 +371,15 @@ let loadArchiveLocal fspath (thisRoot: string) :
         let commonFts = Features.inter featrs (Features.all ()) in
         if Safelist.length featrs <> Safelist.length commonFts then
           raise
-            (Util.Fatal ("Archive format mismatch: the archive was stored with \
+            (Util.Fatal (Printf.sprintf (f_
+                         "Archive format mismatch: the archive was stored with \
                          features that are currently not available.\n\
-                         Missing features: "
-                         ^ (String.concat ", " (Safelist.filter
-                             (fun x -> not (Safelist.mem x commonFts)) featrs))
-                         ^ "\nArchive file: "
-                         ^ fspath ^ "\n\
+                         Missing features: %s\nArchive file: %s\n\
                          You should either upgrade Unison or invoke Unison \
-                         once with -ignorearchives flag and then try again."));
+                         once with -ignorearchives flag and then try again.")
+                         (String.concat ", " (Safelist.filter
+                             (fun x -> not (Safelist.mem x commonFts)) featrs))
+                         fspath));
         try
           (* Temporarily enable features that were used when storing the archive
              to make sure the types are correct when loading the archive. *)
@@ -399,9 +401,9 @@ let loadArchiveLocal fspath (thisRoot: string) :
           let () = Features.setEnabled negotiatedFts in
           Some (archive, hash, magic, properties)
         with Failure s | Umarshal.Error s -> raise (Util.Fatal (Printf.sprintf
-           "Archive file seems damaged (%s): \
+           (f_ "Archive file seems damaged (%s): \
             use the -ignorearchives option, or \
-            throw away archives on both machines and try again" s)))
+            throw away archives on both machines and try again") s)))
     else
       (debug (fun() ->
          Util.msg "Archive %s not found\n"
@@ -412,7 +414,9 @@ let loadArchiveLocal fspath (thisRoot: string) :
 let storeArchiveLocal fspath thisRoot archive hash magic properties =
  debug (fun() ->
     Util.msg "Saving archive in %s\n" (System.fspathToDebugString fspath));
- Util.convertUnixErrorsToFatal "saving archive" (fun () ->
+ (* TRANSLATORS: This is used as an error location in a message like
+    "Error in %s:" (where %s is the string to translate here). *)
+ Util.convertUnixErrorsToFatal (s_ "saving archive") (fun () ->
    let c =
      System.open_out_gen
        [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o600 fspath
@@ -452,7 +456,9 @@ let removeArchiveLocal ((fspath: Fspath.t), (v: archiveVersion)): unit Lwt.t =
      let fspath = Util.fileInUnisonDir name in
      debug (fun() ->
        Util.msg "Removing archive %s\n" (System.fspathToDebugString fspath));
-     Util.convertUnixErrorsToFatal "removing archive" (fun () ->
+     (* TRANSLATORS: This is used as an error location in a message like
+        "Error in %s:" (where %s is the string to translate here). *)
+     Util.convertUnixErrorsToFatal (s_ "removing archive") (fun () ->
        try System.unlink fspath
        with Unix.Unix_error (Unix.ENOENT, _, _) -> ()))
 
@@ -470,8 +476,10 @@ let commitArchiveLocal ((fspath: Fspath.t), ())
      let (toname,_) = archiveName fspath NewArch in
      let ffrom = Util.fileInUnisonDir fromname in
      let fto = Util.fileInUnisonDir toname in
+     (* TRANSLATORS: This is used as an error location in a message like
+        "Error in %s:" (where %s is the string to translate here). *)
      Util.convertUnixErrorsToFatal
-       "committing"
+       (s_ "committing")
          (fun () -> System.rename ffrom fto))
 
 (* [commitArchiveOnRoot root v] invokes [commitArchive fspath v] on the
@@ -480,7 +488,9 @@ let commitArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd "commitArchive" Umarshal.unit Umarshal.unit commitArchiveLocal
 
 let getArchiveInfo f =
-  Util.convertUnixErrorsToTransient "querying file information"
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  Util.convertUnixErrorsToTransient (s_ "querying file information")
     (fun () ->
        try
          Some (System.stat f)
@@ -501,7 +511,9 @@ let postCommitArchiveLocal (fspath,())
        Util.msg "Copying archive %s to %s\n"
          (System.fspathToDebugString ffrom)
          (System.fspathToDebugString fto));
-     Util.convertUnixErrorsToFatal "copying archive" (fun () ->
+     (* TRANSLATORS: This is used as an error location in a message like
+        "Error in %s:" (where %s is the string to translate here). *)
+     Util.convertUnixErrorsToFatal (s_ "copying archive") (fun () ->
        begin try
          System.unlink fto
        with Unix.Unix_error (Unix.ENOENT, _, _) -> () end;
@@ -758,21 +770,21 @@ let checkArchiveCaseSensitivity l =
       let l =
         List.map
           (fun (name, host, _) ->
-             Format.sprintf "    archive %s on host %s" name host)
+             Format.sprintf (f_ "    archive %s on host %s") name host)
           names
       in
       Lwt.fail
         (Util.Fatal
-           (String.concat "\n"
-              ("Warning: incompatible case sensitivity settings." ::
-                Format.sprintf "Unison is currently in %s mode," curMode ::
-                Format.sprintf
-                  "while the archives were created in %s mode." archMode ::
-                "You should either change Unison's setup or delete" ::
-                "the following archives from the .unison directories:" ::
-                l @
-                ["(or invoke Unison once with -ignorearchives flag).";
-                 "Then, try again."])))
+           (Printf.sprintf
+             (f_ "Warning: incompatible case sensitivity settings.\n\
+               Unison is currently in %s mode,\n\
+               while the archives were created in %s mode.\n\
+               You should either change Unison's setup or delete\n\
+               the following archives from the .unison directories:\n\
+               %s\n\
+               (or invoke Unison once with -ignorearchives flag).\n\
+               Then, try again.")
+             curMode archMode (String.concat "\n" l)))
     end
   end
 
@@ -901,10 +913,10 @@ let dumpArchives =
   Prefs.createBool "dumparchives" false
     ~category:`Expert
     ~cli_only:true
-    "dump contents of archives just after loading"
-    ("When this preference is set, Unison will create a file unison.dump "
-     ^ "on each host, containing a text summary of the archive, immediately "
-     ^ "after loading it.")
+    (s_ "dump contents of archives just after loading")
+    (s_ "When this preference is set, Unison will create a file unison.dump \
+     on each host, containing a text summary of the archive, immediately \
+     after loading it.")
 
 (* For all roots (local or remote), load the archive and cache *)
 let loadArchives (optimistic: bool) =
@@ -912,26 +924,26 @@ let loadArchives (optimistic: bool) =
      >>= (fun checksums ->
   let identicals = archivesIdentical checksums in
   if not (optimistic || identicals) then
-    raise (Util.Fatal(
-        "Internal error: On-disk archives are not identical.\n"
-      ^ "\n"
-      ^ "This can happen when both machines have the same hostname.\n"
-      ^ "It can also happen when one copy of Unison has been compiled with\n"
-      ^ "OCaml version 3 and one with OCaml version 4.\n"
-      ^ "\n"
-      ^ "If this is not the case and you get this message repeatedly, please:\n"
-      ^ "  a) Send a bug report to unison-users@seas.upenn.edu (you may need\n"
-      ^ "     to join the group before you will be allowed to post).\n"
-      ^ "     For information, see https://github.com/bcpierce00/unison/wiki\n"
-      ^ "  b) Move the archive files on each machine to some other directory\n"
-      ^ "     (in case they may be useful for debugging).\n"
-      ^ "     The archive files on this machine are in the directory\n"
-      ^ (Printf.sprintf "       %s\n"
-           Util.unisonDir)
-      ^ "     and have names of the form\n"
-      ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
-      ^ "     where the X's are hexadecimal numbers.\n"
-      ^ "  c) Run unison again to synchronize from scratch.\n"));
+    raise (Util.Fatal(Printf.sprintf (f_
+        "Internal error: On-disk archives are not identical.\n\
+         \n\
+         This can happen when both machines have the same hostname.\n\
+         \n\
+         If this is not the case and you get this message repeatedly, please:\n\
+      \032 a) Send a bug report to %s (you may need\n\
+      \032    to join the group before you will be allowed to post).\n\
+      \032    For information, see %s\n\
+      \032 b) Move the archive files on each machine to some other directory\n\
+      \032    (in case they may be useful for debugging).\n\
+      \032    The archive files on this machine are in the directory\n\
+      \032      %s\n\
+      \032    and have names of the form\n\
+      \032      arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n\
+      \032    where the X's are hexadecimal numbers.\n\
+      \032 c) Run unison again to synchronize from scratch.\n")
+      "unison-users@seas.upenn.edu"
+      "https://github.com/bcpierce00/unison/wiki"
+      Util.unisonDir));
   Lwt.return (identicals, checksums))
 
 
@@ -980,7 +992,7 @@ let lockArchiveLocal fspath =
   if acquireLock lockFile then
     None
   else
-    Some (Printf.sprintf "The file %s on host %s should be deleted"
+    Some (Printf.sprintf (f_ "The file %s on host %s should be deleted")
             lockFile (Os.myCanonicalHostName ()))
 
 let lockArchiveOnRoot: Common.root -> unit -> string option Lwt.t =
@@ -999,18 +1011,18 @@ let unlockArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
 let ignorelocks =
   Prefs.createBool "ignorelocks" false
     ~category:(`Advanced `General)
-    "ignore locks left over from previous run (dangerous!)"
-    ("When this preference is set, Unison will ignore any lock files "
-     ^ "that may have been left over from a previous run of Unison that "
-     ^ "was interrupted while reading or writing archive files; by default, "
-     ^ "when Unison sees these lock files it will stop and request manual "
-     ^ "intervention.  This "
-     ^ "option should be set only if you are {\\em positive} that no other "
-     ^ "instance of Unison might be concurrently accessing the same archive "
-     ^ "files (e.g., because there was only one instance of unison running "
-     ^ "and it has just crashed or you have just killed it).  It is probably "
-     ^ "not a good idea to set this option in a profile: it is intended for "
-     ^ "command-line use.")
+    (s_ "ignore locks left over from previous run (dangerous!)")
+    (s_ "When this preference is set, Unison will ignore any lock files \
+     that may have been left over from a previous run of Unison that \
+     was interrupted while reading or writing archive files; by default, \
+     when Unison sees these lock files it will stop and request manual \
+     intervention.  This \
+     option should be set only if you are {\\em positive} that no other \
+     instance of Unison might be concurrently accessing the same archive \
+     files (e.g., because there was only one instance of unison running \
+     and it has just crashed or you have just killed it).  It is probably \
+     not a good idea to set this option in a profile: it is intended for \
+     command-line use.")
 
 let locked = ref false
 
@@ -1038,12 +1050,12 @@ let lockArchives () =
     let whatToDo = Safelist.filterMap (fun st -> st) result in
     raise
       (Util.Fatal
-         (String.concat "\n"
-            (["Warning: the archives are locked.  ";
-              "If no other instance of " ^ Uutil.myName ^ " is running, \
-               the locks should be removed."]
-             @ whatToDo @
-              ["Please delete lock files as appropriate and try again."]))))
+         (Printf.sprintf (f_ "Warning: the archives are locked.\n\
+           If no other instance of Unison is running, \
+           the locks should be removed.\n\
+           %s\n\
+           Please delete lock files as appropriate and try again.")
+           (String.concat "\n" whatToDo))))
     end else begin
       locked := true;
       Lwt.return ()
@@ -1112,16 +1124,16 @@ let doArchiveCrashRecovery () =
     (* All new versions were written: use them *)
     Util.warn
       (Printf.sprintf
-         "Warning: %s may have terminated abnormally last time.\n\
-          A new archive exists on all hosts: I'll use them.\n"
+         (f_ "Warning: %s may have terminated abnormally last time.\n\
+          A new archive exists on all hosts: I'll use them.\n")
          Uutil.myName);
     Globals.allRootsIter (fun r -> postCommitArchiveOnRoot r ()) >>= (fun () ->
     Globals.allRootsIter (fun r -> removeArchiveOnRoot r NewArch))
   end else if exists newnamesExist then begin
     Util.warn
       (Printf.sprintf
-         "Warning: %s may have terminated abnormally last time.\n\
-          A new archive exists on some hosts only; it will be ignored.\n"
+         (f_ "Warning: %s may have terminated abnormally last time.\n\
+          A new archive exists on some hosts only; it will be ignored.\n")
          Uutil.myName);
     Globals.allRootsIter (fun r -> removeArchiveOnRoot r NewArch)
   end else
@@ -1139,43 +1151,45 @@ let doArchiveCrashRecovery () =
     let whatToDo =
       Safelist.map
         (fun (name,host,exists) ->
-          Printf.sprintf "  Archive %s on host %s %s"
+          (* TRANSLATORS: The final %s will be either "should be DELETED" or
+             "is MISSING" (translated separately). *)
+          Printf.sprintf (f_ "  Archive %s on host %s %s")
             name
             host
-            (if exists then "should be DELETED" else "is MISSING"))
+            (if exists then s_ "should be DELETED" else s_ "is MISSING"))
         names in
     raise
       (Util.Fatal
-         (String.concat "\n"
-            (["Warning: inconsistent state.  ";
-              "The archive file is missing on some hosts.";
-              "For safety, the remaining copies should be deleted."]
-             @ whatToDo @
-             ["Please delete archive files as appropriate and try again";
-             "or invoke Unison with -ignorearchives flag."]))))
+         (Printf.sprintf (f_ "Warning: inconsistent state.\n\
+           The archive file is missing on some hosts.\n\
+           For safety, the remaining copies should be deleted.\n\
+           %s\n\
+           Please delete archive files as appropriate and try again\n\
+           or invoke Unison with -ignorearchives flag.")
+           (String.concat "\n" whatToDo))))
   else begin
     foundArchives := false;
     let expectedRoots =
       String.concat "\n\t" (Safelist.map root2string (Globals.rootsList ())) in
-     Util.warn
-     ("No archive files were found for these roots, whose canonical names are:\n\t"
-     ^ expectedRoots ^ "\nThis can happen either\n"
-     ^ "because this is the first time you have synchronized these roots, \n"
-     ^ "or because you have upgraded Unison to a new version with a different\n"
-     ^ "archive format.  \n\n"
-     ^ "Update detection may take a while on this run if the replicas are \n"
-     ^ "large.\n\n"
-     ^ "Unison will assume that the 'last synchronized state' of both replicas\n"
-     ^ "was completely empty.  This means that any files that are different\n"
-     ^ "will be reported as conflicts, and any files that exist only on one\n"
-     ^ "replica will be judged as new and propagated to the other replica.\n"
-     ^ "If the two replicas are identical, then no changes will be reported.\n\n"
-     ^ "If you see this message repeatedly, it may be because one of your machines\n"
-     ^ "is getting its address from DHCP, which is causing its host name to change\n"
-     ^ "between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n"
-     ^ "environment variable for advice on how to correct this.\n"
-     ^ "\n"
-     (* ^ "\nThe expected archive names were:\n" ^ expectedNames *) );
+     Util.warn (Printf.sprintf (f_
+       "No archive files were found for these roots, whose canonical names are:\n\
+        \t%s\nThis can happen either\n\
+        because this is the first time you have synchronized these roots,\n\
+        or because you have upgraded Unison to a new version with a different\n\
+        archive format.\n\n\
+        Update detection may take a while on this run if the replicas are \n\
+        large.\n\n\
+        Unison will assume that the 'last synchronized state' of both replicas\n\
+        was completely empty.  This means that any files that are different\n\
+        will be reported as conflicts, and any files that exist only on one\n\
+        replica will be judged as new and propagated to the other replica.\n\
+        If the two replicas are identical, then no changes will be reported.\n\n\
+        If you see this message repeatedly, it may be because one of your machines\n\
+        is getting its address from DHCP, which is causing its host name to change\n\
+        between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n\
+        environment variable for advice on how to correct this.\n\
+        \n")
+       expectedRoots);
     Lwt.return ()
   end))
 
@@ -1261,12 +1275,12 @@ let translatePath =
 let mountpoints =
   Prefs.createStringList "mountpoint"
     ~category:(`Advanced `General)
-    "abort if this path does not exist"
-    ("Including the preference \\texttt{-mountpoint PATH} causes Unison to "
-     ^ "check, at the end of update detection, that \\texttt{PATH} exists "
-     ^ "within each root, and abort if not.  This can avoid synchronzing when"
-     ^ "removable media is not mounted.  This preference can be given more than once.  "
-     ^ "See \\sectionref{mountpoints}{Mount Points and Removable Media}.")
+    (s_ "abort if this path does not exist")
+    (s_ "Including the preference \\texttt{-mountpoint PATH} causes Unison to \
+     check, at the end of update detection, that \\texttt{PATH} exists \
+     within each root, and abort if not.  This can avoid synchronzing when \
+     removable media is not mounted.  This preference can be given more than once.  \
+     See \\sectionref{mountpoints}{Mount Points and Removable Media}.")
 
 let abortIfAnyMountpointsAreMissing fspath =
   Safelist.iter
@@ -1274,7 +1288,7 @@ let abortIfAnyMountpointsAreMissing fspath =
        let path = Path.fromString s in
        if not (Os.exists fspath path) then
          raise (Util.Fatal
-           (Printf.sprintf "Path %s/%s is designated as a mountpoint, but points to nothing on host %s\n"
+           (Printf.sprintf (f_ "Path %s/%s is designated as a mountpoint, but points to nothing on host %s\n")
              (Fspath.toPrintString fspath) (Path.toString path)
              (Os.myCanonicalHostName ()))))
     (Prefs.read mountpoints)
@@ -1349,10 +1363,10 @@ let rec getSubTree path tree =
 let fastcheck =
   Prefs.createBoolWithDefault "fastcheck"
     ~category:(`Advanced `Syncprocess)
-    "do fast update detection (true/false/default)"
-    ( "When this preference is set to \\verb|true|, \
-       Unison will use the modification time and length of a file as a
-       `pseudo inode number' \
+    (s_ "do fast update detection (true/false/default)")
+    (s_ "When this preference is set to \\verb|true|, \
+       Unison will use the modification time and length of a file as a \
+       'pseudo inode number' \
        when scanning replicas for updates, \
        instead of reading the full contents of every file.  (This does not \
        apply to the very first run, when Unison will always scan \
@@ -1378,7 +1392,7 @@ let useFastChecking () =
 
 let immutable = Pred.create "immutable"
   ~category:(`Advanced `Sync)
-  ("This preference specifies paths for directories whose \
+  (s_ "This preference specifies paths for directories whose \
      immediate children are all immutable files --- i.e., once a file has been \
      created, its contents never changes.  When scanning for updates, \
      Unison does not check whether these files have been modified; \
@@ -1387,7 +1401,7 @@ let immutable = Pred.create "immutable"
 
 let immutablenot = Pred.create "immutablenot"
   ~category:(`Advanced `Sync)
-  ("This preference overrides {\\tt immutable}.")
+  (s_ "This preference overrides {\\tt immutable}.")
 
 type scanInfo =
     { fastCheck : bool;
@@ -1780,25 +1794,27 @@ let rec buildUpdateChildren
           end
       | `Dup ->
           let uiChild =
-            Error
-              ("Two or more files on a case-sensitive system have names \
+            Error (Printf.sprintf
+              (f_ "Two or more files on a case-sensitive system have names \
                 identical except for case.  They cannot be synchronized to a \
-                file system being treated as case-insensitive.  (File '" ^
-               Path.toString path' ^ "')")
+                file system being treated as case-insensitive.  (File '%s')")
+               (Path.toString path'))
           in
           updates := (nm, uiChild) :: !updates;
           archive
       | `BadEnc ->
           let uiChild =
-            Error ("The file name is not encoded in Unicode.  (File '"
-                   ^ Path.toString path' ^ "')")
+            Error (Printf.sprintf
+              (f_ "The file name is not encoded in Unicode.  (File '%s')")
+                   (Path.toString path'))
           in
           updates := (nm, uiChild) :: !updates;
           archive
       | `BadName ->
           let uiChild =
-            Error ("The name of this Unix file is not allowed under Windows.  \
-                    (File '" ^ Path.toString path' ^ "')")
+            Error (Printf.sprintf
+              (f_ "The name of this Unix file is not allowed under Windows.  \
+                    (File '%s')") (Path.toString path'))
           in
           updates := (nm, uiChild) :: !updates;
           archive
@@ -1994,26 +2010,27 @@ let rec buildUpdatePathTree archive fspath here tree scanInfo =
               end
           | `Dup ->
               let uiChild =
-                Error
-                  ("Two or more files on a case-sensitive system have names \
+                Error (Printf.sprintf
+                  (f_ "Two or more files on a case-sensitive system have names \
                     identical except for case.  They cannot be synchronized \
-                    to a file system being treated as case-insensitive.  (File '" ^
-                   Path.toString path' ^ "')")
+                    to a file system being treated as case-insensitive.  (File '%s')")
+                  (Path.toString path'))
               in
               updates := (nm, uiChild) :: !updates;
               archive
           | `BadEnc ->
               let uiChild =
-                Error ("The file name is not encoded in Unicode.  (File '"
-                       ^ Path.toString path' ^ "')")
+                Error (Printf.sprintf
+                  (f_ "The file name is not encoded in Unicode.  (File '%s')")
+                       (Path.toString path'))
               in
               updates := (nm, uiChild) :: !updates;
               archive
           | `BadName ->
               let uiChild =
-                Error
-                  ("The name of this Unix file is not allowed under Windows.  \
-                    (File '" ^ Path.toString path' ^ "')")
+                Error (Printf.sprintf
+                  (f_ "The name of this Unix file is not allowed under Windows.  \
+                    (File '%s')") (Path.toString path'))
               in
               updates := (nm, uiChild) :: !updates;
               archive
@@ -2090,13 +2107,13 @@ let rec buildUpdate archive fspath fullpath here path pathTree scanInfo =
         let error =
           if Path.isEmpty here then
             Printf.sprintf
-              "path %s is not valid because the root of one of the replicas \
-               is not a directory"
+              (f_ "path %s is not valid because the root of one of the replicas \
+               is not a directory")
               (Path.toString fullpath)
           else
             Printf.sprintf
-              "path %s is not valid because %s is not a directory in one of \
-               the replicas"
+              (f_ "path %s is not valid because %s is not a directory in one of \
+               the replicas")
               (Path.toString fullpath) (Path.toString here)
         in
         (archive, Error error, translatePathLocal fspath fullpath, [])
@@ -2115,25 +2132,25 @@ let rec buildUpdate archive fspath fullpath here path pathTree scanInfo =
       | `BadEnc ->
           let error =
             Format.sprintf
-              "The filename %s in path %s is not encoded in Unicode"
+              (f_ "The filename %s in path %s is not encoded in Unicode")
               (Name.toString name) (Path.toString fullpath)
           in
           (archive, Error error, translatePathLocal fspath fullpath, [])
       | `BadName ->
           let error =
             Format.sprintf
-              "The filename %s in path %s is not allowed under Windows"
+              (f_ "The filename %s in path %s is not allowed under Windows")
               (Name.toString name) (Path.toString fullpath)
           in
           (archive, Error error, translatePathLocal fspath fullpath, [])
       | `Dup ->
           let error =
-            Format.sprintf
+            Format.sprintf (f_
               "The path %s is ambiguous at filename %s (i.e., the name \
                of this path is the same, modulo capitalization, as \
                another path in a case-sensitive filesystem, and you are \
                synchronizing this filesystem with a \
-               filesystem being treated as case-insensitive."
+               filesystem being treated as case-insensitive.")
               (Path.toString fullpath) (Name.toString name)
           in
           (archive, Error error, translatePathLocal fspath fullpath, [])
@@ -2538,7 +2555,7 @@ let findUpdatesOnPaths ?(wantWatcher=false) pathList subpaths =
        (fun (host, _) ->
          begin match host with
            Remote _ -> Uutil.showUpdateStatus "";
-                       Trace.statusDetail "Waiting for changes from server"
+                       Trace.statusDetail (s_ "Waiting for changes from server")
          | _        -> ()
          end)
        >>= (fun updates ->
@@ -2650,14 +2667,14 @@ let commitUpdates () =
             let warn =
               if (Unix.isatty Unix.stderr) then Util.msg "%s"
               else Trace.log in
-            warn "Dumping archives to ~/unison.dump on both hosts\n";
+            warn (s_ "Dumping archives to ~/unison.dump on both hosts\n");
             Globals.allRootsIter (fun r -> dumpArchiveOnRoot r ())
               >>= (fun () ->
-            warn "Finished dumping archives\n";
-            raise (Util.Fatal (
-                 "Internal error: New archives are not identical.\n"
-               ^ "Retaining original archives.  "
-               ^    "Please run Unison again to bring them up to date.\n"
+            warn (s_ "Finished dumping archives\n");
+            raise (Util.Fatal (s_
+                 "Internal error: New archives are not identical.\n\
+                  Retaining original archives.  \
+                  Please run Unison again to bring them up to date.\n"
                (*
                ^ "If you get this message, please \n "
                ^ "  a) notify unison-help@cis.upenn.edu\n"
@@ -2910,9 +2927,9 @@ let rec markPossiblyUpdatedRec fspath path ui =
 
 let reportUpdate warnFastCheck explanation =
   let msg =
-    "Destination updated during synchronization\n" ^ explanation ^
+    s_ "Destination updated during synchronization\n" ^ explanation ^
    if warnFastCheck then
-     "  (if this happens repeatedly on a file that has not been changed, \n\
+     s_ "  (if this happens repeatedly on a file that has not been changed,\n\
      \  try running once with 'fastcheck' set to false)"
    else
      ""
@@ -2924,41 +2941,41 @@ let rec explainUpdate path ui =
     NoUpdates ->
       ()
   | Error err ->
-      raise (Util.Transient ("Could not check destination:\n" ^ err))
+      raise (Util.Transient (s_ "Could not check destination:\n" ^ err))
   | Updates (Absent, _) ->
       reportUpdate false
-        (Format.sprintf "The file %s has been deleted\n"
+        (Format.sprintf (f_ "The file %s has been deleted\n")
            (Path.toString path))
   | Updates (File (_, ContentsSame), _) ->
       reportUpdate false
-        (Format.sprintf "The properties of file %s have been modified\n"
+        (Format.sprintf (f_ "The properties of file %s have been modified\n")
            (Path.toString path))
   | Updates (File (desc, ContentsUpdated (_, _, ress)),
              PrevFile (oldDesc, oldFp, _, oldRess)) ->
       if not (Os.isPseudoFingerprint oldFp) then
         reportUpdate (fastCheckMiss path desc ress oldDesc oldRess)
-          (Format.sprintf "The contents of file %s have been modified\n"
+          (Format.sprintf (f_ "The contents of file %s have been modified\n")
              (Path.toString path))
   | Updates (File (_, ContentsUpdated _), _) ->
       reportUpdate false
-        (Format.sprintf "The file %s has been created\n"
+        (Format.sprintf (f_ "The file %s has been created\n")
            (Path.toString path))
   | Updates (Symlink _, PrevSymlink) ->
       reportUpdate false
-        (Format.sprintf "The symlink %s has been modified\n"
+        (Format.sprintf (f_ "The symlink %s has been modified\n")
            (Path.toString path))
   | Updates (Symlink _, _) ->
       reportUpdate false
-        (Format.sprintf "The symlink %s has been created\n"
+        (Format.sprintf (f_ "The symlink %s has been created\n")
            (Path.toString path))
   | Updates (Dir (_, _, PropsUpdated, _), PrevDir _) ->
       reportUpdate false
         (Format.sprintf
-           "The properties of directory %s have been modified\n"
+           (f_ "The properties of directory %s have been modified\n")
            (Path.toString path))
   | Updates (Dir (_, _, PropsUpdated, _), _) ->
       reportUpdate false
-        (Format.sprintf "The directory %s has been created\n"
+        (Format.sprintf (f_ "The directory %s has been created\n")
            (Path.toString path))
   | Updates (Dir (_, uiChildren, PropsSame, _), _) ->
       List.iter

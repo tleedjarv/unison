@@ -21,8 +21,8 @@ let debugV = Util.debug "fileinfo+"
 let allowSymlinks =
   Prefs.createBoolWithDefault "links"
     ~category:(`Advanced `Sync)
-    "allow the synchronization of symbolic links (true/false/default)"
-    ("When set to {\\tt true}, this flag causes Unison to synchronize \
+    (s_ "allow the synchronization of symbolic links (true/false/default)")
+    (s_ "When set to {\\tt true}, this flag causes Unison to synchronize \
       symbolic links.  When the flag is set to {\\tt false}, symbolic \
       links will be ignored during update detection.  \
       Ordinarily, when the flag is set to {\\tt default}, symbolic \
@@ -89,7 +89,7 @@ let statFn fromRoot fspath path =
     try Fs.stat fullpath
     with Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
       raise (Util.Transient (Printf.sprintf
-        "Path %s is marked 'follow' but its target is missing"
+        (f_ "Path %s is marked 'follow' but its target is missing")
         (Fspath.toPrintString fullpath)))
   end else
     stats
@@ -110,7 +110,9 @@ let shouldIgnore s =
 
 let getAux fromRoot fspath path getProps =
   Util.convertUnixErrorsToTransient
-  "querying file information"
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  (s_ "querying file information")
     (fun () ->
        try
          let stats = statFn fromRoot fspath path in
@@ -128,14 +130,16 @@ let getAux fromRoot fspath path getProps =
                else
                  raise
                    (Util.Transient
+                      (* FIXME: Can't translate this error message without
+                         larger changes to the code making use of it (in
+                         addition to displaying to user). *)
                       ("path " ^
                        (Fspath.toPrintString (Fspath.concat fspath path)) ^
                        symlinkErr))
            | _ ->
-               raise (Util.Transient
-                        ("path " ^
-                         (Fspath.toPrintString (Fspath.concat fspath path)) ^
-                         " has unknown file type"))
+               raise (Util.Transient (Printf.sprintf
+                        (f_ "path %s has unknown file type")
+                        (Fspath.toPrintString (Fspath.concat fspath path))))
          in
          let osxInfos = Osx.getFileInfos fspath path typ in
          { typ = typ;
@@ -173,7 +177,9 @@ let basic x =
 
 let check fspath path props =
   Util.convertUnixErrorsToTransient
-  "checking file information"
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  (s_ "checking file information")
     (fun () -> Props.check fspath path (statFn false fspath path) props)
 
 let set fspath path action newDesc =
@@ -220,8 +226,8 @@ let mstamp = Umarshal.(sum3 int unit unit
 let ignoreInodeNumbers =
   Prefs.createBool "ignoreinodenumbers" false
     ~category:(`Advanced `Syncprocess)
-    "ignore inode number changes when detecting updates"
-    ("When set to true, this preference makes Unison not take advantage \
+    (s_ "ignore inode number changes when detecting updates")
+    (s_ "When set to true, this preference makes Unison not take advantage \
       of inode numbers during fast update detection. \
       This switch should be used with care, as it \
       is less safe than the standard update detection method, but it \

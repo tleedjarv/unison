@@ -31,9 +31,9 @@ let localCanonicalHostName =
 let clientHostName : string Prefs.t =
   Prefs.createString "clientHostName" localCanonicalHostName
     ~category:(`Advanced `Remote)
-    "set host name of client"
-    ("When specified, the host name of the client will not be guessed " ^
-     "and the provided host name will be used to find the archive.")
+    (s_ "set host name of client")
+    (s_ "When specified, the host name of the client will not be guessed \
+     and the provided host name will be used to find the archive.")
 
 let serverHostName = localCanonicalHostName
 
@@ -64,7 +64,9 @@ let exists fspath path =
 
 let readLink fspath path =
   Util.convertUnixErrorsToTransient
-  "reading symbolic link"
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  (s_ "reading symbolic link")
     (fun () ->
        let abspath = Fspath.concat fspath path in
        let l = Fs.readlink abspath in
@@ -82,7 +84,9 @@ let rec isAppleDoubleFile file =
 (* children, except for '.' and '..'.                                        *)
 let allChildrenOf fspath path =
   Util.convertUnixErrorsToTransient
-  "scanning directory"
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  (s_ "scanning directory")
     (fun () ->
       let rec loop children directory =
         let newFile = try directory.Fs.readdir () with End_of_file -> "" in
@@ -161,7 +165,9 @@ let rec childrenOf fspath path =
 (* Deletes a file or a directory, but checks before if there is something    *)
 and delete fspath path =
   Util.convertUnixErrorsToTransient
-    "deleting"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (s_ "deleting")
     (fun () ->
       let absolutePath = Fspath.concat fspath path in
       match Fileinfo.getType false fspath path with
@@ -197,8 +203,12 @@ let rename ?exdev fname sourcefspath sourcepath targetfspath targetpath =
   let target = Fspath.concat targetfspath targetpath in
   let target' = Fspath.toPrintString target in
   if source = target then
-    raise (Util.Transient ("Rename ("^fname^"): identical source and target " ^ source'));
-  Util.convertUnixErrorsToTransient ("renaming " ^ source' ^ " to " ^ target')
+    raise (Util.Transient (Printf.sprintf
+      (f_ "Rename (%s): identical source and target %s") fname source'));
+  Util.convertUnixErrorsToTransient
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (Printf.sprintf (f_ "renaming %s to %s") source' target')
     (fun () ->
       debug (fun() -> Util.msg "rename %s to %s\n" source' target');
       begin
@@ -226,7 +236,9 @@ let symlink =
   if Fs.hasSymlink () then
     fun fspath path l ->
       Util.convertUnixErrorsToTransient
-      "writing symbolic link"
+      (* TRANSLATORS: This is used as an error location in a message like
+         "Error in %s:" (where %s is the string to translate here). *)
+      (s_ "writing symbolic link")
       (fun () ->
          let abspath = Fspath.concat fspath path in
          Fs.symlink l abspath)
@@ -234,18 +246,23 @@ let symlink =
     fun fspath path l ->
       raise (Util.Transient
                (Format.sprintf
-                  "Cannot create symlink \"%s\": \
-                   symlinks are not supported on this system%s"
+                  (* TRANSLATORS: The final %s is either empty or string
+                     " or elevated privileges may be required" (translated
+                     separately). *)
+                  (f_ "Cannot create symlink \"%s\": \
+                   symlinks are not supported on this system%s")
                   (Fspath.toPrintString (Fspath.concat fspath path))
                   (if Sys.win32 || Sys.cygwin then
-                     " or elevated privileges may be required"
+                     (s_ " or elevated privileges may be required")
                   else "")
                ))
 
 (* Create a new directory, using the permissions from the given props        *)
 let createDir fspath path perms =
   Util.convertUnixErrorsToTransient
-  "creating directory"
+  (* TRANSLATORS: This is used as an error location in a message like
+     "Error in %s:" (where %s is the string to translate here). *)
+  (s_ "creating directory")
     (fun () ->
        let absolutePath = Fspath.concat fspath path in
        Fs.mkdir absolutePath perms)
@@ -275,8 +292,8 @@ let safeFingerprint fspath path info optFp =
       if count = 0 then
         raise (Util.Transient
                  (Printf.sprintf
-                    "Failed to fingerprint file \"%s\": \
-                     the file keeps on changing"
+                    (f_ "Failed to fingerprint file \"%s\": \
+                     the file keeps on changing")
                     (Fspath.toPrintString (Fspath.concat fspath path))))
       else
         let fp =
@@ -306,9 +323,11 @@ let fullfingerprint_to_string (fp,rfp) =
   Printf.sprintf "(%s,%s)" (Fingerprint.toString fp) (Fingerprint.toString rfp)
 
 let reasonForFingerprintMismatch (fpdata,fpress) (fpdata',fpress') =
-  if fpdata = fpdata' then "resource fork"
-  else if fpress = fpress' then "file contents"
-  else "both file contents and resource fork"
+  (* TRANSLATORS: The following three strings are used as a
+     'reason for fingerprint mismatch'. *)
+  if fpdata = fpdata' then (s_ "resource fork")
+  else if fpress = fpress' then (s_ "file contents")
+  else (s_ "both file contents and resource fork")
 
 let fullfingerprint_dummy = (Fingerprint.dummy,Fingerprint.dummy)
 
@@ -328,7 +347,9 @@ let createUnisonDir() =
   try ignore (System.stat Util.unisonDir)
   with Unix.Unix_error(_) ->
     Util.convertUnixErrorsToFatal
-      (Printf.sprintf "creating unison directory %s"
+      (* TRANSLATORS: This is used as an error location in a message like
+         "Error in %s:" (where %s is the string to translate here). *)
+      (Printf.sprintf (f_ "creating unison directory %s")
          Util.unisonDir)
       (fun () ->
          ignore (System.mkdir Util.unisonDir 0o700))

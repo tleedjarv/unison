@@ -208,7 +208,7 @@ let is_directory path follow =
         Unix.stat path
       with Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
         Watchercommon.error (Format.sprintf
-          "Unable to follow link '%s' because its target is missing" path)
+          (f_ "Unable to follow link '%s' because its target is missing") path)
     end
   in
   Unix.S_DIR = st.st_kind
@@ -270,7 +270,7 @@ let rec add_watch path file follow =
       | Unix.Unix_error _ as e ->
           Watchercommon.error
             (Format.sprintf
-              "Error while starting to watch for changes: [%s] %s"
+              (f_ "Error while starting to watch for changes: [%s] %s")
               path (Watchercommon.format_exc e))
 
 and release_watch file =
@@ -400,7 +400,7 @@ let watch () =
     (Lwt.catch watch_rec
        (fun e ->
           Watchercommon.error
-            ("error while handling events: " ^ Watchercommon.format_exc e)))
+            (s_ "error while handling events: " ^ Watchercommon.format_exc e)))
 
 end
 

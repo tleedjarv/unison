@@ -59,11 +59,11 @@ let parse speclist anonfun errmsg =
     begin match error with
       | Unknown s when s = "-help" -> verify_stdout ()
       | Unknown s ->
-          eprintf "%s: unknown option `%s'.\n" progname s
+          eprintf (f_ "%s: unknown option `%s'.\n") progname s
       | Missing s ->
-          eprintf "%s: option `%s' needs an argument.\n" progname s
+          eprintf (f_ "%s: option `%s' needs an argument.\n") progname s
       | Wrong (opt, arg, expected) ->
-          eprintf "%s: wrong argument `%s'; option `%s' expects %s.\n"
+          eprintf (f_ "%s: wrong argument `%s'; option `%s' expects %s.\n")
                   progname arg opt expected
       | Message s ->
           eprintf "%s: %s.\n" progname s

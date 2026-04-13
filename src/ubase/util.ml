@@ -138,12 +138,13 @@ let encodeException m kind e =
   in
   match e with
     Unix.Unix_error(err,fnname,param) ->
-      let s =   "Error in " ^ m ^ ":\n"
-              ^ (Unix.error_message err)
-              ^ " [" ^ fnname ^ "(" ^ param ^ ")]" ^
-              (match err with
-                 Unix.EUNKNOWNERR n -> Format.sprintf " (code %d)" n
-               | _                  -> "")
+      let s = Printf.sprintf (f_ "Error in %s:\n%s [%s(%s)]%s")
+                m (Unix.error_message err) fnname param
+                (match err with
+                 | Unix.EUNKNOWNERR n ->
+                     (* TRANSLATORS: This refers to error code. *)
+                     Printf.sprintf (f_ " (code %d)") n
+                 | _                  -> "")
       in
       debug "exn"
         (fun() -> msg "Converting a Unix error to %s:\n%s\n" kindStr s);
@@ -156,24 +157,24 @@ let encodeException m kind e =
           msg "In %s: Propagating Transient error\n" m);
       reraise s
   | Not_found ->
-      let s = "Not_found raised in " ^ m
-              ^ " (this indicates a bug!)" in
+      let s =
+        Printf.sprintf (f_ "Not_found raised in %s (this indicates a bug!)") m in
       debug "exn"
         (fun() -> msg "Converting a Not_found to %s:\n%s\n" kindStr s);
       reraise s
   | Invalid_argument a ->
-      let s = "Invalid_argument("^a^") raised in " ^ m
-              ^ " (this indicates a bug!)" in
+      let s = Printf.sprintf
+        (f_ "Invalid_argument(%s) raised in %s (this indicates a bug!)") a m in
       debug "exn"
         (fun() -> msg "Converting an Invalid_argument to %s:\n%s\n" kindStr s);
       reraise s
   | Sys_error(s) ->
-      let s = "Error in " ^ m ^ ":\n" ^ s in
+      let s = Printf.sprintf (f_ "Error in %s:\n%s") m s in
       debug "exn"
         (fun() -> msg "Converting a Sys_error to %s:\n%s\n" kindStr s);
       reraise s
   | Sys_blocked_io ->
-      let s = "Blocked IO error in " ^ m in
+      let s = Printf.sprintf (f_ "Blocked IO error in %s") m in
       debug "exn"
         (fun() -> msg "Converting a Sys_blocked_io to %s:\n%s\n" kindStr s);
       reraise s
@@ -184,9 +185,8 @@ let convertUnixErrorsToExn m f n e =
   try f()
   with
     Unix.Unix_error(err,fnname,param) ->
-      let s =   "Error in " ^ m ^ ":\n"
-              ^ (Unix.error_message err)
-              ^ " [" ^ fnname ^ "(" ^ param ^ ")]" in
+      let s = Printf.sprintf (f_ "Error in %s:\n%s [%s(%s)]")
+                m (Unix.error_message err) fnname param in
       debug "exn"
         (fun() -> msg "Converting a Unix error to %s:\n%s\n" n s);
       raise (e s)
@@ -198,21 +198,21 @@ let convertUnixErrorsToExn m f n e =
           msg "In %s: Propagating Transient error\n" m);
       raise (e s)
   | Not_found ->
-      let s = "Not_found raised in " ^ m
-              ^ " (this indicates a bug!)" in
+      let s =
+        Printf.sprintf (f_ "Not_found raised in %s (this indicates a bug!)") m in
         debug "exn" (fun() -> msg "Converting a Not_found to %s:\n%s\n" n s);
         raise (e s)
   | End_of_file ->
-      let s = "End_of_file exception raised in " ^ m
-              ^ " (this indicates a bug!)" in
+      let s = Printf.sprintf
+        (f_ "End_of_file exception raised in %s (this indicates a bug!)") m in
         debug "exn" (fun() -> msg "Converting an End_of_file to %s:\n%s\n" n s);
         raise (e s)
   | Sys_error(s) ->
-      let s = "Error in " ^ m ^ ":\n" ^ s in
+      let s = Printf.sprintf (f_ "Error in %s:\n%s") m s in
       debug "exn" (fun() -> msg "Converting a Sys_error to %s:\n%s\n" n s);
       raise (e s)
   | Sys_blocked_io ->
-      let s = "Blocked IO error in " ^ m in
+      let s = Printf.sprintf (f_ "Blocked IO error in %s") m in
       debug "exn" (fun() -> msg "Converting a Sys_blocked_io to %s:\n%s\n"
                      n s);
       raise (e s)
@@ -265,16 +265,18 @@ let printException e =
    called with an env variable that doesn't exist                            *)
 let safeGetenv var =
   convertUnixErrorsToFatal
-    "querying environment"
+    (* TRANSLATORS: This is used as an error location in a message like
+       "Error in %s:" (where %s is the string to translate here). *)
+    (s_ "querying environment")
     (fun () ->
        try System.getenv var
        with Not_found ->
-         raise (Fatal ("Environment variable " ^ var ^ " not found")))
+         raise (Fatal (Printf.sprintf (f_ "Environment variable %s not found") var)))
 
 let process_status_to_string = function
-    Unix.WEXITED i   -> Printf.sprintf "Exited with status %d" i
-  | Unix.WSIGNALED i -> Printf.sprintf "Killed by signal %d" i
-  | Unix.WSTOPPED i  -> Printf.sprintf "Stopped by signal %d" i
+    Unix.WEXITED i   -> Printf.sprintf (f_ "Exited with status %d") i
+  | Unix.WSIGNALED i -> Printf.sprintf (f_ "Killed by signal %d") i
+  | Unix.WSTOPPED i  -> Printf.sprintf (f_ "Stopped by signal %d") i
 
 
 let blockSignals sigs f =
@@ -295,7 +297,8 @@ let blockSignals sigs f =
 
 let monthname n =
   Safelist.nth
-    ["Jan";"Feb";"Mar";"Apr";"May";"Jun";"Jul";"Aug";"Sep";"Oct";"Nov";"Dec"]
+    [s_ "Jan"; s_ "Feb"; s_ "Mar"; s_ "Apr"; s_ "May"; s_ "Jun";
+     s_ "Jul"; s_ "Aug"; s_ "Sep"; s_ "Oct"; s_ "Nov"; s_ "Dec"]
     n
 
 let localtime f =
@@ -326,7 +329,7 @@ let time2string timef =
       time.Unix.tm_min
       time.Unix.tm_sec
   with Transient _ ->
-    "(invalid date)"
+    s_ "(invalid date)"
 
 let percentageOfTotal current total =
   (int_of_float ((float current) *. 100.0 /. (float total)))

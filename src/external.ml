@@ -137,7 +137,7 @@ let runExternalProgramAux ~winProc ~posixProc =
       ^ "\n\n" ^ *)
         (if logOut = "" || logErr = ""
            then logOut ^ logErr
-         else logOut ^ "\n\n" ^ ("Error Output:" ^ logErr))
+         else logOut ^ "\n\n" ^ ((s_ "Error Output:") ^ logErr))
       ^ (if returnValue = Unix.WEXITED 0
          then ""
          else "\n\n" ^ Util.process_status_to_string returnValue)))

@@ -26,39 +26,39 @@ let verbose = Util.debug "stasher+"
 let backuplocation =
   Prefs.createString "backuploc" "central"
     ~category:(`Advanced `Syncprocess)
-    "where backups are stored ('local' or 'central')"
-    ("This preference determines whether backups should be kept locally, near the "
-     ^ "original files, or"
-     ^" in a central directory specified by the \\texttt{backupdir} "
-     ^"preference. If set to \\verb|local|, backups will be kept in "
-     ^"the same directory as the original files, and if set to \\verb|central|,"
-     ^" \\texttt{backupdir} will be used instead.")
+    (s_ "where backups are stored ('local' or 'central')")
+    (s_ "This preference determines whether backups should be kept locally, near the \
+     original files, or \
+     in a central directory specified by the \\texttt{backupdir} \
+     preference. If set to \\verb|local|, backups will be kept in \
+     the same directory as the original files, and if set to \\verb|central|, \
+     \\texttt{backupdir} will be used instead.")
 
 let _ = Prefs.alias backuplocation "backuplocation"
 
 let backup =
   Pred.create "backup"
     ~category:(`Advanced `Syncprocess)
-    ("Including the preference \\texttt{-backup \\ARG{pathspec}} "
-     ^ "causes Unison to keep backup files for each path that matches "
-     ^ "\\ARG{pathspec}; directories (nor their permissions or any other "
-     ^ " metadata) are not backed up.  These backup files are kept in the "
-     ^ "directory specified by the \\verb|backuplocation| preference. The backups are named "
-     ^ "according to the \\verb|backupprefix| and \\verb|backupsuffix| preferences."
-     ^ " The number of versions that are kept is determined by the "
-     ^ "\\verb|maxbackups| preference."
-     ^ "\n\n The syntax of \\ARG{pathspec} is described in "
-     ^ "\\sectionref{pathspec}{Path Specification}.")
+    (s_ "Including the preference \\texttt{-backup \\ARG{pathspec}} \
+     causes Unison to keep backup files for each path that matches \
+     \\ARG{pathspec}; directories (nor their permissions or any other \
+     metadata) are not backed up.  These backup files are kept in the \
+     directory specified by the \\verb|backuplocation| preference. The backups are named \
+     according to the \\verb|backupprefix| and \\verb|backupsuffix| preferences. \
+     The number of versions that are kept is determined by the \
+     \\verb|maxbackups| preference.\
+     \n\n The syntax of \\ARG{pathspec} is described in \
+     \\sectionref{pathspec}{Path Specification}.")
 
 let _ = Pred.alias backup "mirror"
 
 let backupnot =
   Pred.create "backupnot"
     ~category:(`Advanced `Syncprocess)
-    ("The values of this preference specify paths or individual files or"
-     ^ " regular expressions that should {\\em not} "
-     ^ "be backed up, even if the {\\tt backup} preference selects "
-     ^ "them---i.e., it selectively overrides {\\tt backup}.")
+    (s_ "The values of this preference specify paths or individual files or \
+     regular expressions that should {\\em not} \
+     be backed up, even if the {\\tt backup} preference selects \
+     them---i.e., it selectively overrides {\\tt backup}.")
 
 let _ = Pred.alias backupnot "mirrornot"
 
@@ -69,40 +69,40 @@ let shouldBackup p =
 let backupprefix =
   Prefs.createString "backupprefix" ".bak.$VERSION."
     ~category:(`Advanced `Syncprocess)
-    "prefix for the names of backup files"
-    ("When a backup for a file \\verb|NAME| is created, it is stored "
-     ^ "in a directory specified by \\texttt{backuplocation}, in a file called "
-     ^ "\\texttt{backupprefix}\\verb|NAME|\\texttt{backupsuffix}."
-     ^ " \\texttt{backupprefix} can include a directory name (causing Unison to "
-     ^ "keep all backup files for a given directory in a subdirectory with this name), and both "
-     ^ " \\texttt{backupprefix} and \\texttt{backupsuffix} can contain the string "
-     ^ "\\ARG{\\$VERSION}, which will be replaced by the \\emph{age} of the backup "
-     ^ "(1 for the most recent, 2 for the second most recent, and so on...)."
-     ^ " This keyword is ignored if it appears in a directory name"
-     ^ " in the prefix; if it  does not appear anywhere"
-     ^ " in the prefix or the suffix, it will be automatically"
-     ^ " placed at the beginning of the suffix.  "
-     ^ "\n\n"
-     ^ "One thing to be careful of: If the {\\tt backuploc} preference is set "
-     ^ "to {\\tt local}, Unison will automatically ignore {\\em all} files "
-     ^ "whose prefix and suffix match {\\tt backupprefix} and {\\tt backupsuffix}.  "
-     ^ "So be careful to choose values for these preferences that are sufficiently "
-     ^ "different from the names of your real files.")
+    (s_ "prefix for the names of backup files")
+    (s_ "When a backup for a file \\verb|NAME| is created, it is stored \
+     in a directory specified by \\texttt{backuplocation}, in a file called \
+     \\texttt{backupprefix}\\verb|NAME|\\texttt{backupsuffix}. \
+     \\texttt{backupprefix} can include a directory name (causing Unison to \
+     keep all backup files for a given directory in a subdirectory with this name), and both \
+     \\texttt{backupprefix} and \\texttt{backupsuffix} can contain the string \
+     \\ARG{\\$VERSION}, which will be replaced by the \\emph{age} of the backup \
+     (1 for the most recent, 2 for the second most recent, and so on...). \
+     This keyword is ignored if it appears in a directory name \
+     in the prefix; if it  does not appear anywhere \
+     in the prefix or the suffix, it will be automatically \
+     placed at the beginning of the suffix.  \
+     \n\n\
+     One thing to be careful of: If the {\\tt backuploc} preference is set \
+     to {\\tt local}, Unison will automatically ignore {\\em all} files \
+     whose prefix and suffix match {\\tt backupprefix} and {\\tt backupsuffix}.  \
+     So be careful to choose values for these preferences that are sufficiently \
+     different from the names of your real files.")
 
 let backupsuffix =
   Prefs.createString "backupsuffix" ""
     ~category:(`Advanced `Syncprocess)
-    "a suffix to be added to names of backup files"
-    ("See \\texttt{backupprefix} for full documentation.")
+    (s_ "a suffix to be added to names of backup files")
+    (s_ "See \\texttt{backupprefix} for full documentation.")
 
 let backups =
   Prefs.createBool "backups" false
     ~category:(`Advanced `Syncprocess)
     ~deprecated:true
-    "keep backup copies of all files (see also 'backup')"
-    ("Setting this flag to true is equivalent to "
-     ^" setting \\texttt{backuplocation} to \\texttt{local}"
-     ^" and \\texttt{backup} to \\verb|Name *|.")
+    (s_ "keep backup copies of all files (see also 'backup')")
+    (s_ "Setting this flag to true is equivalent to \
+     setting \\texttt{backuplocation} to \\texttt{local} \
+     and \\texttt{backup} to \\verb|Name *|.")
 
 (* The following function is used to express the old backup preference, if set,
    in the terms of the new preferences *)
@@ -115,16 +115,16 @@ let translateOldPrefs () =
       Prefs.set backuplocation "local"
   | (_, _, false) ->
       ()
-  | _ -> raise (Util.Fatal ( "Both old 'backups' preference and "
-                            ^ "new 'backup' preference are set!"))
+  | _ -> raise (Util.Fatal (s_ "Both old 'backups' preference and \
+                            new 'backup' preference are set!"))
 
 let maxbackups =
   Prefs.createInt "maxbackups" 2
     ~category:(`Advanced `Syncprocess)
-    "number of backed up versions of a file"
-    ("This preference specifies the number of backup versions that will "
-     ^ "be kept by unison, for each path that matches the predicate "
-     ^ "\\verb|backup|.  The default is 2.")
+    (s_ "number of backed up versions of a file")
+    (s_ "This preference specifies the number of backup versions that will \
+     be kept by unison, for each path that matches the predicate \
+     \\verb|backup|.  The default is 2.")
 
 let _ = Prefs.alias maxbackups "mirrorversions"
 let _ = Prefs.alias maxbackups "backupversions"
@@ -132,12 +132,12 @@ let _ = Prefs.alias maxbackups "backupversions"
 let backupdir =
   Prefs.createString "backupdir" ""
     ~category:(`Advanced `Syncprocess)
-    "directory for storing centralized backups"
-    ("If this preference is set, Unison will use it as the name of the "
-     ^ "directory used to store backup files specified by "
-     ^ "the {\\tt backup} preference, when {\\tt backuplocation} is set"
-     ^ " to \\verb|central|. It is checked {\\em after} the "
-     ^ "{\\tt UNISONBACKUPDIR} environment variable.")
+    (s_ "directory for storing centralized backups")
+    (s_ "If this preference is set, Unison will use it as the name of the \
+     directory used to store backup files specified by \
+     the {\\tt backup} preference, when {\\tt backuplocation} is set \
+     to \\verb|central|. It is checked {\\em after} the \
+     {\\tt UNISONBACKUPDIR} environment variable.")
 
 let backupDirectory () =
   Util.convertUnixErrorsToTransient "backupDirectory()" (fun () ->
@@ -153,20 +153,20 @@ let backupDirectory () =
 let backupcurrent =
   Pred.create "backupcurr"
     ~category:(`Advanced `Syncprocess)
-    ("Including the preference \\texttt{-backupcurr \\ARG{pathspec}} "
-     ^" causes Unison to keep a backup of the {\\em current} version of every file "
-     ^ "matching \\ARG{pathspec}.  "
-     ^" This file will be saved as a backup with version number 000. Such"
-     ^" backups can be used as inputs to external merging programs, for instance.  See "
-     ^ "the documentation for the \\verb|merge| preference."
-     ^" For more details, see \\sectionref{merge}{Merging Conflicting Versions}."
-     ^"\n\n The syntax of \\ARG{pathspec} is described in "
-     ^ "\\sectionref{pathspec}{Path Specification}.")
+    (s_ "Including the preference \\texttt{-backupcurr \\ARG{pathspec}} \
+     causes Unison to keep a backup of the {\\em current} version of every file \
+     matching \\ARG{pathspec}.  \
+     This file will be saved as a backup with version number 000. Such \
+     backups can be used as inputs to external merging programs, for instance.  See \
+     the documentation for the \\verb|merge| preference. \
+     For more details, see \\sectionref{merge}{Merging Conflicting Versions}.\
+     \n\n The syntax of \\ARG{pathspec} is described in \
+     \\sectionref{pathspec}{Path Specification}.")
 
 let backupcurrentnot =
   Pred.create "backupcurrnot"
     ~category:(`Advanced `Syncprocess)
-   "Exceptions to \\verb|backupcurr|, like the \\verb|ignorenot| preference."
+   (s_ "Exceptions to \\verb|backupcurr|, like the \\verb|ignorenot| preference.")
 
 let shouldBackupCurrent p =
   (let s = Path.toString p in
@@ -211,7 +211,7 @@ let backup_rx () =
      Str.global_replace (Str.regexp "\\\\\\$VERSION") version_rx prefix,
      Str.global_replace (Str.regexp "\\\\\\$VERSION") version_rx suffix)
   else
-    raise (Util.Fatal "Either backupprefix or backupsuffix must contain '$VERSION'")
+    raise (Util.Fatal (s_ "Either backupprefix or backupsuffix must contain '$VERSION'"))
 
 (* We ignore files whose name ends in .unison.bak, since people may still have these
    lying around from using previous versions of Unison. *)
@@ -266,8 +266,8 @@ let updateBackupNamingFunctions () =
     | [Str.Text t; Str.Delim _; Str.Text t'] ->
         (fun i -> Printf.sprintf "%s%d%s" t i t')
     | _ -> raise (Util.Fatal (
-        "The tag $VERSION should only appear "
-       ^"once in the backupprefix and backupsuffix preferences.")) in
+        s_ "The tag $VERSION should only appear \
+          once in the backupprefix and backupsuffix preferences.")) in
 
   make_prefix := makeFun (Prefs.read backupprefix);
   make_suffix := makeFun (Prefs.read backupsuffix);
@@ -304,8 +304,8 @@ let stashDirectory fspath path =
          parent instead. *)
       Fspath.canonize (Some (Filename.dirname (Fspath.toString fspath)))
   | "local" -> fspath
-  |  _ -> raise (Util.Fatal ("backuplocation preference should be set"
-                             ^"to central or local."))
+  |  _ -> raise (Util.Fatal (s_ "backuplocation preference should be set \
+                             to central or local."))
 
 let showContent typ fspath path =
   match typ with
