@@ -49,6 +49,35 @@ let ocaml_conf_var varname = shell (ocamlc ^ " -config-var " ^ varname)
 let ocaml_ver_major, ocaml_ver_minor, ocaml_ver_patch =
   Scanf.sscanf (ocaml_conf_var "version") "%d.%d.%d" (fun x y z -> x, y, z)
 
+let ocaml_libdir = "OCAMLLIBDIR" <--? ocaml_conf_var "standard_library"
+
+(*********************************************************************
+*** Opam ***)
+
+let opam = get_command "opam"
+
+let opam_cli_ver =
+  match opam with
+  | Some cmd when has_substring "opamcli_ok"
+               (shell ~err_null:true (cmd ^ " --cli=2.1 && echo opamcli_ok")) ->
+      " --cli=2.1"
+  | _ -> ""
+
+let opam_var ?(default = "") varname =
+  match opam with
+  | Some cmd -> shell (cmd ^ opam_cli_ver ^ " var " ^ varname)
+  | None -> default
+
+let opam_pkg_libdir pkg =
+  opam_var (pkg ^ ":lib")
+    ~default:(Filename.concat (Filename.dirname ocaml_libdir) pkg)
+
+let incl_quoted_dir dir =
+  "-I " ^ (Filename.quote dir)
+
+let incl_opam_pkg_libdir pkg =
+  incl_quoted_dir (opam_pkg_libdir pkg)
+
 (*********************************************************************
 *** Try to automatically guess OS ***)
 
@@ -75,14 +104,14 @@ let () =
   if inputs.$("UISTYLE") <> "" then
     error "UISTYLE is no longer used. See build instructions."
 
-let ocaml_libdir = "OCAMLLIBDIR" <--? ocaml_conf_var "standard_library"
-
 let ocamlfind = get_command "ocamlfind"
 
 let build_GUI =
   let has_lablgtk3 =
     match ocamlfind with
     | Some cmd -> shell ~err_null:true (cmd ^ " query lablgtk3") |> not_empty
+    | None when opam_var "lablgtk3:installed" = "true" -> true
+           (* falls through if opam or lablgtk3 opam package is not installed *)
     | None -> exists ocaml_libdir "lablgtk3"
   in
   if not has_lablgtk3 then begin
@@ -355,6 +384,40 @@ let () =
             in
             "XCODEFLAGS" <-+= "LDFLAGS_GETTEXT=\\\"" ^ ldflags_gettext ^ "\\\""
         end
+    | None when opam_var "gettext:installed" = "true" ->
+        if link_gettext = `OCaml then begin
+          "CAMLINCLS_GETTEXT" <-+= incl_opam_pkg_libdir "fileutils";
+          "OCAMLLIBS_GETTEXT" <-+= "fileutils.cma"
+        end;
+        let libdir = opam_pkg_libdir "gettext" in
+        List.iter (fun s -> "CAMLINCLS_GETTEXT" <-+= incl_quoted_dir s) [
+            libdir;
+            Filename.concat libdir "base";
+            Filename.concat libdir "extension";
+          ];
+        "OCAMLLIBS_GETTEXT" <-+= "gettextBase.cma gettextExtension.cma";
+
+        if link_gettext = `Sys then begin
+          let libdir = opam_pkg_libdir "gettext-stub" in
+          "CAMLINCLS_GETTEXT" <-+= incl_quoted_dir libdir;
+          "OCAMLLIBS_GETTEXT" <-+= "gettextStub.cma";
+
+          if ocaml_conf_var "ccomp_type" = "msvc" then begin
+            (* This is needed until upstream ocaml-gettext is patched *)
+            "CLIBS" <-+= "-cclib intl.lib";
+          end;
+
+          if build_macGUI then
+            let ldflags_gettext =
+              String.concat " " [
+                inputs.$("LDFLAGS_GETTEXT");
+                "-L" ^ (Filename.quote libdir);
+                "-lgettextStub_stubs";
+              ]
+              |> double_escape_dquotes
+            in
+            "XCODEFLAGS" <-+= "LDFLAGS_GETTEXT=\\\"" ^ ldflags_gettext ^ "\\\""
+        end
     | None ->
         if link_gettext = `OCaml then begin
           "CAMLINCLS_GETTEXT" <-+= "-I +fileutils";
@@ -379,7 +442,7 @@ let () =
             let ldflags_gettext =
               String.concat " " [
                 inputs.$("LDFLAGS_GETTEXT");
-                "-L" ^ (Filename.quote (($)"OCAMLLIBDIR" ^ "/gettext-stub"));
+                "-L" ^ (Filename.quote (Filename.concat ocaml_libdir "gettext-stub"));
                 "-lgettextStub_stubs";
               ]
               |> double_escape_dquotes
@@ -427,6 +490,9 @@ let () =
       (* The weird quoting is required for Windows, but harmless in sh *)
       shell (cmd ^ " query -format \"-I \"\"%d\"\"\" lablgtk3") ^ " " ^
       shell (cmd ^ " query -format \"-I \"\"%d\"\"\" cairo2")
+  | None when opam_var "lablgtk3:installed" = "true" ->
+      incl_opam_pkg_libdir "lablgtk3" ^ " " ^
+      incl_opam_pkg_libdir "cairo2"
   | None -> "-I +lablgtk3 -I +cairo2"
 
 let () =
