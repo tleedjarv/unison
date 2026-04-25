@@ -1547,7 +1547,7 @@ jobs:
       env:
         WITH_GETTEXT: ${{ matrix.job.gettext }}
       run: |
-        opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
+        opam install --verbose --yes lablgtk3 && opam install ocamlfind
         opam exec -- make gui
         cp src/unison-gui pkg/bin/
 
