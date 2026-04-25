@@ -40,7 +40,7 @@ jobs:
         cd ocaml-gettext
         opam pin --no-action add gettext .
 
-    - run: opam install ocamlfind gettext
+    - run: opam install gettext
       if: matrix.job.gettext
 
     - run: opam install gettext-stub
@@ -685,7 +685,7 @@ jobs:
 
     - name: Install gettext
       if: matrix.job.gettext
-      run: opam install ocamlfind gettext
+      run: opam install gettext
 
     - name: Install gettext-stub
       if: matrix.job.gettext == 'sys'
@@ -744,7 +744,7 @@ jobs:
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for musl OCaml variant
       if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
-      run: opam install lablgtk3 ocamlfind
+      run: opam install lablgtk3
 
     - if: ${{ !matrix.job.static }} ## unable to build static gtk/gui
       run: |
@@ -1334,7 +1334,7 @@ jobs:
         cd ocaml-gettext
         opam pin --no-action add gettext .
 
-    - run: opam install ocamlfind gettext
+    - run: opam install gettext
       if: matrix.job.gettext
 
     - run: opam install gettext-stub
@@ -1512,7 +1512,7 @@ jobs:
 
     - name: Install gettext
       if: matrix.job.gettext
-      run: opam install ocamlfind gettext
+      run: opam install gettext
 
     - name: Install gettext-stub
       if: matrix.job.gettext == 'sys'
@@ -1547,7 +1547,7 @@ jobs:
       env:
         WITH_GETTEXT: ${{ matrix.job.gettext }}
       run: |
-        opam install --verbose --yes lablgtk3 && opam install ocamlfind
+        opam install --verbose --yes lablgtk3
         opam exec -- make gui
         cp src/unison-gui pkg/bin/
 
