@@ -6,7 +6,7 @@ on:
 
 jobs:
   docs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
     - run: sudo apt-get update
@@ -50,11 +50,12 @@ jobs:
         # non-deprecated version for each arch, for published
         # packages.
         job:
-        - { os: macos-15      , ocaml-version: 5.5.x }
-        - { os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
+        - { os: macos-26      , ocaml-version: 5.5.x }
+        - { os: macos-15      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
         - { os: macos-15-intel, ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86-64 }
-        - { os: ubuntu-24.04  , ocaml-version: 5.5.x }
-        - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
+        - { os: ubuntu-26.04  , ocaml-version: 5.5.x }
+        - { os: ubuntu-26.04  , ocaml-version: 4.14.x }
+        - { os: ubuntu-22.04-arm, ocaml-version: 5.5.x                                           , publish: true, fnsuffix: -ubuntu-22.04-arm64 }
         - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.4+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-22.04-i386 }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.4"            , win-comp: mingw, publish: true        , fnsuffix: -windows-x86_64 }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.4,arch-x86_32", win-comp: mingw, publish: true        , fnsuffix: -windows-i386 }
@@ -655,14 +656,15 @@ jobs:
         # This list is intended to balance good enough coverage and
         # limited resource usage.
         job:
-        - { os: ubuntu-24.04  , ocaml-version: 5.5.x   , ref: v2.54.0 }
+        - { os: ubuntu-26.04  , ocaml-version: 5.5.x   , ref: v2.54.0 }
+        - { os: ubuntu-26.04-arm, ocaml-version: 5.5.x   , ref: v2.54.0 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.8 }
         - { os: ubuntu-22.04  , ocaml-version: ocaml-base-compiler.4.08.1, ref: v2.53.8 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
         - { os: windows-2022  , ocaml-version: 4.14.x  , ref: v2.54.0 }
         - { os: windows-2022  , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
-        - { os: macos-14      , ocaml-version: 5.5.x   , ref: v2.54.0 }
-        - { os: macos-14      , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
+        - { os: macos-15      , ocaml-version: 5.5.x   , ref: v2.54.0 }
+        - { os: macos-15-intel, ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -860,7 +862,7 @@ jobs:
       matrix:
         job:
         - { os: ubuntu-24.04   , ocaml-compiler: 4.12.x }
-        - { os: macos-14       , ocaml-compiler: 4.14.x }
+        - { os: macos-15       , ocaml-compiler: 4.14.x }
 
     runs-on: ${{ matrix.job.os }}
 
